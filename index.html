@@ -425,7 +425,14 @@
     display: grid; grid-template-columns: 1fr 1fr auto auto;
     gap: 6px; align-items: center; margin-bottom: 7px;
   }
-  .yr-item-row.special { grid-template-columns: 1fr 1fr 60px auto; }
+  .yr-item-row.special { grid-template-columns: 1fr 1fr auto; }
+  .yr-months-picker { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; grid-column: 1 / -1; }
+  .yr-month-btn {
+    width: 26px; height: 22px; font-size: 10px; border-radius: 4px;
+    background: #21262d; border: 1px solid #30363d; color: #8b949e;
+    cursor: pointer; padding: 0; line-height: 1;
+  }
+  .yr-month-btn.active { background: #d2a8ff; color: #0d1117; border-color: #d2a8ff; font-weight: 700; }
   .yr-name-input, .yr-formula-input, .yr-month-select {
     background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
     color: #e6edf3; padding: 6px 8px; font-size: 12px; font-family: inherit; width: 100%;
@@ -3198,7 +3205,7 @@ function evalFormula(str) {
 function addYrRow(section) {
   const d = getYearData();
   const id = String(Date.now());
-  if (section === 'special') d.special.push({ id, name: '', formula: '', month: '' });
+  if (section === 'special') d.special.push({ id, name: '', formula: '', months: [] });
   else if (section === 'fixed') d.fixed.push({ id, name: '', formula: '' });
   else if (section === 'variable') d.variable.push({ id, name: '', formula: '' });
   else if (section === 'edu') d.edu.push({ id, name: '', formula: '' });
@@ -3210,6 +3217,18 @@ function addYrRow(section) {
     const el = document.getElementById('yr-n-' + id);
     if (el) el.focus();
   }, 50);
+}
+
+function toggleYrMonth(section, id, m) {
+  const d = getYearData();
+  const row = d[section] && d[section].find(r => r.id === id);
+  if (!row) return;
+  if (!Array.isArray(row.months)) row.months = row.month ? [parseInt(row.month)] : [];
+  const idx = row.months.indexOf(m);
+  if (idx >= 0) row.months.splice(idx, 1);
+  else row.months.push(m);
+  setYearData(d);
+  renderTab4();
 }
 
 function delYrRow(section, id) {
@@ -3226,7 +3245,10 @@ function saveYrRow(section, id) {
   if (!row) return;
   row.name    = (document.getElementById('yr-n-' + id) || {}).value || '';
   row.formula = (document.getElementById('yr-f-' + id) || {}).value || '';
-  if (section === 'special') row.month = (document.getElementById('yr-m-' + id) || {}).value || '';
+  if (section === 'special') {
+    // months는 toggleYrMonth로 별도 관리, 여기선 건드리지 않음
+    if (!Array.isArray(row.months)) row.months = row.month ? [parseInt(row.month)] : [];
+  }
   setYearData(d);
   renderTab4();
   if (focusId) setTimeout(() => {
@@ -3448,20 +3470,24 @@ function renderTab4() {
   document.getElementById('yr-edu-month').textContent = formatKRW(eduMonthly);
   document.getElementById('yr-edu-year').textContent  = formatKRW(eduYearly);
 
-  // 비정기지출 목록 (특별: 시기 포함)
+  // 비정기지출 목록 (다중 월 선택)
   const specialRows = d.special.map(row => {
-    const amt = evalFormula(row.formula);
+    const months = Array.isArray(row.months) ? row.months
+      : (row.month ? [parseInt(row.month)] : []); // 구버전 마이그레이션
+    const monthBtns = [...Array(12)].map((_,i) => {
+      const m = i + 1;
+      const on = months.includes(m);
+      return `<button class="yr-month-btn${on?' active':''}" onclick="toggleYrMonth('special','${row.id}',${m})">${m}</button>`;
+    }).join('');
+    const monthLabel = months.length ? months.sort((a,b)=>a-b).map(m=>m+'월').join(', ') : '월 미지정 (연 전체)';
     return `
     <div class="yr-item-row special">
       <input class="yr-name-input" id="yr-n-${row.id}" value="${row.name}"
         placeholder="항목명" onchange="saveYrRow('special','${row.id}')">
       <input class="yr-formula-input" id="yr-f-${row.id}" value="${row.formula}"
         placeholder="금액 또는 수식" onchange="saveYrRow('special','${row.id}')">
-      <select class="yr-month-select" id="yr-m-${row.id}" onchange="saveYrRow('special','${row.id}')">
-        <option value="">-</option>
-        ${[...Array(12)].map((_,i)=>`<option value="${i+1}" ${row.month==i+1?'selected':''}>${i+1}월</option>`).join('')}
-      </select>
       <button class="yr-del-btn" onclick="delYrRow('special','${row.id}')">✕</button>
+      <div class="yr-months-picker" title="${monthLabel}">${monthBtns}</div>
     </div>`;
   });
   document.getElementById('yr-special-list').innerHTML =
@@ -3473,11 +3499,17 @@ function renderTab4() {
 // ===== 예산 (연예산에서 자동 계산) =====
 function getMonthlyBudgetFromAnnual() {
   const d = getYearData();
+  const cm = parseInt((catMonth || currentMonth || '').split('-')[1] || new Date().getMonth() + 1);
+  const specialBudget = (d.special||[]).reduce((s,r) => {
+    const ms = Array.isArray(r.months) ? r.months : (r.month ? [parseInt(r.month)] : []);
+    if (ms.length > 0) return s + (ms.includes(cm) ? evalFormula(r.formula) : 0);
+    return s + Math.round(evalFormula(r.formula) / getEffectiveMonths());
+  }, 0);
   return {
     '고정':   Math.round(d.fixed.reduce((s,r)        => s + evalFormula(r.formula), 0) / getEffectiveMonths()),
     '변동':   Math.round((d.variable||[]).reduce((s,r) => s + evalFormula(r.formula), 0) / getEffectiveMonths()),
     '교육':   Math.round((d.edu||[]).reduce((s,r)     => s + evalFormula(r.formula), 0) / getEffectiveMonths()),
-    '비정기': Math.round(d.special.reduce((s,r)       => s + evalFormula(r.formula), 0) / getEffectiveMonths()),
+    '비정기': specialBudget,
   };
 }
 
@@ -3494,9 +3526,29 @@ function renderBudgetBars() {
     { key:'special',  rows: d.special,        ...CATEGORY_GROUPS['비정기'] },
   ];
 
+  const catMonthNum = parseInt(catMonth.split('-')[1]); // 현재 카테고리 탭 월 (1~12)
+
   document.getElementById('budgetBars').innerHTML = sections.map(({ key, color, label, rows }) => {
-    const namedRows = rows.filter(r => r.name);
-    const totalBudget = namedRows.reduce((s,r) => s + Math.round(evalFormula(r.formula)/getEffectiveMonths()), 0);
+    const isFixed   = key === 'fixed';
+    const isSpecial = key === 'special';
+
+    // 비정기: 월이 지정된 경우 해당 월에만 표시
+    const namedRows = rows.filter(r => {
+      if (!r.name) return false;
+      if (isSpecial) {
+        const ms = Array.isArray(r.months) ? r.months : (r.month ? [parseInt(r.month)] : []);
+        if (ms.length > 0 && !ms.includes(catMonthNum)) return false; // 다른 달이면 숨김
+      }
+      return true;
+    });
+
+    const totalBudget = namedRows.reduce((s,r) => {
+      if (isSpecial) {
+        const ms = Array.isArray(r.months) ? r.months : (r.month ? [parseInt(r.month)] : []);
+        return s + (ms.length > 0 ? evalFormula(r.formula) : Math.round(evalFormula(r.formula)/getEffectiveMonths()));
+      }
+      return s + Math.round(evalFormula(r.formula)/getEffectiveMonths());
+    }, 0);
     const totalSpent  = namedRows.reduce((s,r) => s + (spentMap[r.name]||0), 0);
     const gPct  = totalBudget > 0 ? Math.min(Math.round(totalSpent/totalBudget*100), 100) : 0;
     const gOver = totalBudget > 0 && totalSpent > totalBudget;
@@ -3505,9 +3557,14 @@ function renderBudgetBars() {
       ? `${formatKRW(totalSpent)} / ${formatKRW(totalBudget)} (${Math.round(totalSpent/totalBudget*100)}%)`
       : `${formatKRW(totalSpent)} / 연예산 미입력`;
 
-    const isFixed = key === 'fixed';
     const itemBars = namedRows.map(r => {
-      const iBudget  = Math.round(evalFormula(r.formula)/getEffectiveMonths());
+      let iBudget;
+      if (isSpecial) {
+        const ms = Array.isArray(r.months) ? r.months : (r.month ? [parseInt(r.month)] : []);
+        iBudget = ms.length > 0 ? evalFormula(r.formula) : Math.round(evalFormula(r.formula)/getEffectiveMonths());
+      } else {
+        iBudget = Math.round(evalFormula(r.formula)/getEffectiveMonths());
+      }
       const iSpent   = spentMap[r.name] || 0;
       const iPct     = iBudget > 0 ? Math.min(Math.round(iSpent/iBudget*100), 100) : 0;
       const iOver    = iBudget > 0 && iSpent > iBudget;
