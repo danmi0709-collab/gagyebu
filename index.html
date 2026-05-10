@@ -236,6 +236,13 @@
   }
   .tx-edit:hover { color: #e2b96b; }
   .tx-actions { display: flex; gap: 2px; flex-shrink: 0; }
+  .tx-drag-handle {
+    color: #484f58; font-size: 18px; cursor: grab;
+    padding: 4px 6px 4px 0; flex-shrink: 0; line-height: 1;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+  }
+  .tx-item.dragging { opacity: 0.35; border-style: dashed; }
+  .tx-item.drag-over { border-top: 2px solid #e2b96b; }
 
   /* 선택 삭제 */
   .btn-select-mode {
@@ -1318,7 +1325,8 @@
 </nav>
 
 <script>
-const STORAGE_KEY = 'hanna_budget_data';
+const STORAGE_KEY   = 'hanna_budget_data';
+const TX_ORDER_KEY  = 'hanna_tx_order';
 let currentType = 'income';
 let currentMonth; // YYYY-MM
 let catMonth;
@@ -1622,6 +1630,21 @@ function renderTab1() {
     groups[t.date].push(t);
   });
 
+  // 저장된 순서 적용
+  const txOrders = loadTxOrder();
+  Object.keys(groups).forEach(date => {
+    const order = txOrders[date];
+    if (order && order.length) {
+      const idxMap = {};
+      order.forEach((id, i) => idxMap[id] = i);
+      groups[date].sort((a, b) => {
+        const ia = idxMap[a.id] !== undefined ? idxMap[a.id] : 9999;
+        const ib = idxMap[b.id] !== undefined ? idxMap[b.id] : 9999;
+        return ia - ib;
+      });
+    }
+  });
+
   list.innerHTML = Object.entries(groups).map(([date, dayTxs]) => {
     const dayIncome  = dayTxs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const dayExpense = dayTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
@@ -1635,10 +1658,11 @@ function renderTab1() {
       const badge = grp ? `<span class="group-badge group-${grp}">${grp}</span>` : '';
       const sel = selectMode && selectedIds.has(t.id);
       return `
-      <div class="tx-item tx-${t.type}${grpClass}${sel ? ' selected' : ''}" data-id="${t.id}"
+      <div class="tx-item tx-${t.type}${grpClass}${sel ? ' selected' : ''}" data-id="${t.id}" data-date="${date}"
            onclick="${selectMode ? `toggleSelectItem('${t.id}')` : ''}">
         ${selectMode ? `<input type="checkbox" class="tx-checkbox" ${sel ? 'checked' : ''}
           onclick="event.stopPropagation();toggleSelectItem('${t.id}')" readonly>` : ''}
+        ${!selectMode ? `<div class="tx-drag-handle" title="드래그로 순서 변경">⠿</div>` : ''}
         <div class="tx-icon">${CAT_ICONS[t.category] || '💸'}</div>
         <div class="tx-info">
           <div class="tx-top">
@@ -1666,6 +1690,125 @@ function renderTab1() {
       ${items}
     </div>`;
   }).join('');
+
+  initDragDrop();
+}
+
+// ── 내역 순서 저장/불러오기 ──────────────────────────────
+function loadTxOrder() {
+  try { return JSON.parse(localStorage.getItem(TX_ORDER_KEY) || '{}'); } catch { return {}; }
+}
+function saveTxOrder(data) {
+  localStorage.setItem(TX_ORDER_KEY, JSON.stringify(data));
+}
+
+// ── 드래그&드롭 (PC 마우스 + 모바일 터치) ────────────────
+let _dragId = null, _dragDate = null;
+let _touchItem = null, _touchClone = null, _touchOffsetY = 0;
+
+function _applyNewOrder(targetItem) {
+  if (!targetItem || targetItem.dataset.id === _dragId) return;
+  if (targetItem.dataset.date !== _dragDate) return;
+  const group = targetItem.closest('.date-group');
+  if (!group) return;
+  const items = [...group.querySelectorAll('.tx-item[data-id]')];
+  const ids   = items.map(el => el.dataset.id);
+  const si = ids.indexOf(_dragId);
+  const ti = ids.indexOf(targetItem.dataset.id);
+  if (si < 0 || ti < 0) return;
+  ids.splice(si, 1);
+  ids.splice(ti, 0, _dragId);
+  const orders = loadTxOrder();
+  orders[_dragDate] = ids;
+  saveTxOrder(orders);
+  renderTab1();
+}
+
+function initDragDrop() {
+  const list = document.getElementById('txList');
+  if (!list) return;
+  // 이전 리스너 제거를 위해 새 요소로 교체
+  const newList = list.cloneNode(true);
+  list.parentNode.replaceChild(newList, list);
+  const el = document.getElementById('txList');
+
+  // ── PC: HTML5 Drag & Drop ──
+  el.addEventListener('dragstart', e => {
+    const item = e.target.closest('.tx-item[data-id]');
+    if (!item) return;
+    _dragId   = item.dataset.id;
+    _dragDate = item.dataset.date;
+    item.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  el.addEventListener('dragend', e => {
+    document.querySelectorAll('.tx-item.dragging').forEach(i => i.classList.remove('dragging'));
+    document.querySelectorAll('.tx-item.drag-over').forEach(i => i.classList.remove('drag-over'));
+  });
+  el.addEventListener('dragover', e => {
+    e.preventDefault();
+    const item = e.target.closest('.tx-item[data-id]');
+    document.querySelectorAll('.tx-item.drag-over').forEach(i => i.classList.remove('drag-over'));
+    if (item && item.dataset.id !== _dragId) item.classList.add('drag-over');
+  });
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    const target = e.target.closest('.tx-item[data-id]');
+    document.querySelectorAll('.tx-item.drag-over').forEach(i => i.classList.remove('drag-over'));
+    _applyNewOrder(target);
+  });
+
+  // ── 모바일: Touch ──
+  el.addEventListener('touchstart', e => {
+    const handle = e.target.closest('.tx-drag-handle');
+    if (!handle) return;
+    const item = handle.closest('.tx-item[data-id]');
+    if (!item) return;
+    _touchItem = item;
+    _dragId    = item.dataset.id;
+    _dragDate  = item.dataset.date;
+    const rect = item.getBoundingClientRect();
+    _touchOffsetY = e.touches[0].clientY - rect.top;
+    _touchClone = item.cloneNode(true);
+    Object.assign(_touchClone.style, {
+      position:'fixed', width: rect.width+'px', left: rect.left+'px',
+      top: rect.top+'px', opacity:'0.8', zIndex:'9999', pointerEvents:'none',
+      borderRadius:'10px', boxShadow:'0 4px 16px rgba(0,0,0,0.5)'
+    });
+    document.body.appendChild(_touchClone);
+    item.classList.add('dragging');
+    e.preventDefault();
+  }, { passive: false });
+
+  el.addEventListener('touchmove', e => {
+    if (!_touchClone) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    _touchClone.style.top = (touch.clientY - _touchOffsetY) + 'px';
+    _touchClone.style.display = 'none';
+    const under = document.elementFromPoint(touch.clientX, touch.clientY);
+    _touchClone.style.display = '';
+    document.querySelectorAll('.tx-item.drag-over').forEach(i => i.classList.remove('drag-over'));
+    const targetItem = under && under.closest('.tx-item[data-id]');
+    if (targetItem && targetItem !== _touchItem) targetItem.classList.add('drag-over');
+  }, { passive: false });
+
+  el.addEventListener('touchend', e => {
+    if (!_touchClone) return;
+    const touch = e.changedTouches[0];
+    _touchClone.remove(); _touchClone = null;
+    _touchItem && _touchItem.classList.remove('dragging');
+    document.querySelectorAll('.tx-item.drag-over').forEach(i => i.classList.remove('drag-over'));
+    const under = document.elementFromPoint(touch.clientX, touch.clientY);
+    const targetItem = under && under.closest('.tx-item[data-id]');
+    _applyNewOrder(targetItem);
+    _touchItem = null; _dragId = null; _dragDate = null;
+  });
+
+  // draggable 속성 부여
+  el.querySelectorAll('.tx-item[data-id]').forEach(item => {
+    item.setAttribute('draggable', 'true');
+  });
 }
 
 function renderTab2() {
