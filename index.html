@@ -2461,8 +2461,8 @@ function parseMultipleTransactions(rawText) {
       continue;
     }
 
-    // ── 삼성월렛/삼성페이: "₩34,000 결제 완료" 형식 ──
-    const walletMatch = line.match(/₩([\d,]+)\s*결제\s*완료/);
+    // ── 삼성월렛/삼성페이: "₩34,000 결제 완료" 형식 (OCR이 ₩를 \로 읽기도 함) ──
+    const walletMatch = line.match(/[₩\\W]([\d,]+)\s*결제\s*완료/);
     if (walletMatch) {
       const amt = parseInt(walletMatch[1].replace(/,/g, ''));
       if (amt < 100) continue;
