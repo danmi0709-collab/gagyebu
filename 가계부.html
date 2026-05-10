@@ -977,6 +977,12 @@
   <!-- 거래 목록 -->
   <div id="txList"></div>
 
+  <!-- 엑셀 다운로드 -->
+  <div class="backup-row">
+    <button class="btn-backup" onclick="exportExcel('week')" style="color:#3fb950;border-color:#3fb950">📊 주별 엑셀</button>
+    <button class="btn-backup" onclick="exportExcel('month')" style="color:#58a6ff;border-color:#58a6ff">📊 월별 엑셀</button>
+  </div>
+
   <!-- 백업 -->
   <div class="backup-row">
     <button class="btn-backup" onclick="exportJSON()">📥 데이터 백업</button>
@@ -2018,6 +2024,63 @@ function renderTab3() {
       </div>`).join('');
   }
   document.getElementById('catList').innerHTML = catListHTML;
+}
+
+function exportExcel(mode) {
+  const now   = new Date();
+  let txs, fileName, periodLabel;
+
+  if (mode === 'month') {
+    // 현재 선택된 달 전체
+    txs = getMonthTx(currentMonth);
+    fileName = `가계부_${currentMonth}.xlsx`;
+    periodLabel = currentMonth;
+  } else {
+    // 이번 주 (월~일)
+    const day   = now.getDay(); // 0=일, 1=월
+    const mon   = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+    const sun   = new Date(mon); sun.setDate(mon.getDate() + 6);
+    const toStr = d => d.toISOString().slice(0, 10);
+    const monStr = toStr(mon), sunStr = toStr(sun);
+    txs = loadData().transactions.filter(t => t.date >= monStr && t.date <= sunStr);
+    fileName    = `가계부_${monStr}_${sunStr}.xlsx`;
+    periodLabel = `${monStr} ~ ${sunStr}`;
+  }
+
+  if (!txs.length) { alert('해당 기간에 내역이 없어요.'); return; }
+
+  // 날짜 오름차순 정렬
+  txs = [...txs].sort((a, b) => a.date.localeCompare(b.date));
+
+  // 데이터 행 생성
+  const rows = txs.map(t => ({
+    '날짜':   t.date,
+    '유형':   t.type === 'income' ? '수입' : '지출',
+    '그룹':   t.type === 'expense' ? (getCategoryGroup(t.category) || '') : '수입',
+    '항목':   t.category || '',
+    '메모':   t.memo || '',
+    '금액':   t.type === 'income' ? t.amount : -t.amount,
+  }));
+
+  // 합계 행
+  const totalIncome  = txs.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+  const totalExpense = txs.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0);
+  rows.push({});
+  rows.push({ '날짜': '합계', '유형': '', '그룹': '', '항목': '', '메모': '수입', '금액': totalIncome });
+  rows.push({ '날짜': '',     '유형': '', '그룹': '', '항목': '', '메모': '지출', '금액': -totalExpense });
+  rows.push({ '날짜': '',     '유형': '', '그룹': '', '항목': '', '메모': '잔액', '금액': totalIncome - totalExpense });
+
+  // xlsx 생성
+  const ws = XLSX.utils.json_to_sheet(rows);
+
+  // 열 너비 설정
+  ws['!cols'] = [
+    { wch: 12 }, { wch: 6 }, { wch: 8 }, { wch: 16 }, { wch: 20 }, { wch: 14 }
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, periodLabel.replace(/[:/\\?*\[\]]/g, '-').slice(0, 31));
+  XLSX.writeFile(wb, fileName);
 }
 
 function exportJSON() {
