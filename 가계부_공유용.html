@@ -2546,6 +2546,25 @@ function parseMultipleTransactions(rawText) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
+    // ── 삼성페이 카드내역: "YYYY.M.DD. 오전/오후 H:MM:SS" 풀날짜 ──
+    const fullDate = line.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})\.\s*(오전|오후)/);
+    if (fullDate) {
+      currentDate = `${fullDate[1]}-${fullDate[2].padStart(2,'0')}-${fullDate[3].padStart(2,'0')}`;
+      continue;
+    }
+
+    // ── 삼성페이 카드내역: "가맹점명 ₩N,NNN" 형식 (₩ / W / \ 모두 대응) ──
+    const cardLine = line.match(/^(.+?)\s+[₩W\\]([\d,]+)$/);
+    if (cardLine) {
+      const merchant = cardLine[1].trim();
+      const amt = parseInt(cardLine[2].replace(/,/g, ''));
+      if (amt < 100) continue;
+      if (/^\d{4}$/.test(merchant)) continue;
+      if (/^[₩W\\]/.test(merchant)) continue;
+      results.push({ date: currentDate, merchant: merchant.slice(0, 40), amount: amt, type: 'expense', checked: true });
+      continue;
+    }
+
     // 날짜 헤더: MM.DD 또는 MM/DD
     const dh = line.match(/^(\d{1,2})[./](\d{2})$/);
     if (dh) {
