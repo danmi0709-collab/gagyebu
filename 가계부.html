@@ -2642,7 +2642,9 @@ async function runOCR() {
       progressBar.style.width = '70%';
     }
 
-    const result = await ocrWorker.recognize(ocrImageData);
+    const imgUrl = URL.createObjectURL(ocrImageData);
+    const result = await ocrWorker.recognize(imgUrl);
+    URL.revokeObjectURL(imgUrl);
     progressBar.style.width = '100%';
     progressLabel.textContent = '완료!';
 
