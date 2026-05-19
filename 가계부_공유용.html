@@ -810,6 +810,43 @@
     .big-card .bc-val { font-size: 12px; }
   }
 
+  /* 자연어 빠른 입력 */
+  .nl-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  .nl-row { display: flex; gap: 8px; align-items: center; }
+  .nl-input {
+    flex: 1;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    color: #e6edf3;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .nl-input:focus { outline: none; border-color: #e2b96b; }
+  .nl-input::placeholder { color: #484f58; }
+  .nl-btn {
+    background: #e2b96b;
+    color: #0d1117;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+  }
+  .nl-btn:hover { opacity: 0.85; }
+  .nl-result { font-size: 11px; color: #8b949e; margin-top: 6px; min-height: 14px; line-height: 1.5; }
+
   /* 헤더 레이아웃 */
   .header-row {
     display: flex;
@@ -840,6 +877,17 @@
 
 <!-- 탭1: 내역 -->
 <div id="tab1" class="tab-content active">
+
+  <!-- 자연어 빠른 입력 -->
+  <div class="nl-card">
+    <div class="nl-row">
+      <input type="text" id="nlInput" class="nl-input"
+        placeholder="예) 배스킨라빈스 변동 외식 4700원"
+        onkeydown="if(event.key==='Enter')parseNL()">
+      <button class="nl-btn" onclick="parseNL()">입력</button>
+    </div>
+    <div id="nlResult" class="nl-result"></div>
+  </div>
 
   <!-- 입력 폼 -->
   <div class="card">
@@ -1357,6 +1405,103 @@ function getMonthLabel(ym) {
 
 function isMobile() {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
+// ===== 자연어 빠른 입력 =====
+function parseKoreanNum(str) {
+  const dig = {'일':1,'이':2,'삼':3,'사':4,'오':5,'육':6,'칠':7,'팔':8,'구':9,'영':0,'공':0};
+  function chunk(s) {
+    let t = 0, c = 0;
+    for (const ch of s) {
+      if (dig[ch] !== undefined) { c = dig[ch]; }
+      else if (ch === '십') { t += (c||1)*10; c = 0; }
+      else if (ch === '백') { t += (c||1)*100; c = 0; }
+      else if (ch === '천') { t += (c||1)*1000; c = 0; }
+      else if (/\d/.test(ch)) { c = c*10 + +ch; }
+    }
+    return t + c;
+  }
+  let total = 0, s = str.replace(/[,원\s]/g,'');
+  const ei = s.indexOf('억');
+  if (ei >= 0) { total += (chunk(s.slice(0,ei))||1)*100000000; s = s.slice(ei+1); }
+  const mi = s.indexOf('만');
+  if (mi >= 0) { total += (chunk(s.slice(0,mi))||1)*10000; s = s.slice(mi+1); }
+  total += chunk(s);
+  return total;
+}
+function extractNLAmount(text) {
+  let m;
+  m = text.match(/([\d,.]+억(?:[일이삼사오육칠팔구십백천\d,.]*만)?(?:[일이삼사오육칠팔구십백천\d,.]*천)?)\s*원/);
+  if (m) { const v = parseKoreanNum(m[1]); if (v>0) return {full:m[0], val:v}; }
+  m = text.match(/([일이삼사오육칠팔구십백천\d,.]+만(?:[일이삼사오육칠팔구십백천\d]*천)?)\s*원/);
+  if (m) { const v = parseKoreanNum(m[1]); if (v>0) return {full:m[0], val:v}; }
+  m = text.match(/([일이삼사오육칠팔구십백천\d,.]+천)\s*원/);
+  if (m) { const v = parseKoreanNum(m[1]); if (v>0) return {full:m[0], val:v}; }
+  m = text.match(/([\d,]+)\s*원/);
+  if (m) { const v = parseInt(m[1].replace(/,/g,'')); if (v>0) return {full:m[0], val:v}; }
+  m = text.match(/([일이삼사오육칠팔구십백천]+)\s*원/);
+  if (m) { const v = parseKoreanNum(m[1]); if (v>0) return {full:m[0], val:v}; }
+  return null;
+}
+function getAllNLItems() {
+  const items = [];
+  (getYearData().income||[]).filter(r=>r.name).forEach(r =>
+    items.push({name:r.name, type:'income', groupKey:'income'})
+  );
+  CATEGORIES.income.forEach(n => {
+    if (!items.some(i=>i.name===n)) items.push({name:n, type:'income', groupKey:'income'});
+  });
+  ['fixed','variable','edu','special'].forEach(sec => {
+    const yr = (getYearData()[sec]||[]).filter(r=>r.name);
+    yr.forEach(r => items.push({name:r.name, type:'expense', groupKey:sec}));
+    const grpName = SEC_TO_GROUP[sec];
+    (CATEGORIES.expense[grpName]||[]).forEach(n => {
+      if (!yr.some(r=>r.name===n)) items.push({name:n, type:'expense', groupKey:sec});
+    });
+  });
+  return items;
+}
+function parseNL() {
+  const raw = document.getElementById('nlInput').value.trim();
+  if (!raw) return;
+  const resEl = document.getElementById('nlResult');
+  let text = raw
+    .replace(/\s*(입력해줘|저장해줘|넣어줘|추가해줘|입력해|저장해|넣어|해줘요|해줘|해주세요)\s*[.!]*\s*$/, '')
+    .replace(/[.!。,，]\s*$/, '')
+    .trim();
+  const res = { date: new Date().toISOString().slice(0,10), type:'expense', groupKey:'', category:'', amount:0, memo:'' };
+  text = text.replace(/오늘/, '');
+  if (/어제/.test(text)) { const d=new Date(); d.setDate(d.getDate()-1); res.date=d.toISOString().slice(0,10); text=text.replace(/어제/,''); }
+  else if (/그제|그저께/.test(text)) { const d=new Date(); d.setDate(d.getDate()-2); res.date=d.toISOString().slice(0,10); text=text.replace(/그제|그저께/,''); }
+  const mdm = text.match(/(\d{1,2})월\s*(\d{1,2})일/);
+  if (mdm) { res.date=`${new Date().getFullYear()}-${mdm[1].padStart(2,'0')}-${mdm[2].padStart(2,'0')}`; text=text.replace(mdm[0],''); }
+  const amtR = extractNLAmount(text);
+  if (amtR) { res.amount=amtR.val; text=text.replace(amtR.full,''); }
+  if (/수입/.test(text)) { res.type='income'; text=text.replace(/수입/,''); }
+  const grpToKey = {'고정':'fixed','변동':'variable','교육':'edu','비정기':'special'};
+  for (const [g,k] of Object.entries(grpToKey)) { if (text.includes(g)) { res.groupKey=k; text=text.replace(g,''); break; } }
+  const allItems = getAllNLItems().sort((a,b)=>b.name.length-a.name.length);
+  const tryMatch = (pool) => { for (const item of pool) { if (text.includes(item.name)) { res.category=item.name; if (!res.groupKey) res.groupKey=item.groupKey; if (item.type==='income') res.type='income'; text=text.replace(item.name,''); return true; } } return false; };
+  if (res.groupKey) tryMatch(allItems.filter(i=>i.groupKey===res.groupKey));
+  if (!res.category) tryMatch(allItems);
+  const memo = text.replace(/[,，、。.!\s]+/g,' ').replace(/\s*(으로|로|에서|에|은|는|을|를|이|가|의)\s*$/,'').trim();
+  res.memo = memo;
+  if (!res.amount) { resEl.textContent='❌ 금액을 찾지 못했어요. 예) 배스킨라빈스 변동 외식 4700원'; resEl.style.color='#f85149'; return; }
+  document.getElementById('inputDate').value = res.date;
+  document.getElementById('inputAmount').value = res.amount;
+  document.getElementById('inputMemo').value = res.memo;
+  setType(res.type);
+  if (res.type==='expense' && res.groupKey) {
+    const grpSel = document.getElementById('inputGroup');
+    if ([...grpSel.options].some(o=>o.value===res.groupKey)) { grpSel.value=res.groupKey; buildItemSelect(res.groupKey,'inputCategory'); }
+  }
+  if (res.category) { const catSel=document.getElementById('inputCategory'); const opt=[...catSel.options].find(o=>o.value===res.category); if (opt) catSel.value=res.category; }
+  const grpLabel = res.groupKey?(SEC_TO_GROUP[res.groupKey]||''):(res.type==='income'?'수입':'');
+  const parts = [res.date, res.type==='income'?'💚 수입':'🔴 지출', grpLabel, res.category, formatKRW(res.amount), res.memo?`"${res.memo}"`:''].filter(Boolean);
+  resEl.textContent = '✅ '+parts.join(' · ')+'  —  확인 후 저장 누르세요!';
+  resEl.style.color = '#3fb950';
+  document.getElementById('nlInput').value = '';
+  document.getElementById('inputDate').scrollIntoView({ behavior:'smooth', block:'center' });
 }
 
 function init() {
