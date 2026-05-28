@@ -980,7 +980,10 @@
         <input type="number" id="inputAmount" placeholder="0" min="0" inputmode="numeric">
       </div>
     </div>
-    <div class="form-row" style="margin-bottom:10px">
+    <div class="form-memo">
+      <input type="text" id="inputMemo" placeholder="내용 (선택)" oninput="autoFillFromMemo(this.value)">
+    </div>
+    <div class="form-row" style="margin-bottom:14px">
       <div class="form-group">
         <label>그룹</label>
         <select id="inputGroup" onchange="onGroupChange()"></select>
@@ -989,9 +992,6 @@
         <label>항목</label>
         <select id="inputCategory" onchange="autoFillFromItem(this.value)"></select>
       </div>
-    </div>
-    <div class="form-memo">
-      <input type="text" id="inputMemo" placeholder="메모 (선택)" oninput="autoFillFromMemo(this.value)">
     </div>
     <button class="btn-save" onclick="addTransaction()">저장</button>
     <button class="btn-kakao" onclick="openKakaoModal()" style="margin-top:8px">
@@ -1119,7 +1119,7 @@
             <input type="number" id="ocrAmount" placeholder="0" inputmode="numeric">
           </div>
           <div class="ocr-field">
-            <label>가맹점 / 메모</label>
+            <label>가맹점 / 내용</label>
             <input type="text" id="ocrMerchant" placeholder="가맹점명">
           </div>
           <div class="ocr-field">
@@ -1194,8 +1194,8 @@
       </div>
     </div>
     <div class="form-group" style="margin-bottom:14px">
-      <label>메모</label>
-      <input type="text" id="editMemo" placeholder="메모">
+      <label>내용</label>
+      <input type="text" id="editMemo" placeholder="내용">
     </div>
     <button class="btn-save" onclick="saveEdit()">저장</button>
   </div>
