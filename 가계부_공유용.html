@@ -3170,19 +3170,30 @@ function renderTab6() {
     return false;
   });
 
+  // 이번 달 이미 가계부에 추가된 구독 id 목록
+  const ym = toYM(today);
+  const txs = loadData().transactions;
+  const addedThisMonth = new Set(
+    txs.filter(t => t.type === 'expense' && t.date.startsWith(ym) && t._subId)
+       .map(t => t._subId)
+  );
+
   let html = '';
 
+  const activeCount = subs.filter(s => s.status === 'active').length;
+  const notAddedCount = subs.filter(s => s.status === 'active' && !addedThisMonth.has(s.id)).length;
   html += `<div class="card" style="margin-bottom:12px">
-    <div style="display:flex;justify-content:space-between;align-items:center">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${notAddedCount > 0 ? '12px' : '0'}">
       <div>
         <div style="font-size:12px;color:#8b949e;margin-bottom:4px">이번 달 구독 합계</div>
         <div style="font-size:22px;font-weight:700;color:#58a6ff">${formatKRW(monthlyTotal)}</div>
       </div>
       <div style="text-align:right">
         <div style="font-size:12px;color:#8b949e;margin-bottom:4px">구독 중</div>
-        <div style="font-size:18px;font-weight:700;color:#e2b96b">${subs.filter(s=>s.status==='active').length}개</div>
+        <div style="font-size:18px;font-weight:700;color:#e2b96b">${activeCount}개</div>
       </div>
     </div>
+    ${notAddedCount > 0 ? `<button onclick="addAllSubsToHistory()" style="width:100%;background:rgba(88,166,255,0.15);color:#58a6ff;border:1px solid #58a6ff;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">📥 이번 달 전체 내역 추가 (${notAddedCount}개 미등록)</button>` : `<div style="text-align:center;font-size:12px;color:#3fb950;padding:4px 0">✓ 이번 달 구독 내역 모두 등록됨</div>`}
   </div>`;
 
   if (upcoming.length > 0) {
@@ -3232,14 +3243,14 @@ function renderTab6() {
       html += `<div class="card-title" style="margin-bottom:8px">🟢 구독 중 (${activeSubs.length})</div>`;
       activeSubs.forEach((s) => {
         const realIdx = subs.indexOf(s);
-        html += renderSubRow(s, realIdx, today);
+        html += renderSubRow(s, realIdx, today, addedThisMonth);
       });
     }
     if (pausedSubs.length > 0) {
       html += `<div class="card-title" style="margin:16px 0 8px;color:#8b949e">⏸ 해지됨 (${pausedSubs.length})</div>`;
       pausedSubs.forEach((s) => {
         const realIdx = subs.indexOf(s);
-        html += renderSubRow(s, realIdx, today);
+        html += renderSubRow(s, realIdx, today, addedThisMonth);
       });
     }
   }
@@ -3254,11 +3265,17 @@ function renderTab6() {
   }
 }
 
-function renderSubRow(s, idx, today) {
+function renderSubRow(s, idx, today, addedThisMonth) {
   const isActive = s.status === 'active';
   const cycleLabel = s.cycle === 'monthly' ? `매월 ${s.payDay}일` : `${s.payMonth}월 ${s.payDay}일 (연간)`;
   const amtColor = isActive ? '#e6edf3' : '#8b949e';
   const nameStyle = isActive ? '' : 'text-decoration:line-through;color:#8b949e';
+  const alreadyAdded = addedThisMonth && addedThisMonth.has(s.id);
+  const addBtn = isActive
+    ? (alreadyAdded
+        ? `<button disabled style="background:#1a2332;color:#3fb950;border:1px solid #238636;border-radius:6px;padding:4px 8px;font-size:11px;cursor:default;font-family:inherit">✓ 추가됨</button>`
+        : `<button onclick="addSubToHistory(${idx})" style="background:rgba(88,166,255,0.15);color:#58a6ff;border:1px solid #58a6ff;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">내역 추가</button>`)
+    : '';
   return `<div class="card" style="margin-bottom:8px;padding:12px 14px;${isActive ? '' : 'opacity:0.6'}">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
@@ -3268,6 +3285,7 @@ function renderSubRow(s, idx, today) {
       <div style="text-align:right">
         <div style="font-size:15px;font-weight:700;color:${amtColor}">${formatKRW(s.amount)}</div>
         <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">
+          ${addBtn}
           <button onclick="toggleSubStatus(${idx})" style="background:${isActive ? '#30363d' : 'rgba(63,185,80,0.15)'};color:${isActive ? '#8b949e' : '#3fb950'};border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">${isActive ? '해지' : '복구'}</button>
           <button onclick="deleteSub(${idx})" style="background:rgba(248,81,73,0.15);color:#f85149;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">삭제</button>
         </div>
@@ -3307,6 +3325,77 @@ function deleteSub(idx) {
   subs.splice(idx, 1);
   saveSubs(subs);
   renderTab6();
+}
+
+function addSubToHistory(idx) {
+  const subs = loadSubs();
+  const s = subs[idx];
+  if (!s) return;
+
+  const today = new Date();
+  const ym = toYM(today);
+  const txs = loadData().transactions;
+
+  if (txs.some(t => t._subId === s.id && t.date.startsWith(ym))) {
+    alert(`"${s.name}"은 이번 달에 이미 추가되어 있어요.`);
+    return;
+  }
+
+  const payDay = parseInt(s.payDay || today.getDate());
+  const maxDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const usedDay = Math.min(payDay, maxDay);
+  const txDate = `${ym}-${String(usedDay).padStart(2, '0')}`;
+
+  const data = loadData();
+  data.transactions.push({
+    id: String(Date.now()),
+    date: txDate,
+    type: 'expense',
+    group: 'fixed',
+    category: '구독서비스',
+    amount: s.amount,
+    memo: s.name,
+    _subId: s.id,
+  });
+  saveData(data);
+  renderTab6();
+  renderTab1();
+  updateHeader();
+}
+
+function addAllSubsToHistory() {
+  const subs = loadSubs();
+  const today = new Date();
+  const ym = toYM(today);
+  const data = loadData();
+  const addedIds = new Set(
+    data.transactions.filter(t => t._subId && t.date.startsWith(ym)).map(t => t._subId)
+  );
+
+  const toAdd = subs.filter(s => s.status === 'active' && !addedIds.has(s.id));
+  if (toAdd.length === 0) { alert('이번 달에 추가할 구독이 없어요.'); return; }
+
+  toAdd.forEach(s => {
+    const payDay = parseInt(s.payDay || today.getDate());
+    const maxDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const usedDay = Math.min(payDay, maxDay);
+    const txDate = `${ym}-${String(usedDay).padStart(2, '0')}`;
+    data.transactions.push({
+      id: String(Date.now() + Math.random()),
+      date: txDate,
+      type: 'expense',
+      group: 'fixed',
+      category: '구독서비스',
+      amount: s.amount,
+      memo: s.name,
+      _subId: s.id,
+    });
+  });
+
+  saveData(data);
+  renderTab6();
+  renderTab1();
+  updateHeader();
 }
 
 function migrateFormulasToMan() {
