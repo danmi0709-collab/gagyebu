@@ -847,6 +847,30 @@
   .nl-btn:hover { opacity: 0.85; }
   .nl-result { font-size: 11px; color: #8b949e; margin-top: 6px; min-height: 14px; line-height: 1.5; }
 
+  /* 토스트 알림 */
+  .toast {
+    position: fixed;
+    bottom: 84px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #238636;
+    color: #e6edf3;
+    padding: 10px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 9999;
+    pointer-events: none;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
   /* 헤더 레이아웃 */
   .header-row {
     display: flex;
@@ -1393,6 +1417,8 @@
   </button>
 </nav>
 
+<div id="toastEl" class="toast"></div>
+
 <script>
 const STORAGE_KEY   = 'hanna_budget_data';
 const TX_ORDER_KEY  = 'hanna_tx_order';
@@ -1728,6 +1754,7 @@ function init() {
   document.getElementById('inputDate').value = now.toISOString().slice(0, 10);
   setType('expense');
   setSyncBtnLabels();
+  autoAddSubscriptions(); // 매달 첫 실행 시 구독 자동 등록
   renderAll();
 }
 
@@ -3495,12 +3522,68 @@ function autoFillFromMemo(val) {
 }
 
 // ===== 구독서비스 탭 (Tab 6) =====
-const SUBS_KEY = 'hanna_subscriptions';
+const SUBS_KEY     = 'hanna_subscriptions';
+const AUTO_SUB_KEY = 'hanna_sub_auto_month';
 
 function loadSubs() {
   try { return JSON.parse(localStorage.getItem(SUBS_KEY) || '[]'); } catch { return []; }
 }
 function saveSubs(arr) { localStorage.setItem(SUBS_KEY, JSON.stringify(arr)); }
+
+// 토스트 메시지
+function showToast(msg, color) {
+  const el = document.getElementById('toastEl');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.background = color || '#238636';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// 매달 첫 실행 시 구독 자동 등록
+function autoAddSubscriptions() {
+  const subs = loadSubs();
+  const activeSubs = subs.filter(s => s.status === 'active');
+  if (activeSubs.length === 0) return;
+
+  const today = new Date();
+  const ym = toYM(today);
+  const lastAutoMonth = localStorage.getItem(AUTO_SUB_KEY) || '';
+  if (lastAutoMonth === ym) return; // 이미 이번 달 자동 등록 완료
+
+  const data = loadData();
+  const addedIds = new Set(
+    data.transactions.filter(t => t._subId && t.date.startsWith(ym)).map(t => t._subId)
+  );
+
+  const toAdd = activeSubs.filter(s => !addedIds.has(s.id));
+  if (toAdd.length === 0) {
+    localStorage.setItem(AUTO_SUB_KEY, ym);
+    return;
+  }
+
+  toAdd.forEach(s => {
+    const payDay = parseInt(s.payDay || today.getDate());
+    const maxDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const usedDay = Math.min(payDay, maxDay);
+    const txDate = `${ym}-${String(usedDay).padStart(2, '0')}`;
+    data.transactions.push({
+      id: String(Date.now() + Math.random()),
+      date: txDate,
+      type: 'expense',
+      group: 'fixed',
+      category: '구독서비스',
+      amount: s.amount,
+      memo: s.name,
+      _subId: s.id,
+    });
+  });
+
+  saveData(data);
+  localStorage.setItem(AUTO_SUB_KEY, ym);
+  // 렌더링 후 토스트 (렌더링이 끝난 뒤 표시되도록 약간 지연)
+  setTimeout(() => showToast(`🔄 ${toAdd.length}개 구독이 이번 달 내역에 자동 등록됐어요`), 600);
+}
 
 function renderTab6() {
   const subs = loadSubs();
