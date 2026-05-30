@@ -3728,7 +3728,7 @@ function renderSubRow(s, idx, today, addedThisMonth) {
   const alreadyAdded = addedThisMonth && addedThisMonth.has(s.id);
   const addBtn = isActive
     ? (alreadyAdded
-        ? `<button disabled style="background:#1a2332;color:#3fb950;border:1px solid #238636;border-radius:6px;padding:4px 8px;font-size:11px;cursor:default;font-family:inherit">✓ 추가됨</button>`
+        ? `<button onclick="goToSubTx('${s.id}')" style="background:#1a2332;color:#3fb950;border:1px solid #238636;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">✓ 내역 보기</button>`
         : `<button onclick="addSubToHistory(${idx})" style="background:rgba(88,166,255,0.15);color:#58a6ff;border:1px solid #58a6ff;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">내역 추가</button>`)
     : '';
   return `<div class="card" style="margin-bottom:8px;padding:12px 14px;${isActive ? '' : 'opacity:0.6'}">
@@ -3855,6 +3855,25 @@ function addAllSubsToHistory() {
   renderTab6();
   renderTab1();
   updateHeader();
+}
+
+// 구독 탭 → 내역 탭 이동 + 해당 내역 하이라이트
+function goToSubTx(subId) {
+  const ym = toYM(new Date());
+  const tx = loadData().transactions.find(t => t._subId === subId && t.date.startsWith(ym));
+  if (!tx) { showToast('해당 내역을 찾을 수 없어요', '#e2b96b'); return; }
+
+  currentMonth = ym;
+  switchTab(1);
+
+  setTimeout(() => {
+    const el = document.querySelector(`.tx-item[data-id="${tx.id}"]`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.style.transition = 'box-shadow 0.3s ease';
+    el.style.boxShadow = '0 0 0 2px #58a6ff, 0 0 12px rgba(88,166,255,0.4)';
+    setTimeout(() => { el.style.boxShadow = ''; }, 1800);
+  }, 120);
 }
 
 function migrateFormulasToMan() {
