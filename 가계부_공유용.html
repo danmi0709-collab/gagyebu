@@ -1252,6 +1252,11 @@
   <div id="tab5Content"></div>
 </div>
 
+<!-- 탭6: 구독서비스 -->
+<div id="tab6" class="tab-content">
+  <div id="tab6Content"></div>
+</div>
+
 <!-- 하단 탭 -->
 <nav class="bottom-nav">
   <button id="nav1" class="active" onclick="switchTab(1)">
@@ -1268,6 +1273,9 @@
   </button>
   <button id="nav5" onclick="switchTab(5)">
     <span class="icon">🎯</span>연진행
+  </button>
+  <button id="nav6" onclick="switchTab(6)">
+    <span class="icon">🔄</span>구독
   </button>
 </nav>
 
@@ -1600,7 +1608,7 @@ function changeCatMonth(delta) {
 }
 
 function switchTab(n) {
-  [1,2,3,4,5].forEach(i => {
+  [1,2,3,4,5,6].forEach(i => {
     document.getElementById('tab' + i).classList.toggle('active', i === n);
     document.getElementById('nav' + i).classList.toggle('active', i === n);
   });
@@ -1608,6 +1616,7 @@ function switchTab(n) {
   if (n === 3) renderTab3();
   if (n === 4) renderTab4();
   if (n === 5) renderTab5();
+  if (n === 6) renderTab6();
 }
 
 function renderAll() {
@@ -3118,6 +3127,186 @@ function autoFillFromMemo(val) {
     groupSel.value = guess.group;
     buildItemSelect(guess.group, 'inputCategory', guess.item);
   }
+}
+
+// ===== 구독서비스 탭 (Tab 6) =====
+const SUBS_KEY = 'my_subscriptions';
+
+function loadSubs() {
+  try { return JSON.parse(localStorage.getItem(SUBS_KEY) || '[]'); } catch { return []; }
+}
+function saveSubs(arr) { localStorage.setItem(SUBS_KEY, JSON.stringify(arr)); }
+
+function renderTab6() {
+  const subs = loadSubs();
+  const today = new Date();
+  const todayD = today.getDate();
+  const todayMs = today.getTime();
+
+  let monthlyTotal = 0;
+  subs.forEach(s => {
+    if (s.status !== 'active') return;
+    if (s.cycle === 'monthly') {
+      monthlyTotal += s.amount;
+    } else if (s.cycle === 'yearly') {
+      const payM = parseInt(s.payMonth || 1);
+      if (payM === today.getMonth() + 1) monthlyTotal += s.amount;
+    }
+  });
+
+  const upcoming = subs.filter(s => {
+    if (s.status !== 'active') return false;
+    if (s.cycle === 'monthly') {
+      const payDay = parseInt(s.payDay || 1);
+      const diff = payDay - todayD;
+      return diff >= 0 && diff <= 7;
+    } else if (s.cycle === 'yearly') {
+      const payM = parseInt(s.payMonth || 1);
+      const payD = parseInt(s.payDay || 1);
+      const payDate = new Date(today.getFullYear(), payM - 1, payD);
+      const diff = Math.round((payDate - todayMs) / 86400000);
+      return diff >= 0 && diff <= 7;
+    }
+    return false;
+  });
+
+  let html = '';
+
+  html += `<div class="card" style="margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:12px;color:#8b949e;margin-bottom:4px">이번 달 구독 합계</div>
+        <div style="font-size:22px;font-weight:700;color:#58a6ff">${formatKRW(monthlyTotal)}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:12px;color:#8b949e;margin-bottom:4px">구독 중</div>
+        <div style="font-size:18px;font-weight:700;color:#e2b96b">${subs.filter(s=>s.status==='active').length}개</div>
+      </div>
+    </div>
+  </div>`;
+
+  if (upcoming.length > 0) {
+    html += `<div class="card" style="border-color:#e2b96b;margin-bottom:12px">
+      <div class="card-title" style="color:#e2b96b">⚠️ 7일 이내 결제 예정</div>`;
+    upcoming.forEach(s => {
+      const cycle = s.cycle === 'monthly' ? `매월 ${s.payDay}일` : `${s.payMonth}월 ${s.payDay}일`;
+      html += `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #30363d;font-size:14px">
+        <span>📅 ${s.name}</span>
+        <span style="color:#e2b96b;font-weight:600">${formatKRW(s.amount)} · ${cycle}</span>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `<div class="card" style="margin-bottom:12px">
+    <div class="card-title">+ 구독 추가</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <input type="text" id="subName" class="form-input" placeholder="서비스명 (예: 넷플릭스)" style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:10px;color:#e6edf3;font-family:inherit;font-size:14px">
+      <div style="display:flex;gap:8px">
+        <input type="number" id="subAmount" class="form-input" placeholder="금액 (원)" style="flex:1;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:10px;color:#e6edf3;font-family:inherit;font-size:14px">
+        <select id="subCycle" style="flex:1;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:10px;color:#e6edf3;font-family:inherit;font-size:14px">
+          <option value="monthly">월간</option>
+          <option value="yearly">연간</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center" id="subPayRow">
+        <label style="font-size:13px;color:#8b949e;white-space:nowrap">결제일</label>
+        <select id="subPayMonth" style="flex:1;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:10px;color:#e6edf3;font-family:inherit;font-size:14px;display:none">
+          ${[...Array(12)].map((_,i)=>`<option value="${i+1}">${i+1}월</option>`).join('')}
+        </select>
+        <select id="subPayDay" style="flex:2;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:10px;color:#e6edf3;font-family:inherit;font-size:14px">
+          ${[...Array(31)].map((_,i)=>`<option value="${i+1}">${i+1}일</option>`).join('')}
+        </select>
+      </div>
+      <button onclick="addSub()" style="background:#58a6ff;color:#0d1117;border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">추가하기</button>
+    </div>
+  </div>`;
+
+  const activeSubs = subs.filter(s => s.status === 'active');
+  const pausedSubs = subs.filter(s => s.status !== 'active');
+
+  if (activeSubs.length === 0 && pausedSubs.length === 0) {
+    html += `<div style="text-align:center;color:#8b949e;padding:30px 0">구독 중인 서비스가 없어요 🙂</div>`;
+  } else {
+    if (activeSubs.length > 0) {
+      html += `<div class="card-title" style="margin-bottom:8px">🟢 구독 중 (${activeSubs.length})</div>`;
+      activeSubs.forEach((s) => {
+        const realIdx = subs.indexOf(s);
+        html += renderSubRow(s, realIdx, today);
+      });
+    }
+    if (pausedSubs.length > 0) {
+      html += `<div class="card-title" style="margin:16px 0 8px;color:#8b949e">⏸ 해지됨 (${pausedSubs.length})</div>`;
+      pausedSubs.forEach((s) => {
+        const realIdx = subs.indexOf(s);
+        html += renderSubRow(s, realIdx, today);
+      });
+    }
+  }
+
+  document.getElementById('tab6Content').innerHTML = html;
+
+  const cycleEl = document.getElementById('subCycle');
+  if (cycleEl) {
+    cycleEl.onchange = () => {
+      document.getElementById('subPayMonth').style.display = cycleEl.value === 'yearly' ? '' : 'none';
+    };
+  }
+}
+
+function renderSubRow(s, idx, today) {
+  const isActive = s.status === 'active';
+  const cycleLabel = s.cycle === 'monthly' ? `매월 ${s.payDay}일` : `${s.payMonth}월 ${s.payDay}일 (연간)`;
+  const amtColor = isActive ? '#e6edf3' : '#8b949e';
+  const nameStyle = isActive ? '' : 'text-decoration:line-through;color:#8b949e';
+  return `<div class="card" style="margin-bottom:8px;padding:12px 14px;${isActive ? '' : 'opacity:0.6'}">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:14px;font-weight:600;${nameStyle}">${s.name}</div>
+        <div style="font-size:12px;color:#8b949e;margin-top:2px">${cycleLabel}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:15px;font-weight:700;color:${amtColor}">${formatKRW(s.amount)}</div>
+        <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">
+          <button onclick="toggleSubStatus(${idx})" style="background:${isActive ? '#30363d' : 'rgba(63,185,80,0.15)'};color:${isActive ? '#8b949e' : '#3fb950'};border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">${isActive ? '해지' : '복구'}</button>
+          <button onclick="deleteSub(${idx})" style="background:rgba(248,81,73,0.15);color:#f85149;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">삭제</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function addSub() {
+  const name = (document.getElementById('subName').value || '').trim();
+  const amount = parseInt(document.getElementById('subAmount').value || '0');
+  const cycle = document.getElementById('subCycle').value;
+  const payDay = parseInt(document.getElementById('subPayDay').value || '1');
+  const payMonth = cycle === 'yearly' ? parseInt(document.getElementById('subPayMonth').value || '1') : null;
+
+  if (!name) { alert('서비스명을 입력해주세요'); return; }
+  if (!amount || amount <= 0) { alert('금액을 입력해주세요'); return; }
+
+  const subs = loadSubs();
+  subs.push({ id: String(Date.now()), name, amount, cycle, payDay, payMonth, status: 'active' });
+  saveSubs(subs);
+  renderTab6();
+}
+
+function toggleSubStatus(idx) {
+  const subs = loadSubs();
+  if (!subs[idx]) return;
+  subs[idx].status = subs[idx].status === 'active' ? 'paused' : 'active';
+  saveSubs(subs);
+  renderTab6();
+}
+
+function deleteSub(idx) {
+  const subs = loadSubs();
+  if (!subs[idx]) return;
+  if (!confirm(`"${subs[idx].name}" 구독을 삭제할까요?`)) return;
+  subs.splice(idx, 1);
+  saveSubs(subs);
+  renderTab6();
 }
 
 function migrateFormulasToMan() {
