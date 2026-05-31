@@ -1425,9 +1425,8 @@ const TX_ORDER_KEY  = 'hanna_tx_order';
 let currentType = 'income';
 let currentMonth; // YYYY-MM
 let catMonth;
-let monthlyChartInstance = null;
-let groupTrendChartInstance = null;
 let categoryChartInstance = null;
+let activeTabN = 1; // 현재 보이는 탭 번호
 
 const CATEGORY_GROUPS = {
   '고정':   { color: '#f85149', label: '🔴 고정'   },
@@ -1466,16 +1465,29 @@ function getCategoryBudgetKey(cat, type) {
 }
 
 // 카테고리 → 그룹 반환 (내역 목록 뱃지용)
-function getCategoryGroup(cat) {
+// 항목→그룹 캐시 (연예산 저장 시 무효화)
+let _groupCache = null;
+
+function _buildGroupCache() {
+  const cache = {};
   const d = getYearData();
   for (const [sec, kor] of Object.entries(SEC_TO_GROUP)) {
-    if ((d[sec]||[]).some(r => r.name === cat)) return kor;
+    for (const r of (d[sec] || [])) {
+      if (r.name) cache[r.name] = kor;
+    }
   }
   // 구형 하드코딩 fallback
   for (const [group, cats] of Object.entries(CATEGORIES.expense)) {
-    if (cats.includes(cat)) return group;
+    for (const cat of cats) { if (!cache[cat]) cache[cat] = group; }
   }
-  return null;
+  _groupCache = cache;
+}
+
+function invalidateGroupCache() { _groupCache = null; }
+
+function getCategoryGroup(cat) {
+  if (!_groupCache) _buildGroupCache();
+  return _groupCache[cat] || null;
 }
 
 // 그룹 키에 해당하는 항목 이름 배열
@@ -1845,6 +1857,7 @@ function changeCatMonth(delta) {
 }
 
 function switchTab(n) {
+  activeTabN = n;
   [1,2,3,4,5,6].forEach(i => {
     document.getElementById('tab' + i).classList.toggle('active', i === n);
     document.getElementById('nav' + i).classList.toggle('active', i === n);
@@ -1858,9 +1871,10 @@ function switchTab(n) {
 
 function renderAll() {
   migrateFormulasToMan();
-  renderTab1();
-  renderTab2();
-  renderTab3();
+  // 지금 보이는 탭만 다시 그림 (나머지는 탭 전환 시 렌더)
+  if      (activeTabN === 1) renderTab1();
+  else if (activeTabN === 2) renderTab2();
+  else if (activeTabN === 3) renderTab3();
   updateHeader();
 }
 
@@ -3421,7 +3435,7 @@ let currentYear = new Date().getFullYear();
 function loadAnnual() {
   try { return JSON.parse(localStorage.getItem(ANNUAL_KEY) || '{}'); } catch { return {}; }
 }
-function saveAnnual(d) { localStorage.setItem(ANNUAL_KEY, JSON.stringify(d)); }
+function saveAnnual(d) { localStorage.setItem(ANNUAL_KEY, JSON.stringify(d)); invalidateGroupCache(); }
 
 function getYearData() {
   const all = loadAnnual();
@@ -3439,7 +3453,7 @@ function setYearData(d) {
   saveAnnual(all);
 }
 
-function changeYear(delta) { currentYear += delta; renderTab4(); }
+function changeYear(delta) { currentYear += delta; invalidateGroupCache(); renderTab4(); }
 
 // 올해면 남은 달수(현재월~12월), 다른 연도면 12
 function getEffectiveMonths() {
