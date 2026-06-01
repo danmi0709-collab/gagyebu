@@ -3559,6 +3559,60 @@ function autoFillFromMemo(val) {
 const SUBS_KEY     = 'hanna_subscriptions';
 const AUTO_SUB_KEY = 'hanna_sub_auto_month';
 
+// 연예산에서 "(구독)" 표시된 항목 탐색
+function detectAnnualSubItems() {
+  const d = getYearData();
+  const found = [];
+  for (const sec of ['fixed', 'variable', 'edu', 'special']) {
+    (d[sec] || []).forEach(r => {
+      if (r.name && r.name.includes('(구독)')) found.push({ sec, row: r });
+    });
+  }
+  return found;
+}
+
+// 연예산 "(구독)" 항목 → 구독 탭으로 이전
+function migrateAnnualSubsToTab6() {
+  const items = detectAnnualSubItems();
+  if (items.length === 0) return;
+
+  const subs = loadSubs();
+  const existingNames = new Set(subs.map(s => s.name.toLowerCase()));
+  const d = getYearData();
+  let added = 0;
+
+  items.forEach(({ row }) => {
+    const cleanName = row.name.replace(/\(구독\)/g, '').trim();
+    if (existingNames.has(cleanName.toLowerCase())) return; // 이미 있으면 스킵
+    subs.push({
+      id: String(Date.now() + Math.random()),
+      name: cleanName,
+      amount: evalFormula(row.formula),
+      cycle: 'monthly',
+      payDay: 1,
+      payMonth: null,
+      status: 'active'
+    });
+    existingNames.add(cleanName.toLowerCase());
+    added++;
+  });
+  saveSubs(subs);
+
+  // 연예산에서 (구독) 항목 제거
+  for (const sec of ['fixed', 'variable', 'edu', 'special']) {
+    d[sec] = (d[sec] || []).filter(r => !r.name || !r.name.includes('(구독)'));
+  }
+  setYearData(d);
+
+  const skipped = items.length - added;
+  const msg = skipped > 0
+    ? `✅ ${added}개 옮김 (${skipped}개는 이미 있어서 건너뜀)`
+    : `✅ ${added}개 구독을 구독 탭으로 옮겼어요`;
+  showToast(msg);
+  renderTab4();
+  renderTab6();
+}
+
 // 이번 달(monthNum: 1~12)이 결제월인지 판단
 function isPaymentMonth(s, monthNum) {
   if (s.cycle === 'monthly')   return true;
@@ -3672,6 +3726,17 @@ function renderTab6() {
   );
 
   let html = '';
+
+  // 연예산 (구독) 항목 발견 시 마이그레이션 배너
+  const annualSubItems = detectAnnualSubItems();
+  if (annualSubItems.length > 0) {
+    const names = annualSubItems.map(i => i.row.name.replace(/\(구독\)/g, '').trim()).join(', ');
+    html += `<div class="card" style="border-color:#e2b96b;margin-bottom:12px">
+      <div style="font-size:13px;color:#e2b96b;font-weight:600;margin-bottom:6px">💡 연예산에 (구독) 항목 ${annualSubItems.length}개 발견</div>
+      <div style="font-size:12px;color:#8b949e;margin-bottom:10px">${names}</div>
+      <button onclick="migrateAnnualSubsToTab6()" style="width:100%;background:rgba(226,185,107,0.15);color:#e2b96b;border:1px solid #e2b96b;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">⬆️ 구독 탭으로 가져오기 (연예산에서 삭제됨)</button>
+    </div>`;
+  }
 
   // 요약 카드
   const activeCount = subs.filter(s => s.status === 'active').length;
