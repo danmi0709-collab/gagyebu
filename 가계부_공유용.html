@@ -3230,18 +3230,11 @@ function migrateAnnualSubsToTab6() {
   });
   saveSubs(subs);
 
-  // 연예산에서 (구독) 항목 제거
-  for (const sec of ['fixed', 'variable', 'edu', 'special']) {
-    d[sec] = (d[sec] || []).filter(r => !r.name || !r.name.includes('(구독)'));
-  }
-  setYearData(d);
-
   const skipped = items.length - added;
   const msg = skipped > 0
-    ? `✅ ${added}개 옮김 (${skipped}개는 이미 있어서 건너뜀)`
-    : `✅ ${added}개 구독을 구독 탭으로 옮겼어요`;
+    ? `✅ ${added}개 가져옴 (${skipped}개는 이미 있어서 건너뜀)`
+    : `✅ ${added}개 구독을 구독 탭에 추가했어요`;
   showToast(msg);
-  renderTab4();
   renderTab6();
 }
 
@@ -3358,7 +3351,7 @@ function renderTab6() {
     html += `<div class="card" style="border-color:#e2b96b;margin-bottom:12px">
       <div style="font-size:13px;color:#e2b96b;font-weight:600;margin-bottom:6px">💡 연예산에 (구독) 항목 ${annualSubItems.length}개 발견</div>
       <div style="font-size:12px;color:#8b949e;margin-bottom:10px">${names}</div>
-      <button onclick="migrateAnnualSubsToTab6()" style="width:100%;background:rgba(226,185,107,0.15);color:#e2b96b;border:1px solid #e2b96b;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">⬆️ 구독 탭으로 가져오기 (연예산에서 삭제됨)</button>
+      <button onclick="migrateAnnualSubsToTab6()" style="width:100%;background:rgba(226,185,107,0.15);color:#e2b96b;border:1px solid #e2b96b;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">⬆️ 구독 탭에 추가하기</button>
     </div>`;
   }
 
