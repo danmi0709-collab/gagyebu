@@ -3837,6 +3837,8 @@ function renderTab6() {
   }
 }
 
+let _editSubIdx = -1;
+
 function renderSubRow(s, idx, today, addedThisMonth) {
   const isActive = s.status === 'active';
   const cycleLabel = getCycleLabel(s);
@@ -3851,6 +3853,37 @@ function renderSubRow(s, idx, today, addedThisMonth) {
     : isActive && !thisMonthPay
       ? `<span style="font-size:11px;color:#484f58">이번 달 아님</span>`
       : '';
+
+  // 수정 폼 (펼쳐진 상태)
+  if (_editSubIdx === idx) {
+    const monthOpts = [...Array(12)].map((_,i) =>
+      `<option value="${i+1}"${parseInt(s.payMonth||1)===i+1?' selected':''}>${i+1}월</option>`).join('');
+    const dayOpts = [...Array(28)].map((_,i) =>
+      `<option value="${i+1}"${parseInt(s.payDay||1)===i+1?' selected':''}>${i+1}일</option>`).join('');
+    const cycleOpts = [
+      ['monthly','월간'],['quarterly','3개월'],['biannual','6개월'],['yearly','연간']
+    ].map(([v,l]) => `<option value="${v}"${s.cycle===v?' selected':''}>${l}</option>`).join('');
+    const showPayMonth = s.cycle !== 'monthly';
+    return `<div class="card" style="margin-bottom:8px;padding:12px 14px;border-color:#58a6ff">
+      <div style="font-size:13px;font-weight:600;color:#58a6ff;margin-bottom:10px">✏️ 수정 중: ${s.name}</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input id="editSubName" value="${s.name}" style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:9px;color:#e6edf3;font-family:inherit;font-size:14px" placeholder="서비스명">
+        <input id="editSubAmount" type="number" value="${s.amount}" style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:9px;color:#e6edf3;font-family:inherit;font-size:14px" placeholder="금액">
+        <div style="display:flex;gap:8px">
+          <select id="editSubCycle" onchange="updateEditCycleUI()" style="flex:1;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:9px;color:#e6edf3;font-family:inherit;font-size:14px">${cycleOpts}</select>
+          <select id="editSubPayDay" style="flex:1;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:9px;color:#e6edf3;font-family:inherit;font-size:14px">${dayOpts}</select>
+        </div>
+        <div id="editSubPayMonthWrap" style="display:${showPayMonth?'':'none'}">
+          <select id="editSubPayMonth" style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:9px;color:#e6edf3;font-family:inherit;font-size:14px">${monthOpts}</select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="saveSubEdit(${idx})" style="flex:1;background:#58a6ff;color:#0d1117;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">저장</button>
+          <button onclick="cancelSubEdit()" style="flex:1;background:#30363d;color:#8b949e;border:none;border-radius:8px;padding:9px;font-size:13px;cursor:pointer;font-family:inherit">취소</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
   return `<div class="card" style="margin-bottom:8px;padding:12px 14px;${isActive ? '' : 'opacity:0.6'}">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
@@ -3861,12 +3894,40 @@ function renderSubRow(s, idx, today, addedThisMonth) {
         <div style="font-size:15px;font-weight:700;color:${amtColor}">${formatKRW(s.amount)}</div>
         <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">
           ${addBtn}
+          <button onclick="editSub(${idx})" style="background:rgba(88,166,255,0.15);color:#58a6ff;border:1px solid #30363d;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">수정</button>
           <button onclick="toggleSubStatus(${idx})" style="background:${isActive ? '#30363d' : 'rgba(63,185,80,0.15)'};color:${isActive ? '#8b949e' : '#3fb950'};border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">${isActive ? '해지' : '복구'}</button>
           <button onclick="deleteSub(${idx})" style="background:rgba(248,81,73,0.15);color:#f85149;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">삭제</button>
         </div>
       </div>
     </div>
   </div>`;
+}
+
+function editSub(idx) { _editSubIdx = idx; renderTab6(); }
+function cancelSubEdit() { _editSubIdx = -1; renderTab6(); }
+
+function updateEditCycleUI() {
+  const v = document.getElementById('editSubCycle').value;
+  document.getElementById('editSubPayMonthWrap').style.display = v !== 'monthly' ? '' : 'none';
+}
+
+function saveSubEdit(idx) {
+  const name   = (document.getElementById('editSubName').value || '').trim();
+  const amount = parseInt(document.getElementById('editSubAmount').value || '0');
+  const cycle  = document.getElementById('editSubCycle').value;
+  const payDay = parseInt(document.getElementById('editSubPayDay').value || '1');
+  const payMonth = cycle !== 'monthly' ? parseInt(document.getElementById('editSubPayMonth').value || '1') : null;
+
+  if (!name)            { alert('서비스명을 입력해주세요'); return; }
+  if (!amount || amount <= 0) { alert('금액을 입력해주세요'); return; }
+
+  const subs = loadSubs();
+  if (!subs[idx]) return;
+  subs[idx] = { ...subs[idx], name, amount, cycle, payDay, payMonth };
+  saveSubs(subs);
+  _editSubIdx = -1;
+  renderTab6();
+  showToast('✅ 수정했어요');
 }
 
 function addSub() {
