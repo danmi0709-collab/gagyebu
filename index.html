@@ -3606,6 +3606,38 @@ function migrateAnnualSubsToTab6() {
   renderTab6();
 }
 
+// 구독 탭 항목 → 연예산 고정지출에 추가
+function syncSubsToAnnual() {
+  const subs = loadSubs().filter(s => s.status === 'active');
+  if (subs.length === 0) { alert('구독 중인 항목이 없어요.'); return; }
+
+  const d = getYearData();
+  d.fixed = d.fixed || [];
+  let added = 0, skipped = 0;
+
+  subs.forEach(s => {
+    const nameTag = s.name + '(구독)';
+    // 이름 겹치면 스킵
+    if (d.fixed.some(r => r.name === nameTag || r.name === s.name)) { skipped++; return; }
+    // 연간 금액 계산 (주기별)
+    const mult = s.cycle === 'yearly' ? 1 : s.cycle === 'biannual' ? 2 : s.cycle === 'quarterly' ? 4 : 12;
+    d.fixed.push({
+      id: String(Date.now() + Math.random()),
+      name: nameTag,
+      formula: String(s.amount * mult)
+    });
+    added++;
+  });
+
+  setYearData(d);
+  const msg = skipped > 0
+    ? `✅ ${added}개 추가 (${skipped}개는 이미 있어서 건너뜀)`
+    : `✅ ${added}개 구독을 연예산 고정지출에 추가했어요`;
+  showToast(msg);
+  renderTab4();
+  renderTab6();
+}
+
 // 이번 달(monthNum: 1~12)이 결제월인지 판단
 function isPaymentMonth(s, monthNum) {
   if (s.cycle === 'monthly')   return true;
@@ -3747,6 +3779,7 @@ function renderTab6() {
       </div>
     </div>
     ${notAddedCount > 0 ? `<button onclick="addAllSubsToHistory()" style="width:100%;background:rgba(88,166,255,0.15);color:#58a6ff;border:1px solid #58a6ff;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">📥 이번 달 전체 내역 추가 (${notAddedCount}개 미등록)</button>` : `<div style="text-align:center;font-size:12px;color:#3fb950;padding:4px 0">✓ 이번 달 구독 내역 모두 등록됨</div>`}
+    <button onclick="syncSubsToAnnual()" style="width:100%;margin-top:8px;background:rgba(63,185,80,0.1);color:#3fb950;border:1px solid #238636;border-radius:8px;padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 연예산 고정지출에 추가</button>
   </div>`;
 
   // 7일 이내 결제 예정 알림
