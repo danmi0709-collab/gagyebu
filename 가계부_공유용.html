@@ -1311,6 +1311,7 @@ const TX_ORDER_KEY  = 'my_tx_order';
 let currentType = 'income';
 let currentMonth; // YYYY-MM
 let catMonth;
+let analysisMonth;
 let categoryChartInstance = null;
 let activeTabN = 1;
 
@@ -1552,6 +1553,7 @@ function init() {
   const now = new Date();
   currentMonth = toYM(now);
   catMonth = toYM(now);
+  analysisMonth = toYM(now);
   document.getElementById('inputDate').value = now.toISOString().slice(0, 10);
   setType('expense');
   autoAddSubscriptions(); // 매달 첫 실행 시 구독 자동 등록
@@ -1893,10 +1895,19 @@ function initDragDrop() {
   });
 }
 
+function changeAnalysisMonth(delta) {
+  const [y, m] = analysisMonth.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  analysisMonth = toYM(d);
+  renderTab2();
+}
+
 function renderTab2() {
-  const nowYM  = toYM(new Date());
-  const prevD  = new Date(); prevD.setMonth(prevD.getMonth() - 1);
+  const nowYM  = analysisMonth;
+  const [ay, am] = nowYM.split('-').map(Number);
+  const prevD = new Date(ay, am - 2, 1);
   const prevYM = toYM(prevD);
+  const isCurrentMonth = nowYM === toYM(new Date());
 
   const thisTxs  = getMonthTx(nowYM);
   const prevTxs  = getMonthTx(prevYM);
@@ -1939,9 +1950,10 @@ function renderTab2() {
   // 전달 대비
   if (prevExp > 0) {
     const pct = Math.round(Math.abs(expDiff) / prevExp * 100);
-    if (expDiff > 0)      points.push(`전달보다 지출이 <b>${pct}% (${formatKRW(expDiff)}) 늘었어요.</b>`);
-    else if (expDiff < 0) points.push(`전달보다 지출이 <b>${pct}% (${formatKRW(-expDiff)}) 줄었어요.</b>`);
-    else                  points.push('전달과 지출이 거의 같아요.');
+    const prevLabel = getMonthLabel(prevYM);
+    if (expDiff > 0)      points.push(`${prevLabel}보다 지출이 <b>${pct}% (${formatKRW(expDiff)}) 늘었어요.</b>`);
+    else if (expDiff < 0) points.push(`${prevLabel}보다 지출이 <b>${pct}% (${formatKRW(-expDiff)}) 줄었어요.</b>`);
+    else                  points.push(`${prevLabel}과 지출이 거의 같아요.`);
   }
 
   // 예산 초과 그룹
@@ -1950,18 +1962,24 @@ function renderTab2() {
 
   // 가장 많이 쓴 그룹
   const topG = groupKeys.filter(g => grpExp[g] > 0).sort((a,b) => grpExp[b]-grpExp[a])[0];
-  if (topG) points.push(`이번 달 가장 많이 쓴 항목은 <b>${CATEGORY_GROUPS[topG].label} (${formatKRW(grpExp[topG])})</b>이에요.`);
+  if (topG) points.push(`${isCurrentMonth ? '이번 달' : getMonthLabel(nowYM)} 가장 많이 쓴 항목은 <b>${CATEGORY_GROUPS[topG].label} (${formatKRW(grpExp[topG])})</b>이에요.`);
 
-  // 미처리 고정지출
-  const unchecked = (yr.fixed||[]).filter(r => r.name && !thisTxs.some(t => t.category===r.name));
-  if (unchecked.length) points.push(`고정지출 중 <b>${unchecked.map(r=>r.name).join(', ')}</b> 아직 미입력이에요.`);
+  // 미처리 고정지출 (이번 달만)
+  if (isCurrentMonth) {
+    const unchecked = (yr.fixed||[]).filter(r => r.name && !thisTxs.some(t => t.category===r.name));
+    if (unchecked.length) points.push(`고정지출 중 <b>${unchecked.map(r=>r.name).join(', ')}</b> 아직 미입력이에요.`);
+  }
 
   // ── 렌더 ──
   document.getElementById('analysisContent').innerHTML = `
-    <div class="analysis-month">${getMonthLabel(nowYM)} 분석</div>
+    <div class="month-nav" style="margin-bottom:12px">
+      <button onclick="changeAnalysisMonth(-1)">◀</button>
+      <span class="month-label">${getMonthLabel(nowYM)} 분석</span>
+      <button onclick="changeAnalysisMonth(1)" ${isCurrentMonth ? 'disabled style="opacity:0.3;cursor:default"' : ''}>▶</button>
+    </div>
 
     <div class="analysis-card">
-      <div class="analysis-card-title">📊 이번 달 총평</div>
+      <div class="analysis-card-title">📊 ${isCurrentMonth ? '이번 달' : getMonthLabel(nowYM)} 총평</div>
       <div class="analysis-verdict" style="color:${verdictColor}">${verdict}</div>
       ${saveRate !== null ? `<div class="analysis-line">수입 <b>${formatKRW(income)}</b> 중 <b>${formatKRW(expense)}</b> 지출 → 저축률 <b style="color:${saveRate>=20?'#3fb950':saveRate>=0?'#e2b96b':'#f85149'}">${saveRate}%</b></div>` : ''}
       ${totalBudget > 0 ? `<div class="analysis-line">총 예산 대비 <b style="color:${overBudget?'#f85149':'#3fb950'}">${totalBudget>0?Math.round(expense/totalBudget*100):0}%</b> 사용</div>` : ''}
@@ -3171,6 +3189,23 @@ function autoFillFromMemo(val) {
 const SUBS_KEY     = 'my_subscriptions';
 const AUTO_SUB_KEY = 'my_sub_auto_month';
 
+function isPaymentMonth(s, monthNum) {
+  if (s.cycle === 'monthly')   return true;
+  if (s.cycle === 'yearly')    return parseInt(s.payMonth || 1) === monthNum;
+  const interval = s.cycle === 'quarterly' ? 3 : s.cycle === 'biannual' ? 6 : 1;
+  const start = parseInt(s.payMonth || 1);
+  return ((monthNum - start + 12) % 12) % interval === 0;
+}
+
+function getCycleLabel(s) {
+  const d = s.payDay;
+  if (s.cycle === 'monthly')   return `매월 ${d}일`;
+  if (s.cycle === 'quarterly') return `3개월마다 ${d}일 (${s.payMonth}월~)`;
+  if (s.cycle === 'biannual')  return `6개월마다 ${d}일 (${s.payMonth}월~)`;
+  if (s.cycle === 'yearly')    return `${s.payMonth}월 ${d}일 (연간)`;
+  return `${d}일`;
+}
+
 function loadSubs() {
   try { return JSON.parse(localStorage.getItem(SUBS_KEY) || '[]'); } catch { return []; }
 }
@@ -3200,7 +3235,8 @@ function autoAddSubscriptions() {
     data.transactions.filter(t => t._subId && t.date.startsWith(ym)).map(t => t._subId)
   );
 
-  const toAdd = activeSubs.filter(s => !addedIds.has(s.id));
+  const thisM = today.getMonth() + 1;
+  const toAdd = activeSubs.filter(s => isPaymentMonth(s, thisM) && !addedIds.has(s.id));
   if (toAdd.length === 0) {
     localStorage.setItem(AUTO_SUB_KEY, ym);
     return;
@@ -3234,31 +3270,19 @@ function renderTab6() {
   const todayD = today.getDate();
   const todayMs = today.getTime();
 
+  const thisMonthNum = today.getMonth() + 1;
+
   let monthlyTotal = 0;
   subs.forEach(s => {
-    if (s.status !== 'active') return;
-    if (s.cycle === 'monthly') {
-      monthlyTotal += s.amount;
-    } else if (s.cycle === 'yearly') {
-      const payM = parseInt(s.payMonth || 1);
-      if (payM === today.getMonth() + 1) monthlyTotal += s.amount;
-    }
+    if (s.status === 'active' && isPaymentMonth(s, thisMonthNum)) monthlyTotal += s.amount;
   });
 
   const upcoming = subs.filter(s => {
     if (s.status !== 'active') return false;
-    if (s.cycle === 'monthly') {
-      const payDay = parseInt(s.payDay || 1);
-      const diff = payDay - todayD;
-      return diff >= 0 && diff <= 7;
-    } else if (s.cycle === 'yearly') {
-      const payM = parseInt(s.payMonth || 1);
-      const payD = parseInt(s.payDay || 1);
-      const payDate = new Date(today.getFullYear(), payM - 1, payD);
-      const diff = Math.round((payDate - todayMs) / 86400000);
-      return diff >= 0 && diff <= 7;
-    }
-    return false;
+    if (!isPaymentMonth(s, thisMonthNum)) return false;
+    const payDay = parseInt(s.payDay || 1);
+    const diff = payDay - todayD;
+    return diff >= 0 && diff <= 7;
   });
 
   // 이번 달 이미 가계부에 추가된 구독 id 목록
@@ -3272,7 +3296,7 @@ function renderTab6() {
   let html = '';
 
   const activeCount = subs.filter(s => s.status === 'active').length;
-  const notAddedCount = subs.filter(s => s.status === 'active' && !addedThisMonth.has(s.id)).length;
+  const notAddedCount = subs.filter(s => s.status === 'active' && isPaymentMonth(s, thisMonthNum) && !addedThisMonth.has(s.id)).length;
   html += `<div class="card" style="margin-bottom:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${notAddedCount > 0 ? '12px' : '0'}">
       <div>
@@ -3291,10 +3315,9 @@ function renderTab6() {
     html += `<div class="card" style="border-color:#e2b96b;margin-bottom:12px">
       <div class="card-title" style="color:#e2b96b">⚠️ 7일 이내 결제 예정</div>`;
     upcoming.forEach(s => {
-      const cycle = s.cycle === 'monthly' ? `매월 ${s.payDay}일` : `${s.payMonth}월 ${s.payDay}일`;
       html += `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #30363d;font-size:14px">
         <span>📅 ${s.name}</span>
-        <span style="color:#e2b96b;font-weight:600">${formatKRW(s.amount)} · ${cycle}</span>
+        <span style="color:#e2b96b;font-weight:600">${formatKRW(s.amount)} · ${s.payDay}일</span>
       </div>`;
     });
     html += `</div>`;
@@ -3308,14 +3331,17 @@ function renderTab6() {
         <input type="number" id="subAmount" class="form-input" placeholder="금액 (원)" style="flex:1;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:10px;color:#e6edf3;font-family:inherit;font-size:14px">
         <select id="subCycle" style="flex:1;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:10px;color:#e6edf3;font-family:inherit;font-size:14px">
           <option value="monthly">월간</option>
+          <option value="quarterly">3개월</option>
+          <option value="biannual">6개월</option>
           <option value="yearly">연간</option>
         </select>
       </div>
-      <div style="display:flex;gap:8px;align-items:center" id="subPayRow">
-        <label style="font-size:13px;color:#8b949e;white-space:nowrap">결제일</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label id="subPayMonthLabel" style="font-size:13px;color:#8b949e;white-space:nowrap;display:none">시작월</label>
         <select id="subPayMonth" style="flex:1;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:10px;color:#e6edf3;font-family:inherit;font-size:14px;display:none">
           ${[...Array(12)].map((_,i)=>`<option value="${i+1}">${i+1}월</option>`).join('')}
         </select>
+        <label style="font-size:13px;color:#8b949e;white-space:nowrap">결제일</label>
         <select id="subPayDay" style="flex:2;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:10px;color:#e6edf3;font-family:inherit;font-size:14px">
           ${[...Array(31)].map((_,i)=>`<option value="${i+1}">${i+1}일</option>`).join('')}
         </select>
@@ -3350,23 +3376,32 @@ function renderTab6() {
 
   const cycleEl = document.getElementById('subCycle');
   if (cycleEl) {
-    cycleEl.onchange = () => {
-      document.getElementById('subPayMonth').style.display = cycleEl.value === 'yearly' ? '' : 'none';
+    const updateCycleUI = () => {
+      const v = cycleEl.value;
+      const showMonth = v !== 'monthly';
+      document.getElementById('subPayMonth').style.display = showMonth ? '' : 'none';
+      document.getElementById('subPayMonthLabel').style.display = showMonth ? '' : 'none';
+      document.getElementById('subPayMonthLabel').textContent =
+        v === 'yearly' ? '결제월' : '시작월';
     };
+    cycleEl.onchange = updateCycleUI;
   }
 }
 
 function renderSubRow(s, idx, today, addedThisMonth) {
   const isActive = s.status === 'active';
-  const cycleLabel = s.cycle === 'monthly' ? `매월 ${s.payDay}일` : `${s.payMonth}월 ${s.payDay}일 (연간)`;
+  const cycleLabel = getCycleLabel(s);
   const amtColor = isActive ? '#e6edf3' : '#8b949e';
   const nameStyle = isActive ? '' : 'text-decoration:line-through;color:#8b949e';
   const alreadyAdded = addedThisMonth && addedThisMonth.has(s.id);
-  const addBtn = isActive
+  const thisMonthPay = isPaymentMonth(s, today.getMonth() + 1);
+  const addBtn = isActive && thisMonthPay
     ? (alreadyAdded
         ? `<button onclick="goToSubTx('${s.id}')" style="background:#1a2332;color:#3fb950;border:1px solid #238636;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">✓ 내역 보기</button>`
         : `<button onclick="addSubToHistory(${idx})" style="background:rgba(88,166,255,0.15);color:#58a6ff;border:1px solid #58a6ff;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">내역 추가</button>`)
-    : '';
+    : isActive && !thisMonthPay
+      ? `<span style="font-size:11px;color:#484f58">이번 달 아님</span>`
+      : '';
   return `<div class="card" style="margin-bottom:8px;padding:12px 14px;${isActive ? '' : 'opacity:0.6'}">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
@@ -3390,7 +3425,8 @@ function addSub() {
   const amount = parseInt(document.getElementById('subAmount').value || '0');
   const cycle = document.getElementById('subCycle').value;
   const payDay = parseInt(document.getElementById('subPayDay').value || '1');
-  const payMonth = cycle === 'yearly' ? parseInt(document.getElementById('subPayMonth').value || '1') : null;
+  const needsMonth = cycle !== 'monthly';
+  const payMonth = needsMonth ? parseInt(document.getElementById('subPayMonth').value || '1') : null;
 
   if (!name) { alert('서비스명을 입력해주세요'); return; }
   if (!amount || amount <= 0) { alert('금액을 입력해주세요'); return; }
@@ -3463,7 +3499,8 @@ function addAllSubsToHistory() {
     data.transactions.filter(t => t._subId && t.date.startsWith(ym)).map(t => t._subId)
   );
 
-  const toAdd = subs.filter(s => s.status === 'active' && !addedIds.has(s.id));
+  const thisM = today.getMonth() + 1;
+  const toAdd = subs.filter(s => s.status === 'active' && isPaymentMonth(s, thisM) && !addedIds.has(s.id));
   if (toAdd.length === 0) { alert('이번 달에 추가할 구독이 없어요.'); return; }
 
   toAdd.forEach(s => {
