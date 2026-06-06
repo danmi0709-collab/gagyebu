@@ -468,6 +468,7 @@
   .yr-summary-highlight .label { font-size: 12px; color: #8b949e; }
   .yr-summary-highlight .val   { font-size: 16px; font-weight: 700; color: #58a6ff; }
   .yr-formula-hint { font-size: 10px; color: #8b949e; margin-bottom: 6px; }
+  .yr-calc-hint { font-size: 11px; color: #58a6ff; margin: -3px 0 5px; grid-column: 1 / -1; min-height: 15px; }
   .yr-bar-bg { background: #21262d; border-radius: 4px; height: 6px; overflow: hidden; margin: 4px 0; }
   .yr-bar    { height: 6px; border-radius: 4px; }
 
@@ -4300,17 +4301,40 @@ function saveYrRow(section, id) {
   }, 0);
 }
 
+function getFormulaHint(formula) {
+  if (!formula || !formula.trim()) return '';
+  const str = formula.trim();
+  // "숫자*숫자" 패턴 감지 (22만*12, 300000*12 등)
+  const m = str.match(/^(.+?)\*(\d+\.?\d*)$/) || str.match(/^(\d+\.?\d*)\*(.+?)$/);
+  if (m) {
+    const a = evalFormula(m[1]);
+    const b = evalFormula(m[2]);
+    if (a && b) {
+      const unit = (Number.isInteger(b) && b >= 1 && b <= 12) ? `${b}개월` : `${b}`;
+      return `${formatKRW(a)} × ${unit} = ${formatKRW(Math.round(a * b))}`;
+    }
+  }
+  return '';
+}
+
+function updateYrHint(section, id) {
+  const inp  = document.getElementById(`yr-f-${id}`);
+  const hint = document.getElementById(`yr-h-${id}`);
+  if (inp && hint) hint.textContent = getFormulaHint(inp.value);
+}
+
 function renderYrRows(rows, section) {
   if (!rows.length) return '<div style="font-size:12px;color:#8b949e;padding:6px 0">항목을 추가해주세요</div>';
   return rows.map(row => {
     const amt = evalFormula(row.formula);
     const isSpecial = section === 'special';
+    const hint = getFormulaHint(row.formula);
     return `
     <div class="yr-item-row${isSpecial ? ' special' : ''}">
       <input class="yr-name-input" id="yr-n-${row.id}" value="${row.name}"
         placeholder="항목명" onchange="saveYrRow('${section}','${row.id}')">
       <input class="yr-formula-input" id="yr-f-${row.id}" value="${row.formula}"
-        placeholder="금액 또는 수식" onchange="saveYrRow('${section}','${row.id}')">
+        placeholder="예) 22만*12" onchange="saveYrRow('${section}','${row.id}')" oninput="updateYrHint('${section}','${row.id}')">
       ${isSpecial ? `
       <select class="yr-month-select" id="yr-m-${row.id}" onchange="saveYrRow('${section}','${row.id}')">
         <option value="">-월-</option>
@@ -4318,6 +4342,7 @@ function renderYrRows(rows, section) {
       </select>` : `
       <span class="yr-result">${amt ? formatKRW(amt) : '-'}</span>`}
       <button class="yr-del-btn" onclick="delYrRow('${section}','${row.id}')">✕</button>
+      ${hint ? `<div id="yr-h-${row.id}" class="yr-calc-hint">${hint}</div>` : `<div id="yr-h-${row.id}" class="yr-calc-hint"></div>`}
     </div>`;
   }).join('');
 }
