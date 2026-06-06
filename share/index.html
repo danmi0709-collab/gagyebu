@@ -879,6 +879,57 @@
     position: relative;
     margin-bottom: 3px;
   }
+  .btn-help {
+    position: absolute;
+    right: 0;
+    background: none;
+    border: none;
+    font-size: 17px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 4px;
+    opacity: 0.6;
+    color: #8b949e;
+    transition: opacity 0.2s;
+  }
+  .btn-help:hover { opacity: 1; }
+
+  /* 도움말 모달 */
+  .help-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 500;
+    overflow-y: auto;
+    padding: 20px 16px 40px;
+  }
+  .help-overlay.show { display: block; }
+  .help-modal {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+    color: #e6edf3;
+  }
+  .help-modal h2 { font-size: 16px; color: #e2b96b; margin: 0 0 16px; }
+  .help-modal h3 { font-size: 13px; color: #58a6ff; margin: 16px 0 6px; }
+  .help-modal p, .help-modal li { font-size: 13px; color: #8b949e; line-height: 1.6; }
+  .help-modal ul { padding-left: 16px; margin: 4px 0; }
+  .help-modal .help-close {
+    width: 100%; margin-top: 20px;
+    background: #30363d; color: #e6edf3;
+    border: none; border-radius: 8px;
+    padding: 10px; font-size: 14px;
+    cursor: pointer; font-family: inherit;
+  }
+  .help-section {
+    border-top: 1px solid #30363d;
+    padding-top: 12px;
+    margin-top: 4px;
+  }
   .header-bottom {
     display: flex;
     align-items: center;
@@ -890,9 +941,78 @@
 </head>
 <body>
 
+<div class="help-overlay" id="helpOverlay" onclick="closeHelp(event)">
+  <div class="help-modal">
+    <h2>💰 가계부 앱 사용 설명서</h2>
+
+    <div class="help-section">
+      <h3>1️⃣ 내역 탭</h3>
+      <ul>
+        <li>날짜 · 카테고리 · 금액 · 메모 입력 후 저장</li>
+        <li>자연어 입력 가능: <em>"배스킨라빈스 변동 외식 4700원"</em></li>
+        <li>월 ◀ ▶ 버튼으로 다른 달 조회</li>
+        <li>카카오페이 내역 붙여넣기 자동 파싱 지원</li>
+      </ul>
+    </div>
+
+    <div class="help-section">
+      <h3>2️⃣ 분석 탭</h3>
+      <ul>
+        <li>저축률 · 그룹별 예산 대비 실적 코멘트</li>
+        <li>◀ ▶ 로 지난달 분석도 확인 가능</li>
+      </ul>
+    </div>
+
+    <div class="help-section">
+      <h3>3️⃣ 카테고리 탭</h3>
+      <ul>
+        <li>고정/변동/교육/비정기 예산바 + 도넛 차트</li>
+        <li>고정지출 체크박스 클릭 → 내역 자동 등록</li>
+      </ul>
+    </div>
+
+    <div class="help-section">
+      <h3>4️⃣ 연예산 탭</h3>
+      <ul>
+        <li>연간 수입/지출 항목별 예산 입력</li>
+        <li>수식 지원: <em>22만, 22.5만, 30*12</em> 등</li>
+      </ul>
+    </div>
+
+    <div class="help-section">
+      <h3>5️⃣ 연진행 탭</h3>
+      <ul>
+        <li>올해 예산 대비 실제 지출 현황 (항목별 진행바)</li>
+      </ul>
+    </div>
+
+    <div class="help-section">
+      <h3>6️⃣ 구독 탭</h3>
+      <ul>
+        <li>구독 서비스 등록 · 수정 · 해지</li>
+        <li>매달 1일 자동으로 내역 탭에 등록</li>
+        <li>7일 이내 결제 예정 알림</li>
+        <li>월간 / 3개월 / 6개월 / 연간 주기 지원</li>
+      </ul>
+    </div>
+
+    <div class="help-section">
+      <h3>💾 데이터 관리</h3>
+      <ul>
+        <li>데이터는 이 기기 브라우저에만 저장됩니다</li>
+        <li>내역 탭 하단 <strong>JSON 내보내기</strong>로 정기 백업 권장</li>
+        <li>브라우저 데이터 삭제 시 내역이 사라질 수 있어요</li>
+      </ul>
+    </div>
+
+    <button class="help-close" onclick="closeHelp()">닫기</button>
+  </div>
+</div>
+
 <div class="header">
   <div class="header-row">
     <h1>💰 나만의 가계부</h1>
+    <button class="btn-help" onclick="openHelp()" title="사용 설명서">❓</button>
   </div>
   <div class="header-bottom">
     <div class="balance">이번 달 잔액 <span id="headerBalance">0원</span></div>
@@ -1549,6 +1669,13 @@ function parseNL() {
   resEl.style.color = '#3fb950';
   document.getElementById('nlInput').value = '';
   document.getElementById('inputDate').scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+function openHelp() { document.getElementById('helpOverlay').classList.add('show'); }
+function closeHelp(e) {
+  if (!e || e.target === document.getElementById('helpOverlay') || !e.target.closest) {
+    document.getElementById('helpOverlay').classList.remove('show');
+  }
 }
 
 function init() {
