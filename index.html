@@ -4334,7 +4334,7 @@ function renderYrRows(rows, section) {
       <input class="yr-name-input" id="yr-n-${row.id}" value="${row.name}"
         placeholder="항목명" onchange="saveYrRow('${section}','${row.id}')">
       <input class="yr-formula-input" id="yr-f-${row.id}" value="${row.formula}"
-        placeholder="예) 22만*12" onchange="saveYrRow('${section}','${row.id}')" oninput="updateYrHint('${section}','${row.id}')">
+        placeholder="수식(00원*0개월)" onchange="saveYrRow('${section}','${row.id}')" oninput="updateYrHint('${section}','${row.id}')">
       ${isSpecial ? `
       <select class="yr-month-select" id="yr-m-${row.id}" onchange="saveYrRow('${section}','${row.id}')">
         <option value="">-월-</option>
