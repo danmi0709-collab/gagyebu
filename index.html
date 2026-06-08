@@ -1227,10 +1227,6 @@
   <div class="backup-row" style="margin-top:6px">
     <button class="btn-backup" style="color:#e07b39;border-color:#e07b39;font-size:0.82rem" onclick="recoverLostData()">🔍 데이터 찾기 (복구 시도)</button>
   </div>
-  <div style="margin-top:10px;display:flex;align-items:center;justify-content:flex-end;gap:8px">
-    <button onclick="forceUpdate()" style="font-size:0.75rem;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text-muted);cursor:pointer">🔄 최신버전으로</button>
-    <span style="font-size:0.78rem;color:var(--text-muted);opacity:0.7">앱 버전 <span id="appVersionBadge"></span></span>
-  </div>
 </div>
 
 <!-- 카카오페이 가져오기 모달 -->
@@ -1478,6 +1474,12 @@
         · PC에서 입력 후 → <strong>PC→폰 올리기</strong><br>
         · 저장할 때마다 구글 시트에 자동 백업됩니다.
       </div>
+    </div>
+
+    <!-- 버전 / 새로고침 -->
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:0.8rem;color:var(--text-muted)">앱 버전 <strong id="appVersionBadge"></strong></span>
+      <button onclick="forceUpdate()" style="font-size:0.8rem;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-family:inherit">🔄 최신버전으로</button>
     </div>
   </div>
 </div>

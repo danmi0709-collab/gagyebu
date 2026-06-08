@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v23';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '설정 탭에 최신버전으로 강제 새로고침 버튼 추가';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v24';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '버전 표시·최신버전버튼 설정 모달로 이동';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {

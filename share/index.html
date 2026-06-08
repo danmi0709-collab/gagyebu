@@ -1248,10 +1248,6 @@
   <div class="backup-row" style="margin-top:6px">
     <button class="btn-backup" style="color:#e07b39;border-color:#e07b39;font-size:0.82rem" onclick="recoverLostData()">🔍 데이터 찾기 (복구 시도)</button>
   </div>
-  <div style="margin-top:10px;display:flex;align-items:center;justify-content:flex-end;gap:8px">
-    <button onclick="forceUpdate()" style="font-size:0.75rem;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text-muted);cursor:pointer">🔄 최신버전으로</button>
-    <span style="font-size:0.78rem;color:var(--text-muted);opacity:0.7">앱 버전 <span id="appVersionBadge"></span></span>
-  </div>
 </div>
 
 <!-- 카카오페이 가져오기 모달 -->
@@ -1469,7 +1465,6 @@
       </div>
     </div>
   </div>
-  </div>
 </div>
 
 <!-- 탭2: 분석 -->
@@ -1669,7 +1664,7 @@ const STORAGE_KEY   = 'my_budget_data';
 const TX_ORDER_KEY  = 'my_tx_order';
 let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
-const APP_VERSION = 'v23'; // deploy.py가 자동으로 올림
+const APP_VERSION = 'v24'; // deploy.py가 자동으로 올림
 const NICKNAME_KEY = 'my_nickname';
 
 let currentMonth; // YYYY-MM
