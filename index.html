@@ -2314,7 +2314,9 @@ function renderTab2() {
   });
 
   // ── 총평 ──
+  const savingBudgetMonthly = Math.round((yr.saving||[]).reduce((s,r) => s + evalFormula(r.formula), 0) / eff);
   const saveRate  = income > 0 ? Math.round(saving / income * 100) : null;
+  const saveTargetRate = income > 0 && savingBudgetMonthly > 0 ? Math.round(savingBudgetMonthly / income * 100) : null;
   const expDiff   = expense - prevExp;
   const totalBudget = Object.values(budgetMap).reduce((s,v)=>s+v,0);
   const overBudget  = totalBudget > 0 && expense > totalBudget;
@@ -2363,7 +2365,7 @@ function renderTab2() {
     <div class="analysis-card">
       <div class="analysis-card-title">📊 ${isCurrentMonth ? '이번 달' : getMonthLabel(nowYM)} 총평</div>
       <div class="analysis-verdict" style="color:${verdictColor}">${verdict}</div>
-      ${saveRate !== null ? `<div class="analysis-line">수입 <b>${formatKRW(income)}</b> · 지출 <b>${formatKRW(expense)}</b> · 저축 <b style="color:#79c0ff">${formatKRW(saving)}</b> → 저축률 <b style="color:${saveRate>=20?'#3fb950':saveRate>=0?'#e2b96b':'#f85149'}">${saveRate}%</b></div>` : ''}
+      ${saveRate !== null ? `<div class="analysis-line">수입 <b>${formatKRW(income)}</b> · 지출 <b>${formatKRW(expense)}</b> · 저축 <b style="color:#79c0ff">${formatKRW(saving)}</b> → 저축률 <b style="color:${saveRate>=20?'#3fb950':saveRate>=0?'#e2b96b':'#f85149'}">${saveRate}%</b>${saveTargetRate!==null?` <span style="font-size:12px;color:#8b949e">(목표 ${saveTargetRate}%)</span>`:''}</div>` : ''}
       ${totalBudget > 0 ? `<div class="analysis-line">총 예산 대비 <b style="color:${overBudget?'#f85149':'#3fb950'}">${totalBudget>0?Math.round(expense/totalBudget*100):0}%</b> 사용</div>` : ''}
     </div>
 
@@ -2390,12 +2392,20 @@ function renderTab2() {
           <span class="analysis-badge ${cls}">${badge}</span>
         </div>`;
       }).join('')}
-      ${saving > 0 ? `
       <div class="analysis-group-row" style="border-top:1px solid #30363d;margin-top:6px;padding-top:6px">
         <span style="color:#79c0ff">💙 저축</span>
-        <span style="color:#8b949e;font-size:12px">${formatKRW(saving)}${income>0?` <span style="font-size:10px;color:#58a6ff">(수입의 ${Math.round(saving/income*100)}%)</span>`:''}</span>
-        <span class="analysis-badge badge-good">저축률 ${income>0?Math.round(saving/income*100):0}%</span>
-      </div>` : ''}
+        <span style="color:#8b949e;font-size:12px">${formatKRW(saving)}${income>0&&saving>0?` <span style="font-size:10px;color:#58a6ff">(수입의 ${Math.round(saving/income*100)}%)</span>`:''}${savingBudgetMonthly>0?` <span style="font-size:10px;color:#8b949e">/ 목표 ${formatKRW(savingBudgetMonthly)}</span>`:''}</span>
+        ${savingBudgetMonthly > 0
+          ? (() => {
+              const pct = Math.round(saving/savingBudgetMonthly*100);
+              if (pct >= 100) return `<span class="analysis-badge badge-good">달성 ${pct}%</span>`;
+              if (pct >= 50)  return `<span class="analysis-badge badge-warn">진행 ${pct}%</span>`;
+              return `<span class="analysis-badge badge-none">미달 ${pct}%</span>`;
+            })()
+          : saving > 0
+            ? `<span class="analysis-badge badge-good">저축률 ${income>0?Math.round(saving/income*100):0}%</span>`
+            : `<span class="analysis-badge badge-none">저축 없음</span>`}
+      </div>
     </div>
 
     ${points.length ? `
@@ -4458,12 +4468,36 @@ function renderTab5() {
   const d = loadAssets();
   const ASSET_TYPES = ['현금·예금', '적금', '주식·ETF', '부동산', '연금·퇴직금', '기타'];
   const TYPE_ICONS  = { '현금·예금':'💵', '적금':'🏦', '주식·ETF':'📈', '부동산':'🏠', '연금·퇴직금':'🏛️', '기타':'💼' };
+  const TYPE_COLORS = { '현금·예금':'#58a6ff', '적금':'#79c0ff', '주식·ETF':'#3fb950', '부동산':'#e2b96b', '연금·퇴직금':'#d2a8ff', '기타':'#8b949e' };
 
   const totalAsset = d.assets.reduce((s, a) => s + (a.amount || 0), 0);
   const totalLiab  = d.liabilities.reduce((s, l) => s + (l.amount || 0), 0);
   const netWorth   = totalAsset - totalLiab;
 
+  // 유형별 합계
+  const byType = {};
+  ASSET_TYPES.forEach(t => { byType[t] = 0; });
+  d.assets.forEach(a => { byType[a.type] = (byType[a.type] || 0) + (a.amount || 0); });
+  const activeTypes = ASSET_TYPES.filter(t => byType[t] > 0);
+
+  const isFirstTime = d.assets.length === 0 && d.liabilities.length === 0;
+
   const html = `<div style="padding:0 0 80px">
+
+    ${isFirstTime ? `
+    <div class="card" style="background:#161b22;border:1px dashed #30363d;margin-bottom:16px;padding:16px">
+      <div style="font-size:13px;font-weight:700;color:#e6edf3;margin-bottom:8px">📝 처음이세요? 지금 갖고 있는 자산을 입력해보세요</div>
+      <div style="font-size:12px;color:#8b949e;line-height:1.8">
+        💵 현금·예금 — 은행 예금, 통장 잔액<br>
+        🏦 적금 — 정기적금, 목돈 마련용<br>
+        📈 주식·ETF — 주식, 펀드, ETF<br>
+        🏠 부동산 — 집, 토지, 건물 시세<br>
+        🏛️ 연금·퇴직금 — 국민연금, 퇴직연금<br>
+        💼 기타 — 자동차, 귀금속 등
+      </div>
+    </div>` : ''}
+
+    <!-- 순자산 요약 -->
     <div class="card" style="text-align:center;padding:20px 16px;margin-bottom:16px">
       <div style="font-size:12px;color:#8b949e;margin-bottom:6px">📊 순자산 (자산 − 부채)</div>
       <div style="font-size:28px;font-weight:700;color:${netWorth >= 0 ? '#58a6ff' : '#f85149'}">${formatKRW(netWorth)}</div>
@@ -4472,17 +4506,28 @@ function renderTab5() {
         &nbsp;·&nbsp;
         부채 <span style="color:#f85149;font-weight:600">${formatKRW(totalLiab)}</span>
       </div>
+      ${activeTypes.length > 0 ? `
+      <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
+        ${activeTypes.map(t => `
+        <div style="background:#21262d;border-radius:8px;padding:6px 12px;font-size:12px">
+          <span>${TYPE_ICONS[t]}</span>
+          <span style="color:${TYPE_COLORS[t]};font-weight:600;margin-left:4px">${t}</span>
+          <span style="color:#e6edf3;margin-left:6px">${formatKRW(byType[t])}</span>
+          ${totalAsset > 0 ? `<span style="color:#8b949e;font-size:10px;margin-left:2px">(${Math.round(byType[t]/totalAsset*100)}%)</span>` : ''}
+        </div>`).join('')}
+      </div>` : ''}
     </div>
 
+    <!-- 자산 입력 -->
     <div class="card yr-section">
       <div class="yr-section-header">
-        <span style="color:#3fb950;font-weight:700">💰 자산</span>
+        <span style="color:#3fb950;font-weight:700">💰 자산 목록</span>
         <button class="yr-add-btn" onclick="addAsset()">+ 추가</button>
       </div>
-      ${d.assets.length === 0 ? '<div style="font-size:12px;color:#8b949e;padding:6px 0">자산 항목을 추가해주세요</div>' : ''}
+      ${d.assets.length === 0 ? '<div style="font-size:12px;color:#8b949e;padding:6px 0">위 안내를 참고해서 자산을 추가해주세요</div>' : ''}
       ${d.assets.map(r => `
       <div class="yr-item-row" style="align-items:center;gap:4px;flex-wrap:wrap">
-        <input class="yr-name-input" id="an-${r.id}" value="${r.name}" placeholder="항목명"
+        <input class="yr-name-input" id="an-${r.id}" value="${r.name}" placeholder="항목명 (예: 신한은행)"
           style="flex:2;min-width:80px" onchange="saveAssetRow('${r.id}')">
         <select id="at-${r.id}" onchange="saveAssetRow('${r.id}')"
           style="flex:2;min-width:90px;background:#161b22;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:12px;padding:6px 4px">
@@ -4492,25 +4537,28 @@ function renderTab5() {
           style="flex:2;min-width:80px;text-align:right" onchange="saveAssetRow('${r.id}')">
         <button class="yr-del-btn" onclick="deleteAsset('${r.id}')">✕</button>
       </div>`).join('')}
-      <div class="yr-total-row"><span>합계</span><span style="color:#3fb950">${formatKRW(totalAsset)}</span></div>
+      <div class="yr-total-row"><span>자산 합계</span><span style="color:#3fb950">${formatKRW(totalAsset)}</span></div>
     </div>
 
+    <!-- 부채 입력 -->
     <div class="card yr-section">
       <div class="yr-section-header">
-        <span style="color:#f85149;font-weight:700">💸 부채</span>
+        <span style="color:#f85149;font-weight:700">💸 부채 목록</span>
         <button class="yr-add-btn" onclick="addLiability()">+ 추가</button>
       </div>
-      ${d.liabilities.length === 0 ? '<div style="font-size:12px;color:#8b949e;padding:6px 0">부채 항목을 추가해주세요</div>' : ''}
+      <div style="font-size:11px;color:#8b949e;margin-bottom:8px">전세대출, 주택담보대출, 마이너스통장, 카드론 등</div>
+      ${d.liabilities.length === 0 ? '<div style="font-size:12px;color:#8b949e;padding:6px 0">부채가 없으면 비워도 돼요</div>' : ''}
       ${d.liabilities.map(r => `
       <div class="yr-item-row" style="align-items:center;gap:4px">
-        <input class="yr-name-input" id="ln-${r.id}" value="${r.name}" placeholder="항목명"
+        <input class="yr-name-input" id="ln-${r.id}" value="${r.name}" placeholder="항목명 (예: 주택담보대출)"
           style="flex:3" onchange="saveLiabRow('${r.id}')">
-        <input class="yr-formula-input" id="la-${r.id}" type="number" value="${r.amount||''}" placeholder="금액"
+        <input class="yr-formula-input" id="la-${r.id}" type="number" value="${r.amount||''}" placeholder="잔액"
           style="flex:2;text-align:right" onchange="saveLiabRow('${r.id}')">
         <button class="yr-del-btn" onclick="deleteLiability('${r.id}')">✕</button>
       </div>`).join('')}
-      <div class="yr-total-row"><span>합계</span><span style="color:#f85149">${formatKRW(totalLiab)}</span></div>
+      <div class="yr-total-row"><span>부채 합계</span><span style="color:#f85149">${formatKRW(totalLiab)}</span></div>
     </div>
+
   </div>`;
 
   document.getElementById('tab5Content').innerHTML = html;
@@ -4768,6 +4816,9 @@ function renderBudgetBars() {
 
   const catMonthNum = parseInt(catMonth.split('-')[1]); // 현재 카테고리 탭 월 (1~12)
 
+  const savingMonthlyBudget = Math.round((d.saving||[]).reduce((s,r) => s + evalFormula(r.formula), 0) / getEffectiveMonths());
+  const { saving: savingActual } = calcSummary(getMonthTx(catMonth));
+
   document.getElementById('budgetBars').innerHTML = sections.map(({ key, color, label, rows }) => {
     const isFixed   = key === 'fixed';
     const isSpecial = key === 'special';
@@ -4842,7 +4893,42 @@ function renderBudgetBars() {
       </div>
       ${namedRows.length ? `<div class="budget-items-detail">${itemBars}</div>` : ''}
     </div>`;
-  }).join('');
+  }).join('') + (() => {
+    if (savingMonthlyBudget <= 0 && savingActual <= 0) return '';
+    const sPct  = savingMonthlyBudget > 0 ? Math.min(100, Math.round(savingActual / savingMonthlyBudget * 100)) : 0;
+    const sOver = savingActual > savingMonthlyBudget && savingMonthlyBudget > 0;
+    const sAmt  = savingMonthlyBudget > 0
+      ? `${formatKRW(savingActual)} / ${formatKRW(savingMonthlyBudget)} (${Math.round(savingActual/savingMonthlyBudget*100)}%)`
+      : `${formatKRW(savingActual)} / 연예산 미입력`;
+    // 저축 항목별 바
+    const savingItems = (d.saving||[]).filter(r => r.name).map(r => {
+      const iBudget = Math.round(evalFormula(r.formula) / getEffectiveMonths());
+      const iActual = getMonthTx(catMonth).filter(t => t.type==='saving' && t.category===r.name).reduce((s,t)=>s+t.amount,0);
+      const iPct    = iBudget > 0 ? Math.min(100, Math.round(iActual/iBudget*100)) : 0;
+      const iAmt    = iBudget > 0 ? `${formatKRW(iActual)} / ${formatKRW(iBudget)} (${iPct}%)` : (iActual>0?formatKRW(iActual):'');
+      return `
+      <div class="budget-item-row">
+        <div class="budget-item-top">
+          <span class="budget-item-name">${r.name}</span>
+          <span class="budget-item-amt">${iAmt}</span>
+        </div>
+        <div class="budget-bar-bg" style="height:4px">
+          <div class="budget-bar" style="width:${iPct}%;background:#79c0ff"></div>
+        </div>
+      </div>`;
+    }).join('');
+    return `
+    <div class="budget-row">
+      <div class="budget-row-top">
+        <span class="budget-label" style="color:#79c0ff">💙 저축</span>
+        <span class="budget-amounts" style="${sOver?'color:#3fb950':''}">${sAmt}</span>
+      </div>
+      <div class="budget-bar-bg">
+        <div class="budget-bar" style="width:${sPct}%;background:#79c0ff"></div>
+      </div>
+      ${savingItems ? `<div class="budget-items-detail">${savingItems}</div>` : ''}
+    </div>`;
+  })();
 }
 
 init();
