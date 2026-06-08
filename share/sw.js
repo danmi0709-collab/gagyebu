@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v8';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '하단 탭 클릭 안되는 버그 수정 (설치배너 pointer-events 수정)';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v9';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = 'Samsung 구글바 겹침 완전 해결 (하단 고정 여백 34px 추가)';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {

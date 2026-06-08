@@ -45,7 +45,7 @@
     color: var(--text);
     font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
     min-height: 100vh;
-    padding-bottom: calc(70px + env(safe-area-inset-bottom));
+    padding-bottom: calc(70px + max(34px, env(safe-area-inset-bottom)));
   }
 
   /* 헤더 */
@@ -74,14 +74,15 @@
     border-top: 1px solid var(--border);
     display: flex;
     z-index: 100;
-    padding-bottom: env(safe-area-inset-bottom);
+    /* Samsung 구글바 / 제스처 영역 대응: 최소 34px + safe-area */
+    padding-bottom: max(34px, env(safe-area-inset-bottom));
   }
   .bottom-nav button {
     flex: 1;
     background: none;
     border: none;
     color: var(--text2);
-    padding: 10px 0 12px;
+    padding: 10px 0 6px;
     font-size: 10px;
     cursor: pointer;
     display: flex;
