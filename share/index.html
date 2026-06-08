@@ -2866,7 +2866,8 @@ function exportJSON() {
   };
   const json = JSON.stringify(backup, null, 2);
   const today = new Date().toISOString().slice(0, 10);
-  const fileName = `가계부_백업_${today}.json`;
+  const txCount = (backup.transactions || []).length;
+  const fileName = `가계부_백업_${today}_${txCount}건.json`;
 
   // Samsung 브라우저 등 Android 호환: blob URL 즉시 해제 금지
   try {
