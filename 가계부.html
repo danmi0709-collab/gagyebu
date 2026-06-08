@@ -4504,6 +4504,15 @@ function deleteLiability(id) {
   const d = loadAssets(); d.liabilities = d.liabilities.filter(r => r.id !== id); saveAssets(d); renderTab5();
 }
 
+function saveGoal() {
+  const d = loadAssets();
+  const raw = (document.getElementById('goalInput').value || '').replace(/,/g,'');
+  d.goal = parseInt(raw) || 0;
+  saveAssets(d);
+  renderTab5();
+  showToast('🎯 목표 ' + formatKRW(d.goal) + ' 저장됐어요');
+}
+
 function recordNetWorth() {
   const d = loadAssets();
   if (!d.history) d.history = [];
@@ -4551,7 +4560,40 @@ function renderTab5() {
   const history = d.history || [];
   const sorted = history.slice().sort((a,b) => a.ym.localeCompare(b.ym));
 
+  const goal = d.goal || 0;
+  const goalPctRaw = goal > 0 ? Math.round(netWorth / goal * 100) : 0;
+  const goalPct = Math.max(0, Math.min(goalPctRaw, 100));
+  const goalColor = goalPctRaw >= 100 ? '#3fb950' : goalPctRaw >= 50 ? '#e2b96b' : '#58a6ff';
+
   const html = `<div style="padding:0 0 80px">
+
+    <!-- 순자산 목표 -->
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${goal > 0 ? '14px' : '0'}">
+        <span style="font-size:13px;font-weight:700;color:#e6edf3">🎯 순자산 목표</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" id="goalInput" value="${goal || ''}" placeholder="목표 금액 (원)"
+            style="width:130px;background:#21262d;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:12px;padding:5px 8px;text-align:right"
+            onkeydown="if(event.key==='Enter')saveGoal()">
+          <button onclick="saveGoal()" style="background:#30363d;border:none;border-radius:6px;color:#e6edf3;font-size:11px;font-weight:600;padding:5px 10px;cursor:pointer">저장</button>
+        </div>
+      </div>
+      ${goal > 0 ? `
+      <div style="font-size:13px;color:#e6edf3;margin-bottom:10px">
+        목표 <span style="color:#e6edf3;font-weight:700">${formatKRW(goal)}</span>
+        &nbsp;→&nbsp;현재
+        <span style="color:${goalColor};font-weight:700">${goalPctRaw}% 달성</span>
+        ${goalPctRaw >= 100 ? ' 🎉' : ''}
+      </div>
+      <div style="background:#21262d;border-radius:6px;height:10px;overflow:hidden;margin-bottom:6px">
+        <div style="width:${goalPct}%;height:100%;background:${goalColor};border-radius:6px;transition:width 0.4s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#8b949e">
+        <span>현재 ${formatKRW(netWorth)}</span>
+        <span>목표까지 ${goalPctRaw >= 100 ? '달성 완료!' : formatKRW(goal - netWorth) + ' 남음'}</span>
+      </div>` : `
+      <div style="font-size:11px;color:#484f58;margin-top:6px">금액을 입력하고 저장하면 달성률이 표시돼요</div>`}
+    </div>
 
     <!-- 순자산 추이 차트 -->
     <div class="card" style="margin-bottom:16px">
