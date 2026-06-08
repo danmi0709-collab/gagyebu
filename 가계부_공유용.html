@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>나만의 가계부</title>
-
 <!-- Open Graph (카카오톡·SNS 미리보기) -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="나만의 가계부">
@@ -15,12 +14,10 @@
 <meta property="og:image:height" content="630">
 <meta property="og:url" content="https://danmi0709-collab.github.io/gagyebu/share">
 <meta name="description" content="설치 없이 브라우저에서 바로 쓰는 무료 가계부. 수입·지출·저축 관리, 자산 추이 차트, 연예산 계획까지.">
-
 <!-- 카카오톡 전용 -->
 <meta property="kakao:title" content="나만의 가계부 💰">
 <meta property="kakao:description" content="설치 없이 바로 쓰는 무료 가계부. 내 데이터는 내 기기에만 저장됩니다.">
 <meta property="kakao:image" content="https://danmi0709-collab.github.io/gagyebu/og-image.png">
-
 <!-- PWA (홈 화면 설치) -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#c07a3a">
@@ -931,46 +928,6 @@
     transform: translateX(-50%) translateY(0);
   }
 
-  /* PWA 설치 유도 배너 */
-  #installBanner {
-    position: fixed;
-    bottom: -120px;
-    left: 0; right: 0;
-    z-index: 9000;
-    padding: 0 16px 12px;
-    transition: bottom 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
-    pointer-events: none;
-  }
-  #installBanner.show { bottom: 68px; pointer-events: auto; }
-  .install-banner-inner {
-    background: var(--card);
-    border: 1.5px solid var(--border);
-    border-radius: 20px;
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-    max-width: 480px;
-    margin: 0 auto;
-  }
-  .install-emoji { font-size: 26px; flex-shrink: 0; }
-  .install-text { flex: 1; min-width: 0; }
-  .install-title { font-size: 13px; font-weight: 700; color: var(--text); }
-  .install-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
-  .install-btn {
-    background: var(--accent); color: #fff; border: none;
-    border-radius: 10px; padding: 8px 16px;
-    font-size: 13px; font-weight: 700; cursor: pointer;
-    font-family: inherit; flex-shrink: 0; white-space: nowrap;
-  }
-  .install-close {
-    background: none; border: none; color: var(--text3);
-    font-size: 18px; cursor: pointer; padding: 2px 4px;
-    flex-shrink: 0; line-height: 1;
-  }
-  .install-close:hover { color: var(--text); }
-
   /* 헤더 레이아웃 */
   .header-row {
     display: flex;
@@ -1445,45 +1402,6 @@
   to   { transform: scale(1) translateY(0);       opacity: 1; }
 }
 </style>
-
-<!-- PWA 설치 유도 배너 -->
-<div id="installBanner">
-  <div class="install-banner-inner">
-    <span class="install-emoji">📲</span>
-    <div class="install-text">
-      <div class="install-title">홈 화면에 설치하면 더 편리해요!</div>
-      <div class="install-sub">앱처럼 바로 실행 · 오프라인도 가능</div>
-    </div>
-    <button class="install-btn" onclick="triggerInstall()">설치하기</button>
-    <button class="install-close" onclick="dismissInstallBanner()" title="닫기">✕</button>
-  </div>
-</div>
-
-<!-- iOS 설치 안내 팝업 -->
-<div id="iosInstallModal" onclick="if(event.target===this)closeIosModal()" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center">
-  <div style="background:var(--card);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:480px;animation:cheerIn 0.35s ease" onclick="event.stopPropagation()">
-    <div style="text-align:center;margin-bottom:22px">
-      <div style="font-size:38px">🍎</div>
-      <div style="font-size:17px;font-weight:800;color:var(--text);margin:10px 0 4px">아이폰에 설치하는 방법</div>
-      <div style="font-size:13px;color:var(--text2)">사파리(Safari)에서만 가능해요</div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
-      <div style="display:flex;gap:12px;align-items:center;background:var(--card2);border-radius:14px;padding:13px 16px">
-        <div style="font-size:22px;flex-shrink:0">1️⃣</div>
-        <div style="font-size:13px;color:var(--text);font-weight:500;line-height:1.5">하단 가운데 <b style="color:var(--accent)">공유 버튼 □↑</b> 탭</div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:center;background:var(--card2);border-radius:14px;padding:13px 16px">
-        <div style="font-size:22px;flex-shrink:0">2️⃣</div>
-        <div style="font-size:13px;color:var(--text);font-weight:500;line-height:1.5">스크롤해서 <b style="color:var(--accent)">"홈 화면에 추가"</b> 선택</div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:center;background:var(--card2);border-radius:14px;padding:13px 16px">
-        <div style="font-size:22px;flex-shrink:0">3️⃣</div>
-        <div style="font-size:13px;color:var(--text);font-weight:500;line-height:1.5">오른쪽 위 <b style="color:var(--accent)">"추가"</b> 탭 → 완료!</div>
-      </div>
-    </div>
-    <button onclick="closeIosModal()" style="width:100%;background:var(--accent);border:none;border-radius:14px;color:#fff;font-size:15px;font-weight:700;padding:14px;cursor:pointer;font-family:inherit">확인했어요!</button>
-  </div>
-</div>
 
 <!-- 거래 편집 모달 -->
 <div class="edit-modal-overlay" id="editModal" onclick="closeEditModalOutside(event)">
@@ -5416,80 +5334,8 @@ function renderBudgetBars() {
 }
 
 init();
-
-// ─── PWA 설치 유도 배너 ───
-const PWA_PROMPT_KEY = 'my_pwa_prompt_shown';
-let pwaDeferred = null;
-
-function isIOS() {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
-}
-function isInStandaloneMode() {
-  return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-}
-function isSafariBrowser() {
-  const ua = navigator.userAgent;
-  return /safari/i.test(ua) && !/chrome/i.test(ua) && !/crios/i.test(ua) && !/fxios/i.test(ua);
-}
-function showInstallBanner() {
-  if (!IS_SHARED) return;
-  if (isInStandaloneMode()) return;                      // 이미 설치됨
-  if (localStorage.getItem(PWA_PROMPT_KEY)) return;      // 이미 봤음
-  if (isIOS() && !isSafariBrowser()) return;             // iOS인데 사파리 아님 → 설치 불가
-  const banner = document.getElementById('installBanner');
-  if (banner) setTimeout(() => banner.classList.add('show'), 2500);
-}
-function dismissInstallBanner() {
-  const banner = document.getElementById('installBanner');
-  if (banner) banner.classList.remove('show');
-  localStorage.setItem(PWA_PROMPT_KEY, '1');
-}
-function triggerInstall() {
-  if (pwaDeferred) {
-    // Android Chrome: 브라우저 기본 설치 다이얼로그 띄우기
-    pwaDeferred.prompt();
-    pwaDeferred.userChoice.then(() => { pwaDeferred = null; dismissInstallBanner(); });
-  } else if (isIOS()) {
-    // iOS: 방법 안내 팝업
-    const banner = document.getElementById('installBanner');
-    if (banner) banner.classList.remove('show');
-    const modal = document.getElementById('iosInstallModal');
-    if (modal) modal.style.display = 'flex';
-  }
-}
-function closeIosModal() {
-  const modal = document.getElementById('iosInstallModal');
-  if (modal) modal.style.display = 'none';
-  localStorage.setItem(PWA_PROMPT_KEY, '1');
-}
-
-// Android Chrome: 설치 이벤트 캡처
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  pwaDeferred = e;
-  showInstallBanner();
-});
-// 설치 완료 시
-window.addEventListener('appinstalled', () => {
-  localStorage.setItem(PWA_PROMPT_KEY, '1');
-});
-// iOS는 beforeinstallprompt 없으므로 페이지 로드 후 별도 체크
-window.addEventListener('load', () => {
-  if (isIOS()) showInstallBanner();
-});
-
-// 서비스워커 등록 (PWA 홈화면 설치 지원)
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').then(() => {
-      console.log('SW registered');
-    }).catch(() => {});
-  });
-}
 </script>
 </body>
 </html>
-
-
 
 
