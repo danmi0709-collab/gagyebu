@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v12';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '자산탭 전세레버리지 기능 추가 (전세금 입력, 실투자금 계산, 전세가율 표시)';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v13';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '자산탭 실투자금→실자산금 명칭 변경, 부채 예시에 전세레버리지 추가';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {

@@ -4904,7 +4904,7 @@ function renderTab5() {
           <div style="font-size:13px;font-weight:700;color:#79c0ff">${formatKRW(totalJeonse)}</div>
         </div>
         <div style="background:var(--card2);border-radius:8px;padding:10px 6px">
-          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">실투자금</div>
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">실자산금</div>
           <div style="font-size:13px;font-weight:700;color:var(--accent)">${formatKRW(totalEquity)}</div>
         </div>
       </div>
@@ -4944,7 +4944,7 @@ function renderTab5() {
           <input id="aj-${r.id}" type="number" value="${jeonse||''}" placeholder="전세보증금(원)"
             style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:5px 8px;text-align:right"
             onchange="saveAssetRow('${r.id}')">
-          ${equity !== null ? `<span style="font-size:11px;color:var(--text2);white-space:nowrap">실투자 <strong style="color:var(--accent)">${formatKRW(equity)}</strong></span>` : '<span style="font-size:11px;color:var(--text3)">입력하면 실투자금 계산</span>'}
+          ${equity !== null ? `<span style="font-size:11px;color:var(--text2);white-space:nowrap">실자산 <strong style="color:var(--accent)">${formatKRW(equity)}</strong></span>` : '<span style="font-size:11px;color:var(--text3)">입력하면 실자산금 계산</span>'}
         </div>
       </div>`;}).join('')}
       <div class="yr-total-row"><span>자산 합계</span><span style="color:#3fb950">${formatKRW(totalAsset)}</span></div>
@@ -4956,7 +4956,7 @@ function renderTab5() {
         <span style="color:#f85149;font-weight:700">💸 부채 목록</span>
         <button class="yr-add-btn" onclick="addLiability()">+ 추가</button>
       </div>
-      <div style="font-size:11px;color:var(--text2);margin-bottom:8px">전세대출, 주택담보대출, 마이너스통장, 카드론 등</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:8px">전세보증금(전세레버리지), 전세대출, 주택담보대출, 마이너스통장, 카드론 등</div>
       ${d.liabilities.length === 0 ? '<div style="font-size:12px;color:var(--text2);padding:6px 0">부채가 없으면 비워도 돼요</div>' : ''}
       ${d.liabilities.map(r => `
       <div class="yr-item-row" style="align-items:center;gap:4px">
