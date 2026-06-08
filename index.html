@@ -1531,6 +1531,25 @@
     </div>
   </div>
 
+  <!-- 부채상환 계획 -->
+  <div class="card yr-section">
+    <div class="yr-section-header">
+      <span style="color:#f85149;font-weight:700">💸 부채상환 계획</span>
+      <button class="yr-add-btn" onclick="addYrRow('debtRepay')">+ 추가</button>
+    </div>
+    <div style="font-size:11px;color:#8b949e;margin-bottom:8px">
+      원금 상환 계획 입력 · 이자는 고정지출 <b>대출이자</b>에 따로 기록
+    </div>
+    <div class="yr-col-head">
+      <span>부채명 (자산탭과 동일)</span><span>수식 (00원*0개월)</span><span>연합계</span>
+    </div>
+    <div id="yr-debtrepay-list"></div>
+    <div class="yr-total-row">
+      <span>연합계 / 월평균</span>
+      <span><span id="yr-debtrepay-year" style="color:#f85149">0원</span> / <span id="yr-debtrepay-month" style="color:#f85149">0원</span></span>
+    </div>
+  </div>
+
   <!-- 연진행 현황 (예산 대비 실제 사용) -->
   <div id="yr-progress"></div>
 </div>
@@ -1589,7 +1608,7 @@ const CATEGORY_GROUPS = {
 const CATEGORIES = {
   income: ['급여','부동산 수입','투자 수익','용돈·선물','환급·캐시백','부업·프리랜서','기타 수입'],
   expense: {
-    '고정':   ['월세·전세','관리비·공과금','통신비','보험료','구독서비스','대출이자','가족'],
+    '고정':   ['월세·전세','관리비·공과금','통신비','보험료','구독서비스','대출이자','전세이자','모기지이자','가족'],
     '변동':   ['식비','외식','생필품·마트','교통비','의료비','의류·미용','모임비'],
     '교육':   ['학원비','교육비','육아비','도서·콘텐츠','임장비용'],
     '비정기': ['경조사','여행·숙박','전자제품','기타'],
@@ -1609,7 +1628,10 @@ const SEC_OPTIONS_EXPENSE = [
 // 연예산 항목명으로 섹션키 반환
 function getCategoryBudgetKey(cat, type) {
   if (type === 'income') return 'income';
-  if (type === 'saving') return 'saving';
+  if (type === 'saving') {
+    const liabs = loadAssets().liabilities.map(l => l.name);
+    return liabs.includes(cat) ? 'debtRepay' : 'saving';
+  }
   const d = getYearData();
   for (const sec of ['fixed','variable','edu','special']) {
     if ((d[sec]||[]).some(r => r.name === cat)) return sec;
@@ -1654,7 +1676,7 @@ function buildGroupSelect(type, groupSelId, itemSelId, selGroup) {
   const opts = type === 'income'
     ? [{ key:'income', label:'💰 수입' }]
     : type === 'saving'
-    ? [{ key:'saving', label:'💙 저축' }]
+    ? [{ key:'saving', label:'💙 저축·투자' }, { key:'debtRepay', label:'💸 부채상환' }]
     : SEC_OPTIONS_EXPENSE;
   const groupSel = document.getElementById(groupSelId);
   groupSel.innerHTML = opts.map(o =>
@@ -1669,6 +1691,10 @@ function buildItemSelect(secKey, itemSelId, selItem) {
     ? getYearData().income.map(r => r.name).filter(n => n)
     : secKey === 'saving'
     ? CATEGORIES.saving
+    : secKey === 'debtRepay'
+    ? (loadAssets().liabilities.map(l => l.name).filter(n => n).length
+        ? loadAssets().liabilities.map(l => l.name).filter(n => n)
+        : ['─ 자산탭에 부채를 먼저 추가해주세요 ─'])
     : getItemsForGroup(secKey);
   const sel = document.getElementById(itemSelId);
   if (!items.length) {
@@ -1987,6 +2013,17 @@ function addTransaction() {
   data.transactions.push({ id: String(Date.now()), date, type: currentType, category, amount, memo });
   saveData(data);
   if (memo) learnBudgetItem(memo, document.getElementById('inputGroup').value, category);
+
+  // 부채상환이면 자산탭 부채 잔액 자동 감액
+  if (currentType === 'saving') {
+    const assets = loadAssets();
+    const liab = assets.liabilities.find(l => l.name === category);
+    if (liab) {
+      liab.amount = Math.max(0, (liab.amount || 0) - amount);
+      saveAssets(assets);
+      showToast(`💸 ${category} 잔액 ${formatKRW(amount)} 줄었어요`);
+    }
+  }
 
   document.getElementById('inputAmount').value = '';
   document.getElementById('inputMemo').value = '';
@@ -3657,7 +3694,8 @@ function getYearData() {
   if (!d.variable) d.variable = [];
   if (!d.edu)      d.edu      = [];
   if (!d.special)  d.special  = [];
-  if (!d.saving)   d.saving   = [];
+  if (!d.saving)     d.saving     = [];
+  if (!d.debtRepay) d.debtRepay = [];
   return d;
 }
 function setYearData(d) {
@@ -4319,6 +4357,7 @@ function addYrRow(section) {
   else if (section === 'variable') d.variable.push({ id, name: '', formula: '' });
   else if (section === 'edu') d.edu.push({ id, name: '', formula: '' });
   else if (section === 'saving') d.saving.push({ id, name: '', formula: '' });
+  else if (section === 'debtRepay') d.debtRepay.push({ id, name: '', formula: '' });
   else d.income.push({ id, name: '', formula: '' });
   setYearData(d);
   renderTab4();
@@ -4564,6 +4603,33 @@ function renderTab5() {
   document.getElementById('tab5Content').innerHTML = html;
 }
 
+function renderDebtRepayYrRows(rows) {
+  if (!rows.length) return '<div style="font-size:12px;color:#8b949e;padding:6px 0">부채상환 계획을 추가해주세요<br><span style="font-size:11px">💡 부채명을 자산탭과 동일하게 쓰면 내역 입력 시 잔액이 자동 감소해요</span></div>';
+  const assets = loadAssets();
+  return rows.map(row => {
+    const liab = assets.liabilities.find(l => l.name === row.name);
+    const balance = liab ? (liab.amount || 0) : null;
+    const hint = getFormulaHint(row.formula);
+    const amt = evalFormula(row.formula);
+    const afterRepay = balance !== null ? balance - amt : null;
+    return `
+    <div class="yr-item-row">
+      <input class="yr-name-input" id="yr-n-${row.id}" value="${row.name}"
+        placeholder="부채명 (자산탭과 동일)" onchange="saveYrRow('debtRepay','${row.id}')">
+      <input class="yr-formula-input" id="yr-f-${row.id}" value="${row.formula}"
+        placeholder="수식(00원*0개월)" onchange="saveYrRow('debtRepay','${row.id}')" oninput="updateYrHint('debtRepay','${row.id}')">
+      <span class="yr-result">${amt ? formatKRW(amt) : '-'}</span>
+      <button class="yr-del-btn" onclick="delYrRow('debtRepay','${row.id}')">✕</button>
+      ${hint ? `<div id="yr-h-${row.id}" class="yr-calc-hint">${hint}</div>` : `<div id="yr-h-${row.id}" class="yr-calc-hint"></div>`}
+      ${balance !== null ? `
+      <div style="font-size:11px;color:#8b949e;padding:2px 0 4px;grid-column:1/-1">
+        현재 잔액 <span style="color:#f85149;font-weight:600">${formatKRW(balance)}</span>
+        ${amt > 0 ? ` → 상환 후 <span style="color:${afterRepay<=0?'#3fb950':'#e2b96b'};font-weight:600">${formatKRW(Math.max(0,afterRepay))}</span>` : ''}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
 function renderTab4() {
   document.getElementById('yearLabel').textContent = currentYear + '년';
   const d = getYearData();
@@ -4580,8 +4646,10 @@ function renderTab4() {
   const specialMonthly  = Math.round(specialTotal / eff);
   const savingYearly    = (d.saving||[]).reduce((s,r) => s + evalFormula(r.formula), 0);
   const savingMonthly   = Math.round(savingYearly / eff);
+  const debtRepayYearly = (d.debtRepay||[]).reduce((s,r) => s + evalFormula(r.formula), 0);
+  const debtRepayMonthly = Math.round(debtRepayYearly / eff);
   const totalExpense    = fixedYearly + variableYearly + eduYearly + specialTotal;
-  const netYearly       = incomeTotal - totalExpense - savingYearly;
+  const netYearly       = incomeTotal - totalExpense - savingYearly - debtRepayYearly;
   const remainMonthly   = Math.round(netYearly / eff);
 
   // % 계산 (수입 기준)
@@ -4613,8 +4681,13 @@ function renderTab4() {
         <span>💙 저축 (${pct(savingYearly)}%)</span>
         <span>${formatKRW(savingYearly)}</span>
       </div>
+      ${debtRepayYearly > 0 ? `
+      <div class="yr-summary-row" style="font-size:12px;color:#8b949e">
+        <span>💸 부채상환 (${pct(debtRepayYearly)}%)</span>
+        <span>${formatKRW(debtRepayYearly)}</span>
+      </div>` : ''}
       <div class="yr-summary-row" style="border-top:1px solid #30363d;margin-top:4px;padding-top:8px">
-        <span style="font-weight:600">수입 − 지출 − 저축 = 가용잔액</span>
+        <span style="font-weight:600">수입 − 지출 − 저축 − 상환 = 가용잔액</span>
         <span style="color:${netYearly >= 0 ? '#3fb950' : '#f85149'};font-weight:700;font-size:15px">${formatKRW(netYearly)}</span>
       </div>
       <div class="yr-summary-highlight">
@@ -4680,6 +4753,11 @@ function renderTab4() {
   document.getElementById('yr-saving-year').textContent  = formatKRW(savingYearly);
   document.getElementById('yr-saving-month').textContent = formatKRW(savingMonthly);
 
+  // 부채상환 목록
+  document.getElementById('yr-debtrepay-list').innerHTML = renderDebtRepayYrRows(d.debtRepay||[]);
+  document.getElementById('yr-debtrepay-year').textContent  = formatKRW(debtRepayYearly);
+  document.getElementById('yr-debtrepay-month').textContent = formatKRW(debtRepayMonthly);
+
   // ── 연진행 현황 (예산 대비 실제) ──────────────────────────
   const data = loadData();
   const yearStr = String(currentYear);
@@ -4691,6 +4769,10 @@ function renderTab4() {
   });
   const actualSaving = data.transactions
     .filter(t => t.type === 'saving' && t.date.startsWith(yearStr))
+    .reduce((s,t) => s + t.amount, 0);
+  const liabNames = loadAssets().liabilities.map(l => l.name);
+  const actualDebtRepay = data.transactions
+    .filter(t => t.type === 'saving' && t.date.startsWith(yearStr) && liabNames.includes(t.category))
     .reduce((s,t) => s + t.amount, 0);
 
   const progSections = [
@@ -4744,7 +4826,22 @@ function renderTab4() {
       <div style="background:#79c0ff;height:8px;border-radius:6px;width:${savingPct}%"></div>
     </div>
     <div style="font-size:12px;color:#8b949e;text-align:right">${savingPct}% 달성</div>
-  </div>` : ''}`;
+  </div>` : ''}
+
+  ${debtRepayYearly > 0 ? (() => {
+    const drPct = Math.min(100, Math.round(actualDebtRepay / debtRepayYearly * 100));
+    return `<div class="card" style="margin-bottom:12px">
+    <div style="font-size:14px;font-weight:700;color:#f85149;margin-bottom:8px">💸 부채상환 달성</div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+      <span style="font-size:18px;font-weight:700;color:#f85149">${formatKRW(actualDebtRepay)}</span>
+      <span style="font-size:13px;color:#8b949e;align-self:flex-end">/ ${formatKRW(debtRepayYearly)}</span>
+    </div>
+    <div style="background:#21262d;border-radius:6px;height:8px;margin-bottom:4px">
+      <div style="background:#f85149;height:8px;border-radius:6px;width:${drPct}%"></div>
+    </div>
+    <div style="font-size:12px;color:#8b949e;text-align:right">${drPct}% 달성</div>
+  </div>`;
+  })() : ''}`;
 
   progSections.forEach(({ key, label, color }) => {
     const rows = (d[key] || []).filter(r => evalFormula(r.formula) > 0 || spent[r.name]);
