@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v17';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '연예산 수식 입력란 순수 숫자 콤마 자동 표시';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v18';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '백업 비어있던 버그 수정: 이전 키 데이터 자동 복구 + 데이터 찾기 버튼';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {

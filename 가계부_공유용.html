@@ -1245,6 +1245,9 @@
     <button class="btn-backup" onclick="document.getElementById('importFile').click()">📤 데이터 복원</button>
     <input type="file" id="importFile" accept=".json" onchange="importJSON(event)">
   </div>
+  <div class="backup-row" style="margin-top:6px">
+    <button class="btn-backup" style="color:#e07b39;border-color:#e07b39;font-size:0.82rem" onclick="recoverLostData()">🔍 데이터 찾기 (복구 시도)</button>
+  </div>
 </div>
 
 <!-- 카카오페이 가져오기 모달 -->
@@ -2086,7 +2089,6 @@ function parseNL() {
 // 이전 버전(hanna_* 키) → 현재 버전(my_* 키) 자동 마이그레이션
 function migrateOldKeys() {
   if (!IS_SHARED) return;
-  if (localStorage.getItem('my_migrated_v1')) return; // 이미 완료
 
   const pairs = [
     ['my_budget_data',          'my_budget_data'],
@@ -2105,14 +2107,20 @@ function migrateOldKeys() {
   let count = 0;
   pairs.forEach(([old, nw]) => {
     const oldVal = localStorage.getItem(old);
-    if (oldVal && !localStorage.getItem(nw)) {
+    if (!oldVal) return;
+    const newVal = localStorage.getItem(nw);
+    // 새 키가 없거나, 거래내역이 비어있는 경우에도 이전 데이터로 덮어씀
+    let isEmpty = !newVal;
+    if (!isEmpty && nw === 'my_budget_data') {
+      try { isEmpty = (JSON.parse(newVal).transactions || []).length === 0; } catch {}
+    }
+    if (isEmpty) {
       localStorage.setItem(nw, oldVal);
       localStorage.removeItem(old);
       count++;
     }
   });
 
-  localStorage.setItem('my_migrated_v1', '1');
   if (count > 0) {
     setTimeout(() => showToast(`이전 데이터 복구 완료 ✅ (${count}개 항목)`, '#c07a3a'), 1200);
   }
@@ -2782,11 +2790,71 @@ function exportExcel(mode) {
   XLSX.writeFile(wb, fileName);
 }
 
+// localStorage 전체를 뒤져서 거래내역 찾기 (비상용)
+function recoverLostData() {
+  const suspects = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    try {
+      const val = localStorage.getItem(key);
+      if (!val || val.length < 20) continue;
+      const parsed = JSON.parse(val);
+      const txCount = Array.isArray(parsed.transactions) ? parsed.transactions.length : 0;
+      if (txCount > 0) suspects.push({ key, txCount });
+    } catch(e) {}
+  }
+
+  if (suspects.length === 0) {
+    alert('현재 기기에 저장된 거래 데이터를 찾지 못했어요.\n\n다른 브라우저나 다른 기기에 데이터가 있을 수 있어요.');
+    return;
+  }
+
+  const lines = suspects.map(s => `  • ${s.key}: 거래 ${s.txCount}건`).join('\n');
+  const best = suspects.sort((a, b) => b.txCount - a.txCount)[0];
+  const confirmed = confirm(
+    `발견된 데이터:\n${lines}\n\n` +
+    `"${best.key}" (${best.txCount}건)을 현재 앱으로 복구할까요?\n` +
+    `(기존 데이터가 있으면 덮어씌워집니다)`
+  );
+  if (!confirmed) return;
+
+  try {
+    const raw = localStorage.getItem(best.key);
+    const parsed = JSON.parse(raw);
+    saveData({ transactions: parsed.transactions });
+    if (best.key !== STORAGE_KEY) localStorage.removeItem(best.key);
+    renderAll();
+    showToast(`✅ 복구 완료! 거래 ${best.txCount}건 불러왔어요`, '#c07a3a');
+  } catch(e) {
+    alert('복구 중 오류가 발생했어요: ' + e.message);
+  }
+}
+
 function exportJSON() {
+  // 마이그레이션 한 번 더 시도 (이전 키에 데이터가 남아있을 수 있음)
+  migrateOldKeys();
+
+  let txData = loadData();
+  // my_budget_data가 비어있으면 my_budget_data도 확인 (공유앱 전용)
+  if (IS_SHARED && (txData.transactions || []).length === 0) {
+    try {
+      const legacy = localStorage.getItem('my_budget_data');
+      if (legacy) {
+        const legacyParsed = JSON.parse(legacy);
+        if ((legacyParsed.transactions || []).length > 0) {
+          txData = legacyParsed;
+          saveData(txData); // 올바른 키로 이전
+          localStorage.removeItem('my_budget_data');
+          showToast('이전 거래 데이터 복구 완료 ✅', '#c07a3a');
+        }
+      }
+    } catch(e) {}
+  }
+
   const backup = {
     version: 2,
     exportedAt: new Date().toISOString(),
-    transactions: loadData().transactions || [],
+    transactions: txData.transactions || [],
     annual:       loadAnnual(),
     subscriptions: loadSubs(),
     assets:       loadAssets(),
