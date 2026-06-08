@@ -4728,6 +4728,38 @@ function deleteLiability(id) {
   const d = loadAssets(); d.liabilities = d.liabilities.filter(r => r.id !== id); saveAssets(d); renderTab5();
 }
 
+// 전세금 → 부채 자동 연동
+function syncJeonseTOLiab() {
+  const d = loadAssets();
+  const reWithJeonse = d.assets.filter(a => a.type === '부동산' && (a.jeonse || 0) > 0);
+  if (reWithJeonse.length === 0) {
+    showToast('전세금이 입력된 부동산이 없어요', '#888');
+    return;
+  }
+  let added = 0, updated = 0;
+  reWithJeonse.forEach(a => {
+    const label = `전세보증금 · ${a.name || '부동산'}`;
+    // 이미 같은 이름으로 연동된 부채 찾기
+    const existing = d.liabilities.find(l => l._jeonseRef === a.id);
+    if (existing) {
+      if (existing.amount !== a.jeonse) { existing.amount = a.jeonse; existing.name = label; updated++; }
+    } else {
+      d.liabilities.push({ id: String(Date.now() + added), name: label, amount: a.jeonse, _jeonseRef: a.id });
+      added++;
+    }
+  });
+  // 자산에서 삭제된 항목의 연동 부채 제거
+  const refIds = reWithJeonse.map(a => a.id);
+  d.liabilities = d.liabilities.filter(l => !l._jeonseRef || refIds.includes(l._jeonseRef));
+  saveAssets(d);
+  renderTab5();
+  const msg = added > 0 && updated > 0 ? `${added}개 추가, ${updated}개 업데이트`
+            : added > 0 ? `${added}개 부채에 추가됐어요`
+            : updated > 0 ? `${updated}개 금액 업데이트됐어요`
+            : '이미 최신 상태예요';
+  showToast('✅ 전세보증금 연동: ' + msg);
+}
+
 function saveGoal() {
   const d = loadAssets();
   const raw = (document.getElementById('goalInput').value || '').replace(/,/g,'');
@@ -4898,9 +4930,12 @@ function renderTab5() {
           <div style="font-size:13px;font-weight:700;color:var(--accent)">${formatKRW(totalEquity)}</div>
         </div>
       </div>
-      <div style="margin-top:10px;font-size:11px;color:var(--text2);display:flex;justify-content:space-between;align-items:center">
-        <span>전세가율 <strong style="color:${totalREVal>0&&totalJeonse/totalREVal>0.8?'#f85149':'#3fb950'}">${totalREVal > 0 ? Math.round(totalJeonse/totalREVal*100) : 0}%</strong></span>
-        <span style="color:var(--text3);font-size:10px">전세금은 임차인 반환 의무 있음 → 부채에 추가 권장</span>
+      <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span style="font-size:11px;color:var(--text2)">전세가율 <strong style="color:${totalREVal>0&&totalJeonse/totalREVal>0.8?'#f85149':'#3fb950'}">${totalREVal > 0 ? Math.round(totalJeonse/totalREVal*100) : 0}%</strong></span>
+        <button onclick="syncJeonseTOLiab()"
+          style="background:#e2b96b22;border:1px solid #e2b96b66;border-radius:8px;color:#e2b96b;font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer;white-space:nowrap">
+          🔗 부채에 자동 등록
+        </button>
       </div>
     </div>` : ''}
 
@@ -4950,6 +4985,7 @@ function renderTab5() {
       ${d.liabilities.length === 0 ? '<div style="font-size:12px;color:var(--text2);padding:6px 0">부채가 없으면 비워도 돼요</div>' : ''}
       ${d.liabilities.map(r => `
       <div class="yr-item-row" style="align-items:center;gap:4px">
+        ${r._jeonseRef ? `<span style="font-size:10px;color:#e2b96b;white-space:nowrap">🔗</span>` : ''}
         <input class="yr-name-input" id="ln-${r.id}" value="${r.name}" placeholder="항목명 (예: 주택담보대출)"
           style="flex:3" onchange="saveLiabRow('${r.id}')">
         <input class="yr-formula-input" id="la-${r.id}" type="number" value="${r.amount||''}" placeholder="잔액"
