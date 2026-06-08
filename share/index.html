@@ -1720,8 +1720,8 @@ const STORAGE_KEY   = 'my_budget_data';
 const TX_ORDER_KEY  = 'my_tx_order';
 let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
-const APP_VERSION = 'v36'; // deploy.py가 자동으로 올림
-const RELEASE_HISTORY_APP = ["v36: 수식 개선: 억 단위 지원, 복합수식 힌트 표시, 수식입력칸 숫자키보드", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
+const APP_VERSION = 'v37'; // deploy.py가 자동으로 올림
+const RELEASE_HISTORY_APP = ["v37: 수식 입력칸 숫자전용 키보드 제거 (Samsung 키보드 호환 문제)", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
 const NICKNAME_KEY = 'my_nickname';
 
 let currentMonth; // YYYY-MM
@@ -5713,9 +5713,6 @@ function renderTab4() {
   });
 
   document.getElementById('yr-progress').innerHTML = pgHtml;
-
-  // 수식 입력칸 → 숫자 키보드 (inputmode 일괄 적용)
-  document.querySelectorAll('.yr-formula-input').forEach(el => el.inputMode = 'decimal');
 }
 
 // ===== 예산 (연예산에서 자동 계산) =====
