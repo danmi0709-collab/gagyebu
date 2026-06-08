@@ -1096,7 +1096,7 @@
     <button class="btn-settings" onclick="openSettings()" title="구글 시트 연동 설정">⚙️</button>
   </div>
   <div class="header-bottom">
-    <div class="balance">이번 달 잔액 <span id="headerBalance">0원</span></div>
+    <div class="balance">이번 달 가용잔액 <span id="headerBalance">0원</span></div>
     <div class="sync-status" id="syncStatus"></div>
   </div>
 </div>
@@ -1590,12 +1590,13 @@
 
 <script>
 const STORAGE_KEY   = 'my_budget_data';
-const TX_ORDER_KEY  = 'my_tx_order';
+const TX_ORDER_KEY  = 'hanna_tx_order';
 let currentType = 'income';
 let currentMonth; // YYYY-MM
 let catMonth;
 let analysisMonth; // YYYY-MM (분석 탭 기준월)
 let categoryChartInstance = null;
+let netWorthChartInstance = null;
 let activeTabN = 1; // 현재 보이는 탭 번호
 
 const CATEGORY_GROUPS = {
@@ -2810,7 +2811,7 @@ function switchModalTab(n) {
 }
 
 // ===== 패턴 학습 =====
-const MERCHANT_MEM_KEY = 'my_merchant_cats';
+const MERCHANT_MEM_KEY = 'hanna_merchant_cats';
 
 function loadMerchantMem() {
   try { return JSON.parse(localStorage.getItem(MERCHANT_MEM_KEY) || '{}'); } catch { return {}; }
@@ -3510,7 +3511,7 @@ function confirmOCRImport() {
 }
 
 // ===== 구글 시트 연동 =====
-const SHEETS_URL_KEY = 'my_sheets_url';
+const SHEETS_URL_KEY = 'hanna_sheets_url';
 
 function getSheetsUrl() {
   return localStorage.getItem(SHEETS_URL_KEY) || '';
@@ -3678,7 +3679,7 @@ function pullFromSheets() {
 }
 
 // ===== 1년 예산 =====
-const ANNUAL_KEY = 'my_annual_budget';
+const ANNUAL_KEY = 'hanna_annual_budget';
 let currentYear = new Date().getFullYear();
 
 function loadAnnual() {
@@ -3788,7 +3789,7 @@ function autoFillFromMemo(val) {
 
 // ===== 구독서비스 탭 (Tab 6) =====
 const SUBS_KEY     = 'my_subscriptions';
-const AUTO_SUB_KEY = 'my_sub_auto_month';
+const AUTO_SUB_KEY = 'hanna_sub_auto_month';
 
 // 연예산에서 "(구독)" 표시된 항목 탐색
 function detectAnnualSubItems() {
@@ -4317,7 +4318,7 @@ function goToSubTx(subId) {
 }
 
 function migrateFormulasToMan() {
-  if (localStorage.getItem('my_formula_man_migrated')) return;
+  if (localStorage.getItem('hanna_formula_man_migrated')) return;
   function toMan(numStr) {
     const n = parseInt(numStr);
     if (n < 10000) return numStr;
@@ -4336,7 +4337,7 @@ function migrateFormulasToMan() {
     });
   });
   saveAnnual(all);
-  localStorage.setItem('my_formula_man_migrated', '1');
+  localStorage.setItem('hanna_formula_man_migrated', '1');
 }
 
 function evalFormula(str) {
@@ -4456,8 +4457,8 @@ function renderYrRows(rows, section) {
 // ===== 자산 탭 =====
 const ASSETS_KEY = 'my_assets';
 function loadAssets() {
-  try { return JSON.parse(localStorage.getItem(ASSETS_KEY) || '{"assets":[],"liabilities":[]}'); }
-  catch { return { assets: [], liabilities: [] }; }
+  try { return JSON.parse(localStorage.getItem(ASSETS_KEY) || '{"assets":[],"liabilities":[],"history":[]}'); }
+  catch { return { assets: [], liabilities: [], history: [] }; }
 }
 function saveAssets(d) { localStorage.setItem(ASSETS_KEY, JSON.stringify(d)); }
 
@@ -4503,6 +4504,32 @@ function deleteLiability(id) {
   const d = loadAssets(); d.liabilities = d.liabilities.filter(r => r.id !== id); saveAssets(d); renderTab5();
 }
 
+function recordNetWorth() {
+  const d = loadAssets();
+  if (!d.history) d.history = [];
+  const now = new Date();
+  const ym = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const totalAsset = d.assets.reduce((s, a) => s + (a.amount || 0), 0);
+  const totalLiab  = d.liabilities.reduce((s, l) => s + (l.amount || 0), 0);
+  const netWorth   = totalAsset - totalLiab;
+  const idx = d.history.findIndex(h => h.ym === ym);
+  if (idx >= 0) {
+    d.history[idx].netWorth = netWorth;
+  } else {
+    d.history.push({ ym, netWorth });
+  }
+  d.history.sort((a, b) => a.ym.localeCompare(b.ym));
+  saveAssets(d);
+  showToast('📈 ' + ym + ' 순자산 ' + formatKRW(netWorth) + ' 기록 완료');
+  renderTab5();
+}
+function deleteHistoryEntry(ym) {
+  const d = loadAssets();
+  d.history = (d.history || []).filter(h => h.ym !== ym);
+  saveAssets(d);
+  renderTab5();
+}
+
 function renderTab5() {
   const d = loadAssets();
   const ASSET_TYPES = ['현금·예금', '적금', '주식·ETF', '부동산', '연금·퇴직금', '기타'];
@@ -4521,7 +4548,32 @@ function renderTab5() {
 
   const isFirstTime = d.assets.length === 0 && d.liabilities.length === 0;
 
+  const history = d.history || [];
+  const sorted = history.slice().sort((a,b) => a.ym.localeCompare(b.ym));
+
   const html = `<div style="padding:0 0 80px">
+
+    <!-- 순자산 추이 차트 -->
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:13px;font-weight:700;color:#e6edf3">📈 순자산 추이</span>
+        <button onclick="recordNetWorth()" style="background:#58a6ff;border:none;border-radius:6px;color:#0d1117;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer">이번 달 기록</button>
+      </div>
+      ${sorted.length > 0 ? `<canvas id="netWorthChart" style="max-height:160px;width:100%"></canvas>` : `
+      <div style="text-align:center;padding:18px 0;color:#8b949e;font-size:12px">
+        "이번 달 기록" 버튼을 눌러 순자산을 기록해보세요<br>
+        <span style="font-size:11px;color:#484f58">매월 기록하면 추이 차트를 볼 수 있어요</span>
+      </div>`}
+      ${sorted.length > 0 ? `
+      <div style="margin-top:10px;border-top:1px solid #30363d;padding-top:8px">
+        ${history.slice().reverse().map(h => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px;border-bottom:1px solid #21262d">
+          <span style="color:#8b949e">${h.ym}</span>
+          <span style="color:${h.netWorth>=0?'#58a6ff':'#f85149'};font-weight:600">${formatKRW(h.netWorth)}</span>
+          <button onclick="deleteHistoryEntry('${h.ym}')" style="background:none;border:none;color:#484f58;cursor:pointer;font-size:11px;padding:2px 8px">✕</button>
+        </div>`).join('')}
+      </div>` : ''}
+    </div>
 
     ${isFirstTime ? `
     <div class="card" style="background:#161b22;border:1px dashed #30363d;margin-bottom:16px;padding:16px">
@@ -4601,6 +4653,44 @@ function renderTab5() {
   </div>`;
 
   document.getElementById('tab5Content').innerHTML = html;
+
+  if (sorted.length > 0) {
+    const canvas = document.getElementById('netWorthChart');
+    if (canvas) {
+      if (netWorthChartInstance) { netWorthChartInstance.destroy(); netWorthChartInstance = null; }
+      netWorthChartInstance = new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels: sorted.map(h => h.ym),
+          datasets: [{
+            data: sorted.map(h => h.netWorth),
+            borderColor: '#58a6ff',
+            backgroundColor: 'rgba(88,166,255,0.08)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: '#58a6ff',
+            pointRadius: 5,
+            pointHoverRadius: 7,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false }, tooltip: {
+            callbacks: { label: ctx => ' ' + formatKRW(ctx.parsed.y) }
+          }},
+          scales: {
+            x: { ticks: { color: '#8b949e', font: { size: 10 } }, grid: { color: '#21262d' } },
+            y: { ticks: { color: '#8b949e', font: { size: 10 }, callback: v => {
+              if (Math.abs(v) >= 100000000) return (v/100000000).toFixed(0) + '억';
+              if (Math.abs(v) >= 10000) return (v/10000).toFixed(0) + '만';
+              return v;
+            }}, grid: { color: '#21262d' } }
+          }
+        }
+      });
+    }
+  }
 }
 
 function renderDebtRepayYrRows(rows) {
@@ -5032,3 +5122,4 @@ init();
 </script>
 </body>
 </html>
+
