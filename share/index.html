@@ -1548,6 +1548,9 @@
     <button onclick="changeYear(1)">›</button>
   </div>
 
+  <!-- 예산 기간 피커 -->
+  <div id="yr-period-picker"></div>
+
   <!-- 요약 카드 -->
   <div id="yr-summary"></div>
 
@@ -1712,7 +1715,7 @@ const STORAGE_KEY   = 'my_budget_data';
 const TX_ORDER_KEY  = 'my_tx_order';
 let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
-const APP_VERSION = 'v31'; // deploy.py가 자동으로 올림
+const APP_VERSION = 'v32'; // deploy.py가 자동으로 올림
 const NICKNAME_KEY = 'my_nickname';
 
 let currentMonth; // YYYY-MM
@@ -4135,11 +4138,36 @@ function setYearData(d) {
 
 function changeYear(delta) { currentYear += delta; invalidateGroupCache(); renderTab4(); }
 
-// 올해면 남은 달수(현재월~12월), 다른 연도면 12
+// 연예산 기간 (시작달~마지막달)
+function getYearPeriod() {
+  const all = loadAnnual();
+  const yd = all[currentYear] || {};
+  return { start: yd._start || 1, end: yd._end || 12 };
+}
+
+function saveYearPeriod(start, end) {
+  start = parseInt(start); end = parseInt(end);
+  if (end < start) end = start;
+  const all = loadAnnual();
+  const y = currentYear;
+  if (!all[y]) all[y] = { income:[], fixed:[], variable:[], edu:[], special:[], saving:[], debtRepay:[] };
+  all[y]._start = start;
+  all[y]._end   = end;
+  saveAnnual(all);
+  renderTab4();
+}
+
+function onYrPeriodChange() {
+  const s = parseInt(document.getElementById('yrPeriodStart').value);
+  let e   = parseInt(document.getElementById('yrPeriodEnd').value);
+  if (e < s) { e = s; document.getElementById('yrPeriodEnd').value = s; }
+  saveYearPeriod(s, e);
+}
+
+// 예산 기간 달수 (시작~마지막)
 function getEffectiveMonths() {
-  const now = new Date();
-  if (currentYear === now.getFullYear()) return 12 - now.getMonth();
-  return 12;
+  const { start, end } = getYearPeriod();
+  return end - start + 1;
 }
 
 // ===== 고정지출 체크박스 =====
@@ -5311,6 +5339,21 @@ function renderDebtRepayYrRows(rows) {
 
 function renderTab4() {
   document.getElementById('yearLabel').textContent = currentYear + '년';
+
+  // 예산 기간 피커 렌더
+  const { start: pS, end: pE } = getYearPeriod();
+  const nM = pE - pS + 1;
+  const mOpt = sel => [...Array(12)].map((_,i) =>
+    `<option value="${i+1}"${sel===i+1?' selected':''}>${i+1}월</option>`).join('');
+  document.getElementById('yr-period-picker').innerHTML = `
+    <div style="display:flex;align-items:center;gap:6px;justify-content:center;padding:4px 0 10px;font-size:13px;color:var(--text2)">
+      <span>📅 예산 기간</span>
+      <select id="yrPeriodStart" onchange="onYrPeriodChange()" style="background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:13px;font-family:inherit">${mOpt(pS)}</select>
+      <span>~</span>
+      <select id="yrPeriodEnd" onchange="onYrPeriodChange()" style="background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:13px;font-family:inherit">${mOpt(pE)}</select>
+      <span style="color:var(--accent);font-weight:600">${nM}개월</span>
+    </div>`;
+
   const d = getYearData();
   const eff = getEffectiveMonths();
 
@@ -5440,18 +5483,23 @@ function renderTab4() {
   // ── 연진행 현황 (예산 대비 실제) ──────────────────────────
   const data = loadData();
   const yearStr = String(currentYear);
+  const { start: pgStart, end: pgEnd } = getYearPeriod();
+  const inPeriod = t => {
+    const m = parseInt(t.date.slice(5, 7));
+    return t.date.startsWith(yearStr) && m >= pgStart && m <= pgEnd;
+  };
   const spent = {};
   data.transactions.forEach(t => {
-    if (t.type === 'expense' && t.date.startsWith(yearStr)) {
+    if (t.type === 'expense' && inPeriod(t)) {
       spent[t.category] = (spent[t.category] || 0) + t.amount;
     }
   });
   const actualSaving = data.transactions
-    .filter(t => t.type === 'saving' && t.date.startsWith(yearStr))
+    .filter(t => t.type === 'saving' && inPeriod(t))
     .reduce((s,t) => s + t.amount, 0);
   const liabNames = loadAssets().liabilities.map(l => l.name);
   const actualDebtRepay = data.transactions
-    .filter(t => t.type === 'saving' && t.date.startsWith(yearStr) && liabNames.includes(t.category))
+    .filter(t => t.type === 'saving' && inPeriod(t) && liabNames.includes(t.category))
     .reduce((s,t) => s + t.amount, 0);
 
   const progSections = [
