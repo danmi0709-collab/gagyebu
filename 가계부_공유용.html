@@ -1505,6 +1505,8 @@
       <span style="font-size:0.8rem;color:var(--text-muted)">앱 버전 <strong id="appVersionBadge"></strong></span>
       <button onclick="forceUpdate()" style="font-size:0.8rem;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-family:inherit">🔄 최신버전으로</button>
     </div>
+    <!-- 최근 업데이트 내역 -->
+    <div id="releaseHistoryEl" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11.5px;color:var(--text2);line-height:1.85"></div>
   </div>
 </div>
 
@@ -1668,8 +1670,11 @@
   <!-- 연진행 현황 (예산 대비 실제 사용) -->
   <div id="yr-progress"></div>
 
+  <!-- 연도 복사 버튼 (JS에서 조건부 렌더) -->
+  <div id="yr-copy-btn-wrap" style="margin-top:10px;padding:0 2px"></div>
+
   <!-- 연예산 백업/복원 -->
-  <div style="display:flex;gap:8px;margin-top:10px;padding:0 2px">
+  <div style="display:flex;gap:8px;margin-top:6px;padding:0 2px">
     <button onclick="exportAnnual()" style="flex:1;padding:9px;background:rgba(88,166,255,0.1);color:#58a6ff;border:1px solid #58a6ff;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">📥 연예산 백업</button>
     <button onclick="document.getElementById('importAnnualFile').click()" style="flex:1;padding:9px;background:rgba(192,122,58,0.1);color:#c07a3a;border:1px solid #c07a3a;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">📤 연예산 복원</button>
     <input type="file" id="importAnnualFile" accept=".json" style="display:none" onchange="importAnnualJSON(event)">
@@ -1715,7 +1720,8 @@ const STORAGE_KEY   = 'my_budget_data';
 const TX_ORDER_KEY  = 'my_tx_order';
 let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
-const APP_VERSION = 'v32'; // deploy.py가 자동으로 올림
+const APP_VERSION = 'v33'; // deploy.py가 자동으로 올림
+const RELEASE_HISTORY_APP = ["v33: 연도 복사 버튼 추가 (작년 항목→올해), 설정탭 최근 3회 업데이트 내역 표시", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
 const NICKNAME_KEY = 'my_nickname';
 
 let currentMonth; // YYYY-MM
@@ -3008,6 +3014,37 @@ function importJSON(e) {
   reader.readAsText(file);
 }
 
+// ===== 연도 복사 (작년 항목 → 올해) =====
+function copyFromPrevYear() {
+  const prevYear = currentYear - 1;
+  const all = loadAnnual();
+  const prev = all[prevYear] || {};
+  const KEYS = ['income','fixed','variable','edu','special','saving','debtRepay'];
+  const prevHas = KEYS.some(k => (prev[k] || []).length > 0);
+  if (!prevHas) { showToast(`${prevYear}년 데이터가 없어요`, '#888'); return; }
+
+  const curr = all[currentYear] || {};
+  const currHas = KEYS.some(k => (curr[k] || []).length > 0);
+  if (currHas && !confirm(`${currentYear}년에 이미 항목이 있어요.\n${prevYear}년 항목으로 덮어씌울까요?`)) return;
+
+  saveUndoSnapshot();
+  let idBase = Date.now();
+  const copied = {};
+  KEYS.forEach(k => {
+    copied[k] = (prev[k] || []).map(r => ({ ...r, id: String(idBase++) }));
+  });
+  // 기간 설정(_start/_end)은 현재 연도 것 유지
+  if (curr._start) copied._start = curr._start;
+  if (curr._end)   copied._end   = curr._end;
+
+  all[currentYear] = copied;
+  saveAnnual(all);
+  renderTab4();
+  showToast(`✅ ${prevYear}년 항목을 ${currentYear}년으로 복사했어요!`);
+  const btn = document.getElementById('undoRestoreBtn');
+  if (btn) btn.style.display = 'inline-block';
+}
+
 // ===== 연예산 단독 백업/복원 =====
 function exportAnnual() {
   const annual = loadAnnual();
@@ -3956,6 +3993,12 @@ function openSettings() {
     ns.style.display = IS_SHARED ? 'block' : 'none';
     const nd = document.getElementById('currentNicknameDisplay');
     if (nd) nd.textContent = getNickname() || '(미설정)';
+  }
+  // 최근 업데이트 내역 렌더
+  const rh = document.getElementById('releaseHistoryEl');
+  if (rh && typeof RELEASE_HISTORY_APP !== 'undefined' && RELEASE_HISTORY_APP.length) {
+    rh.innerHTML = '<div style="font-weight:600;color:var(--text);margin-bottom:5px">📋 최근 업데이트</div>' +
+      RELEASE_HISTORY_APP.map(h => `<div>• ${h}</div>`).join('');
   }
   document.getElementById('settingsModal').classList.add('open');
 }
@@ -5353,6 +5396,19 @@ function renderTab4() {
       <select id="yrPeriodEnd" onchange="onYrPeriodChange()" style="background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:13px;font-family:inherit">${mOpt(pE)}</select>
       <span style="color:var(--accent);font-weight:600">${nM}개월</span>
     </div>`;
+
+  // 작년 항목 복사 버튼 (작년에 데이터 있을 때만 표시)
+  const prevYear = currentYear - 1;
+  const allAnnualData = loadAnnual();
+  const prevYrData = allAnnualData[prevYear] || {};
+  const prevHasData = ['income','fixed','variable','edu','special','saving','debtRepay']
+    .some(k => (prevYrData[k] || []).length > 0);
+  const copyWrap = document.getElementById('yr-copy-btn-wrap');
+  if (copyWrap) {
+    copyWrap.innerHTML = prevHasData
+      ? `<button onclick="copyFromPrevYear()" style="width:100%;padding:9px;background:rgba(63,185,80,0.08);color:#3fb950;border:1px solid rgba(63,185,80,0.35);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">📋 ${prevYear}년 항목 그대로 가져오기</button>`
+      : '';
+  }
 
   const d = getYearData();
   const eff = getEffectiveMonths();

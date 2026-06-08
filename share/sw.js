@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v32';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '연예산 기간 설정 추가 (시작달~마지막달 직접 지정, 월평균·진행현황에 자동 반영)';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v33';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '연도 복사 버튼 추가 (작년 항목→올해), 설정탭 최근 3회 업데이트 내역 표시';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
