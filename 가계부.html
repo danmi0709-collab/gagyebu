@@ -2802,14 +2802,28 @@ function exportJSON() {
     assets:       loadAssets(),
     budgetLearn:  loadBudgetLearn(),
   };
-  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const json = JSON.stringify(backup, null, 2);
   const today = new Date().toISOString().slice(0, 10);
-  a.href = url;
-  a.download = `가계부_백업_${today}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const fileName = `가계부_백업_${today}.json`;
+
+  // Samsung 브라우저 등 Android 호환: blob URL 즉시 해제 금지
+  try {
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000); // 5초 후 해제
+    showToast('📥 백업 파일 저장 완료!');
+  } catch(e) {
+    // 폴백: 새 탭에서 열기
+    const w = window.open();
+    if (w) { w.document.write('<pre>' + json + '</pre>'); }
+    else { alert('백업 내용을 복사하세요:\n\n' + json); }
+  }
 }
 
 function importJSON(e) {

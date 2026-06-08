@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v10';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '이전 버전 데이터 자동 복구 (hanna_* → my_* 전체 마이그레이션)';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v11';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '백업 파일 다운로드 버그 수정 (Samsung 브라우저 호환)';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
