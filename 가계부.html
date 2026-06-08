@@ -5507,10 +5507,12 @@ function closeInstallBanner() {
   z-index: 9997;
   transition: transform .35s ease, opacity .35s ease;
   opacity: 0;
+  pointer-events: none;
 }
 #installBanner.show {
   transform: translateX(-50%) translateY(0);
   opacity: 1;
+  pointer-events: auto;
 }
 .install-banner-row {
   display: flex;

@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v7';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '데이터 복원 버그 수정 (빈 백업 파일도 복원 가능)';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v8';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '하단 탭 클릭 안되는 버그 수정 (설치배너 pointer-events 수정)';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
