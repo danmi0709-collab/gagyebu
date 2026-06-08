@@ -1225,6 +1225,9 @@
     <input type="file" id="importFile" accept=".json" onchange="importJSON(event)">
   </div>
   <div class="backup-row" style="margin-top:6px">
+    <button id="undoRestoreBtn" class="btn-backup" style="display:none;color:#e07b39;border-color:#e07b39;font-size:0.82rem;width:100%" onclick="undoRestore()">↩️ 방금 복원 취소 (이전 상태로)</button>
+  </div>
+  <div class="backup-row" style="margin-top:6px">
     <button class="btn-backup" style="color:#e07b39;border-color:#e07b39;font-size:0.82rem" onclick="recoverLostData()">🔍 데이터 찾기 (복구 시도)</button>
   </div>
 </div>
@@ -2908,6 +2911,41 @@ function exportJSON() {
   }
 }
 
+const UNDO_KEY = IS_SHARED ? 'my_undo_backup' : 'hanna_undo_backup';
+
+function saveUndoSnapshot() {
+  try {
+    const snap = {
+      transactions: loadData().transactions || [],
+      annual:       loadAnnual(),
+      subscriptions: loadSubs(),
+      assets:       loadAssets(),
+      budgetLearn:  loadBudgetLearn(),
+      savedAt:      new Date().toISOString(),
+    };
+    localStorage.setItem(UNDO_KEY, JSON.stringify(snap));
+  } catch(e) {}
+}
+
+function undoRestore() {
+  const raw = localStorage.getItem(UNDO_KEY);
+  if (!raw) { showToast('되돌릴 데이터가 없어요', '#888'); return; }
+  try {
+    const snap = JSON.parse(raw);
+    const dt = snap.savedAt ? new Date(snap.savedAt).toLocaleTimeString('ko-KR') : '?';
+    if (!confirm(`복원 전 상태(${dt} 기준)로 되돌릴까요?`)) return;
+    saveData({ transactions: snap.transactions || [] });
+    if (snap.annual      && Object.keys(snap.annual).length > 0)       saveAnnual(snap.annual);
+    if (snap.subscriptions && snap.subscriptions.length > 0)            saveSubs(snap.subscriptions);
+    if (snap.assets)                                                     saveAssets(snap.assets);
+    if (snap.budgetLearn && Object.keys(snap.budgetLearn).length > 0)  saveBudgetLearn(snap.budgetLearn);
+    localStorage.removeItem(UNDO_KEY);
+    renderAll();
+    showToast('↩️ 복원 전 상태로 되돌렸어요!', '#c07a3a');
+    document.getElementById('undoRestoreBtn').style.display = 'none';
+  } catch(e) { alert('되돌리기 실패: ' + e.message); }
+}
+
 function importJSON(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -2918,15 +2956,20 @@ function importJSON(e) {
       if (!Array.isArray(d.transactions)) throw new Error();
       const fileCount    = d.transactions.length;
       const currentCount = (loadData().transactions || []).length;
-      const msg = `📂 이 파일: ${fileCount}건\n📱 현재 앱: ${currentCount}건\n\n백업 파일로 덮어씌울까요?\n(현재 데이터는 사라집니다)`;
+      const hasAnnual    = d.annual && Object.keys(d.annual).length > 0;
+      const annualNote   = hasAnnual ? '' : '\n⚠️ 이 파일엔 연예산 데이터가 없어요 (연예산은 유지됩니다)';
+      const msg = `📂 이 파일: ${fileCount}건\n📱 현재 앱: ${currentCount}건\n\n백업 파일로 덮어씌울까요?${annualNote}`;
       if (confirm(msg)) {
+        saveUndoSnapshot(); // 복원 전 현재 상태 임시저장
         saveData({ transactions: d.transactions || [] });
-        if (d.annual)        saveAnnual(d.annual);
-        if (d.subscriptions) saveSubs(d.subscriptions);
+        if (hasAnnual) saveAnnual(d.annual); // 비어있으면 덮어쓰지 않음
+        if (d.subscriptions && d.subscriptions.length > 0) saveSubs(d.subscriptions);
         if (d.assets)        saveAssets(d.assets);
-        if (d.budgetLearn)   saveBudgetLearn(d.budgetLearn);
+        if (d.budgetLearn && Object.keys(d.budgetLearn || {}).length > 0) saveBudgetLearn(d.budgetLearn);
         renderAll();
         showToast(`✅ ${fileCount}건 불러왔어요!`);
+        const btn = document.getElementById('undoRestoreBtn');
+        if (btn) btn.style.display = 'inline-block';
       }
     } catch { alert('올바른 백업 파일이 아닙니다.'); }
     e.target.value = '';
