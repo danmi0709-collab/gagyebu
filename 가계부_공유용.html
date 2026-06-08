@@ -1150,7 +1150,6 @@
   </div>
   <div class="header-bottom">
     <div class="balance">이번 달 가용잔액 <span id="headerBalance">0원</span></div>
-    <div class="sync-status" id="syncStatus"></div>
   </div>
 </div>
 
@@ -1443,16 +1442,16 @@
   </div>
 </div>
 
-<!-- 설정 모달 (구글 시트 연동) -->
+<!-- 설정 모달 -->
 <div class="settings-overlay" id="settingsModal" onclick="closeSettingsOutside(event)">
   <div class="settings-box">
     <div class="settings-header">
-      <span class="settings-title">⚙️ 구글 시트 연동 설정</span>
+      <span class="settings-title">⚙️ 설정</span>
       <button class="settings-close" onclick="closeSettings()">✕</button>
     </div>
 
     <!-- 닉네임 변경 (공유용 전용) -->
-    <div id="nicknameSettingsSection" style="display:none;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)">
+    <div id="nicknameSettingsSection" style="display:block;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)">
       <label class="settings-label">✏️ 닉네임 변경</label>
       <div style="display:flex;gap:8px;align-items:center">
         <span style="font-size:13px;color:var(--text2)">현재: </span>
@@ -1460,38 +1459,7 @@
         <button onclick="closeSettings();openNicknameModal()" style="margin-left:auto;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;padding:6px 14px;cursor:pointer;font-family:inherit">변경하기</button>
       </div>
     </div>
-
-    <div id="sheetsSection">
-      <label class="settings-label">구글 Apps Script 웹앱 URL</label>
-      <input class="settings-input" type="url" id="sheetsUrlInput"
-        placeholder="https://script.google.com/macros/s/.../exec">
-
-      <div class="settings-btn-row">
-        <button class="btn-sheets-pull" onclick="pullFromSheets()" id="btnPull"></button>
-        <button class="btn-sheets-push" onclick="pushToSheets()" id="btnPush"></button>
-      </div>
-
-      <button class="btn-save" onclick="saveSettingsUrl()" style="margin-bottom:14px">URL 저장</button>
-
-      <div class="settings-sync-log" id="syncLog"></div>
-
-      <div class="settings-guide">
-        <strong>📋 구글 시트 연동 설정 방법</strong>
-        <ol>
-          <li><strong>구글 시트</strong>를 하나 새로 만드세요.</li>
-          <li>상단 메뉴 → <strong>확장 프로그램 → Apps Script</strong> 클릭</li>
-          <li>기존 내용 지우고 <strong>구글시트_스크립트.gs</strong> 파일의 내용을 붙여넣기</li>
-          <li>저장(💾) 후 → <strong>배포 → 새 배포</strong> 클릭</li>
-          <li>유형: <strong>웹 앱</strong>, 액세스: <strong>모든 사용자</strong> 선택 후 배포</li>
-          <li>생성된 URL을 위 입력창에 붙여넣고 <strong>URL 저장</strong></li>
-        </ol>
-        <br>
-        💡 <strong>사용 방법:</strong><br>
-        · 폰에서 입력 후 → <strong>폰→PC 불러오기</strong><br>
-        · PC에서 입력 후 → <strong>PC→폰 올리기</strong><br>
-        · 저장할 때마다 구글 시트에 자동 백업됩니다.
-      </div>
-    </div>
+  </div>
   </div>
 </div>
 
