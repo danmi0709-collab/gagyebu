@@ -20,6 +20,15 @@
 <meta property="kakao:title" content="나만의 가계부 💰">
 <meta property="kakao:description" content="설치 없이 바로 쓰는 무료 가계부. 내 데이터는 내 기기에만 저장됩니다.">
 <meta property="kakao:image" content="https://danmi0709-collab.github.io/gagyebu/og-image.png">
+
+<!-- PWA (홈 화면 설치) -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#c07a3a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="가계부">
+<link rel="apple-touch-icon" href="icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -5328,6 +5337,15 @@ function renderBudgetBars() {
 }
 
 init();
+
+// 서비스워커 등록 (PWA 홈화면 설치 지원)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(() => {
+      console.log('SW registered');
+    }).catch(() => {});
+  });
+}
 </script>
 </body>
 </html>

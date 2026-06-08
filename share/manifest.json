@@ -1,0 +1,26 @@
+{
+  "name": "나만의 가계부",
+  "short_name": "가계부",
+  "description": "설치 없이 브라우저에서 바로 쓰는 무료 가계부. 수입·지출·저축 관리, 자산 추이 차트, 연예산 계획까지.",
+  "start_url": "/gagyebu/share/",
+  "scope": "/gagyebu/share/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf8f3",
+  "theme_color": "#c07a3a",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
