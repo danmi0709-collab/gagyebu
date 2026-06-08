@@ -1461,34 +1461,36 @@
       </div>
     </div>
 
-    <label class="settings-label">구글 Apps Script 웹앱 URL</label>
-    <input class="settings-input" type="url" id="sheetsUrlInput"
-      placeholder="https://script.google.com/macros/s/.../exec">
+    <div id="sheetsSection">
+      <label class="settings-label">구글 Apps Script 웹앱 URL</label>
+      <input class="settings-input" type="url" id="sheetsUrlInput"
+        placeholder="https://script.google.com/macros/s/.../exec">
 
-    <div class="settings-btn-row">
-      <button class="btn-sheets-pull" onclick="pullFromSheets()" id="btnPull"></button>
-      <button class="btn-sheets-push" onclick="pushToSheets()" id="btnPush"></button>
-    </div>
+      <div class="settings-btn-row">
+        <button class="btn-sheets-pull" onclick="pullFromSheets()" id="btnPull"></button>
+        <button class="btn-sheets-push" onclick="pushToSheets()" id="btnPush"></button>
+      </div>
 
-    <button class="btn-save" onclick="saveSettingsUrl()" style="margin-bottom:14px">URL 저장</button>
+      <button class="btn-save" onclick="saveSettingsUrl()" style="margin-bottom:14px">URL 저장</button>
 
-    <div class="settings-sync-log" id="syncLog"></div>
+      <div class="settings-sync-log" id="syncLog"></div>
 
-    <div class="settings-guide">
-      <strong>📋 구글 시트 연동 설정 방법</strong>
-      <ol>
-        <li><strong>구글 시트</strong>를 하나 새로 만드세요.</li>
-        <li>상단 메뉴 → <strong>확장 프로그램 → Apps Script</strong> 클릭</li>
-        <li>기존 내용 지우고 <strong>구글시트_스크립트.gs</strong> 파일의 내용을 붙여넣기</li>
-        <li>저장(💾) 후 → <strong>배포 → 새 배포</strong> 클릭</li>
-        <li>유형: <strong>웹 앱</strong>, 액세스: <strong>모든 사용자</strong> 선택 후 배포</li>
-        <li>생성된 URL을 위 입력창에 붙여넣고 <strong>URL 저장</strong></li>
-      </ol>
-      <br>
-      💡 <strong>사용 방법:</strong><br>
-      · 폰에서 입력 후 → <strong>폰→PC 불러오기</strong><br>
-      · PC에서 입력 후 → <strong>PC→폰 올리기</strong><br>
-      · 저장할 때마다 구글 시트에 자동 백업됩니다.
+      <div class="settings-guide">
+        <strong>📋 구글 시트 연동 설정 방법</strong>
+        <ol>
+          <li><strong>구글 시트</strong>를 하나 새로 만드세요.</li>
+          <li>상단 메뉴 → <strong>확장 프로그램 → Apps Script</strong> 클릭</li>
+          <li>기존 내용 지우고 <strong>구글시트_스크립트.gs</strong> 파일의 내용을 붙여넣기</li>
+          <li>저장(💾) 후 → <strong>배포 → 새 배포</strong> 클릭</li>
+          <li>유형: <strong>웹 앱</strong>, 액세스: <strong>모든 사용자</strong> 선택 후 배포</li>
+          <li>생성된 URL을 위 입력창에 붙여넣고 <strong>URL 저장</strong></li>
+        </ol>
+        <br>
+        💡 <strong>사용 방법:</strong><br>
+        · 폰에서 입력 후 → <strong>폰→PC 불러오기</strong><br>
+        · PC에서 입력 후 → <strong>PC→폰 올리기</strong><br>
+        · 저장할 때마다 구글 시트에 자동 백업됩니다.
+      </div>
     </div>
   </div>
 </div>
@@ -3691,8 +3693,13 @@ function closeHelp(e) {
 }
 
 function openSettings() {
-  document.getElementById('sheetsUrlInput').value = getSheetsUrl();
   document.getElementById('syncLog').textContent = '';
+  // 구글시트 섹션: 공유앱에서 완전히 숨김 (개인 URL 노출 방지)
+  const ss = document.getElementById('sheetsSection');
+  if (ss) ss.style.display = IS_SHARED ? 'none' : 'block';
+  if (!IS_SHARED) {
+    document.getElementById('sheetsUrlInput').value = getSheetsUrl();
+  }
   // 닉네임 섹션: 공유용에서만 표시
   const ns = document.getElementById('nicknameSettingsSection');
   if (ns) {
@@ -3724,8 +3731,9 @@ function setSyncStatus(state, msg) {
   el.textContent = msg;
 }
 
-// 저장 때마다 자동으로 구글 시트에 백업
+// 저장 때마다 자동으로 구글 시트에 백업 (공유앱에서는 비활성)
 function autoSync(data) {
+  if (IS_SHARED) return;
   const url = getSheetsUrl();
   if (!url) return;
   fetch(url, {
