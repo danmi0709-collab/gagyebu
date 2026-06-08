@@ -4658,7 +4658,7 @@ function renderSubRow(s, idx, today, addedThisMonth) {
         <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">
           ${addBtn}
           <button onclick="editSub(${idx})" style="background:rgba(88,166,255,0.15);color:var(--accent);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">수정</button>
-          ${!expired ? `<button onclick="toggleSubStatus(${idx})" style="background:${isActive ? 'var(--border)' : 'rgba(63,185,80,0.15)'};color:${isActive ? 'var(--text2)' : '#3fb950'};border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">${isActive ? '해지' : '복구'}</button>` : ''}
+          ${expired ? `<button onclick="resubscribe(${idx})" style="background:rgba(63,185,80,0.15);color:#3fb950;border:1px solid rgba(63,185,80,0.4);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">🔄 재구독</button>` : `<button onclick="toggleSubStatus(${idx})" style="background:${isActive ? 'var(--border)' : 'rgba(63,185,80,0.15)'};color:${isActive ? 'var(--text2)' : '#3fb950'};border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">${isActive ? '해지' : '복구'}</button>`}
           <button onclick="deleteSub(${idx})" style="background:rgba(248,81,73,0.15);color:#f85149;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">삭제</button>
         </div>
       </div>
@@ -4668,6 +4668,23 @@ function renderSubRow(s, idx, today, addedThisMonth) {
 
 function editSub(idx) { _editSubIdx = idx; renderTab6(); }
 function cancelSubEdit() { _editSubIdx = -1; renderTab6(); }
+
+function resubscribe(idx) {
+  const s = loadSubs()[idx];
+  if (!s) return;
+  // 추가 폼에 이름·금액 채우고 스크롤
+  const nameEl = document.getElementById('subName');
+  const amtEl  = document.getElementById('subAmount');
+  if (nameEl) nameEl.value = s.name;
+  if (amtEl)  amtEl.value  = s.amount;
+  // 종료달·주기는 초기화 (새 구독이므로)
+  const endEl = document.getElementById('subEndDate');
+  if (endEl) endEl.value = '';
+  // 폼으로 스크롤
+  nameEl && nameEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  nameEl && nameEl.focus();
+  showToast(`"${s.name}" 정보를 채웠어요. 주기·종료달 확인 후 추가해주세요 👆`, '#c07a3a');
+}
 
 function updateEditCycleUI() {
   const v = document.getElementById('editSubCycle').value;

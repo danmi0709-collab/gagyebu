@@ -1720,8 +1720,8 @@ const STORAGE_KEY   = 'my_budget_data';
 const TX_ORDER_KEY  = 'my_tx_order';
 let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
-const APP_VERSION = 'v34'; // deploy.py가 자동으로 올림
-const RELEASE_HISTORY_APP = ["v34: 구독 종료달 필드 추가: 만료 자동 비활성화·이력 보존·3분류 표시", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
+const APP_VERSION = 'v35'; // deploy.py가 자동으로 올림
+const RELEASE_HISTORY_APP = ["v35: 만료 구독 재구독 버튼 추가 (이름·금액 자동입력 후 폼으로 이동)", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
 const NICKNAME_KEY = 'my_nickname';
 
 let currentMonth; // YYYY-MM
@@ -4679,7 +4679,7 @@ function renderSubRow(s, idx, today, addedThisMonth) {
         <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">
           ${addBtn}
           <button onclick="editSub(${idx})" style="background:rgba(88,166,255,0.15);color:var(--accent);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">수정</button>
-          ${!expired ? `<button onclick="toggleSubStatus(${idx})" style="background:${isActive ? 'var(--border)' : 'rgba(63,185,80,0.15)'};color:${isActive ? 'var(--text2)' : '#3fb950'};border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">${isActive ? '해지' : '복구'}</button>` : ''}
+          ${expired ? `<button onclick="resubscribe(${idx})" style="background:rgba(63,185,80,0.15);color:#3fb950;border:1px solid rgba(63,185,80,0.4);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">🔄 재구독</button>` : `<button onclick="toggleSubStatus(${idx})" style="background:${isActive ? 'var(--border)' : 'rgba(63,185,80,0.15)'};color:${isActive ? 'var(--text2)' : '#3fb950'};border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">${isActive ? '해지' : '복구'}</button>`}
           <button onclick="deleteSub(${idx})" style="background:rgba(248,81,73,0.15);color:#f85149;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">삭제</button>
         </div>
       </div>
@@ -4689,6 +4689,23 @@ function renderSubRow(s, idx, today, addedThisMonth) {
 
 function editSub(idx) { _editSubIdx = idx; renderTab6(); }
 function cancelSubEdit() { _editSubIdx = -1; renderTab6(); }
+
+function resubscribe(idx) {
+  const s = loadSubs()[idx];
+  if (!s) return;
+  // 추가 폼에 이름·금액 채우고 스크롤
+  const nameEl = document.getElementById('subName');
+  const amtEl  = document.getElementById('subAmount');
+  if (nameEl) nameEl.value = s.name;
+  if (amtEl)  amtEl.value  = s.amount;
+  // 종료달·주기는 초기화 (새 구독이므로)
+  const endEl = document.getElementById('subEndDate');
+  if (endEl) endEl.value = '';
+  // 폼으로 스크롤
+  nameEl && nameEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  nameEl && nameEl.focus();
+  showToast(`"${s.name}" 정보를 채웠어요. 주기·종료달 확인 후 추가해주세요 👆`, '#c07a3a');
+}
 
 function updateEditCycleUI() {
   const v = document.getElementById('editSubCycle').value;

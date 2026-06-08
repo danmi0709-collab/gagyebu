@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v34';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '구독 종료달 필드 추가: 만료 자동 비활성화·이력 보존·3분류 표시';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v35';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '만료 구독 재구독 버튼 추가 (이름·금액 자동입력 후 폼으로 이동)';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
