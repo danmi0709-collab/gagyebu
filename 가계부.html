@@ -4567,12 +4567,19 @@ function migrateFormulasToMan() {
 
 function evalFormula(str) {
   if (!str) return 0;
-  // 만 단위 변환: 22만 → 220000, 22.5만 → 225000
-  let s = String(str).replace(/(\d+(?:\.\d+)?)만/g, (_, n) => Math.round(parseFloat(n) * 10000));
+  // 콤마 제거 → 만 단위 변환 → 수식 계산
+  let s = String(str).replace(/,/g, '');
+  s = s.replace(/(\d+(?:\.\d+)?)만/g, (_, n) => Math.round(parseFloat(n) * 10000));
   const clean = s.replace(/[^0-9+\-*/().]/g, '');
   if (!clean) return 0;
   try { return Math.max(0, Math.round(Function('"use strict";return(' + clean + ')')())); }
   catch { return 0; }
+}
+
+// 연예산 수식 입력 — 순수 숫자면 콤마 포맷, 수식(만/*+- 포함)이면 그대로
+function onYrFormulaInput(el, section, id) {
+  if (/^[\d,]*$/.test(el.value)) onNumInput(el);   // 숫자만 → 콤마 포맷
+  updateYrHint(section, id);                        // 힌트 업데이트
 }
 
 function addYrRow(section) {
@@ -4660,12 +4667,14 @@ function renderYrRows(rows, section) {
     const amt = evalFormula(row.formula);
     const isSpecial = section === 'special';
     const hint = getFormulaHint(row.formula);
+    // 저장된 값이 순수 숫자면 콤마 포함 표시
+    const displayFormula = /^[\d,]+$/.test(row.formula) ? fmtN(parseInt(row.formula.replace(/,/g,''))) : row.formula;
     return `
     <div class="yr-item-row${isSpecial ? ' special' : ''}">
       <input class="yr-name-input" id="yr-n-${row.id}" value="${row.name}"
         placeholder="항목명" onchange="saveYrRow('${section}','${row.id}')">
-      <input class="yr-formula-input" id="yr-f-${row.id}" value="${row.formula}"
-        placeholder="수식(00원*0개월)" onchange="saveYrRow('${section}','${row.id}')" oninput="updateYrHint('${section}','${row.id}')">
+      <input class="yr-formula-input" id="yr-f-${row.id}" value="${displayFormula}"
+        placeholder="수식(00원*0개월)" onchange="saveYrRow('${section}','${row.id}')" oninput="onYrFormulaInput(this,'${section}','${row.id}')">
       ${isSpecial ? `
       <select class="yr-month-select" id="yr-m-${row.id}" onchange="saveYrRow('${section}','${row.id}')">
         <option value="">-월-</option>
@@ -5078,12 +5087,13 @@ function renderDebtRepayYrRows(rows) {
     const hint = getFormulaHint(row.formula);
     const amt = evalFormula(row.formula);
     const afterRepay = balance !== null ? balance - amt : null;
+    const displayFormula = /^[\d,]+$/.test(row.formula) ? fmtN(parseInt(row.formula.replace(/,/g,''))) : row.formula;
     return `
     <div class="yr-item-row">
       <input class="yr-name-input" id="yr-n-${row.id}" value="${row.name}"
         placeholder="부채명 (자산탭과 동일)" onchange="saveYrRow('debtRepay','${row.id}')">
-      <input class="yr-formula-input" id="yr-f-${row.id}" value="${row.formula}"
-        placeholder="수식(00원*0개월)" onchange="saveYrRow('debtRepay','${row.id}')" oninput="updateYrHint('debtRepay','${row.id}')">
+      <input class="yr-formula-input" id="yr-f-${row.id}" value="${displayFormula}"
+        placeholder="수식(00원*0개월)" onchange="saveYrRow('debtRepay','${row.id}')" oninput="onYrFormulaInput(this,'debtRepay','${row.id}')">
       <span class="yr-result">${amt ? formatKRW(amt) : '-'}</span>
       <button class="yr-del-btn" onclick="delYrRow('debtRepay','${row.id}')">✕</button>
       ${hint ? `<div id="yr-h-${row.id}" class="yr-calc-hint">${hint}</div>` : `<div id="yr-h-${row.id}" class="yr-calc-hint"></div>`}
