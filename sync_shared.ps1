@@ -3,10 +3,12 @@
 # 실행: 이 파일을 PowerShell에서 실행하거나 더블클릭
 # ============================================================
 
-$src    = "$PSScriptRoot\가계부.html"
-$shared = "$PSScriptRoot\가계부_공유용.html"
-$idx    = "$PSScriptRoot\index.html"
-$sidx   = "$PSScriptRoot\share\index.html"
+$root   = Split-Path -Parent $MyInvocation.MyCommand.Path
+if (-not $root) { $root = (Get-Location).Path }
+$src    = Join-Path $root "가계부.html"
+$shared = Join-Path $root "가계부_공유용.html"
+$idx    = Join-Path $root "index.html"
+$sidx   = Join-Path $root "share\index.html"
 
 Write-Host "동기화 시작..."
 
@@ -78,7 +80,36 @@ $c | Set-Content $sidx   -Encoding UTF8
 # 메인 앱 복사
 Copy-Item $src $idx -Force
 
-Write-Host "완료!"
+Write-Host ""
+Write-Host "저장 완료:"
 Write-Host "  가계부_공유용.html"
 Write-Host "  index.html (메인)"
 Write-Host "  share/index.html (공유)"
+
+# ── 자동 검사: hanna_ 키 누락 여부 ──
+Write-Host ""
+Write-Host "검사 중..." -NoNewline
+
+$lines  = Get-Content $shared -Encoding UTF8
+$hits   = @()
+for ($i = 0; $i -lt $lines.Count; $i++) {
+    if ($lines[$i] -match 'hanna_') {
+        $hits += [PSCustomObject]@{ Line = $i + 1; Text = $lines[$i].Trim() }
+    }
+}
+
+if ($hits.Count -eq 0) {
+    Write-Host " OK"
+    Write-Host ""
+    Write-Host "[PASS] hanna_ 키 없음 - 공유앱 데이터 분리 정상" -ForegroundColor Green
+} else {
+    Write-Host " 경고!"
+    Write-Host ""
+    Write-Host "[FAIL] hanna_ 키 $($hits.Count)개 발견! sync_shared.ps1 에 변환 규칙 추가 필요" -ForegroundColor Red
+    Write-Host ""
+    foreach ($h in $hits) {
+        Write-Host "  Line $($h.Line): $($h.Text)" -ForegroundColor Yellow
+    }
+    Write-Host ""
+    Write-Host "위 항목을 sync_shared.ps1 의 변환 목록에 추가하세요." -ForegroundColor Yellow
+}
