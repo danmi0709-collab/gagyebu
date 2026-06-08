@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -97,8 +97,9 @@
     transition: all 0.2s;
     font-family: inherit;
   }
-  .type-btn.active-income { background: rgba(63,185,80,0.15); border-color: #3fb950; color: #3fb950; font-weight: 600; }
+  .type-btn.active-income  { background: rgba(63,185,80,0.15);  border-color: #3fb950; color: #3fb950; font-weight: 600; }
   .type-btn.active-expense { background: rgba(248,81,73,0.15); border-color: #f85149; color: #f85149; font-weight: 600; }
+  .type-btn.active-saving  { background: rgba(121,192,255,0.15); border-color: #79c0ff; color: #79c0ff; font-weight: 600; }
 
   .form-row {
     display: grid;
@@ -192,9 +193,11 @@
   }
   .summary-chip .chip-label { font-size: 10px; color: #8b949e; margin-bottom: 4px; }
   .summary-chip .chip-val { font-size: 13px; font-weight: 700; }
-  .chip-income .chip-val { color: #3fb950; }
+  .chip-income .chip-val  { color: #3fb950; }
   .chip-expense .chip-val { color: #f85149; }
+  .chip-saving .chip-val  { color: #79c0ff; }
   .chip-balance .chip-val { color: #58a6ff; }
+  .chip-saving .chip-label::after { content: ''; }
 
   /* 거래 목록 */
   .tx-item {
@@ -212,8 +215,9 @@
   .tx-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
   .tx-cat { font-size: 14px; font-weight: 600; white-space: nowrap; }
   .tx-amount { font-size: 14px; font-weight: 700; white-space: nowrap; }
-  .tx-income .tx-amount { color: #3fb950; }
+  .tx-income .tx-amount  { color: #3fb950; }
   .tx-expense .tx-amount { color: #f85149; }
+  .tx-saving .tx-amount  { color: #79c0ff; }
   .tx-bottom { display: flex; gap: 8px; margin-top: 3px; }
   .tx-date { font-size: 11px; color: #8b949e; }
   .tx-memo { font-size: 11px; color: #8b949e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -880,9 +884,22 @@
     position: relative;
     margin-bottom: 3px;
   }
-  .btn-help {
+  .btn-settings {
     position: absolute;
     right: 0;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 4px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  .btn-settings:hover { opacity: 1; }
+  .btn-help {
+    position: absolute;
+    right: 36px;
     background: none;
     border: none;
     font-size: 17px;
@@ -938,6 +955,65 @@
     gap: 10px;
     flex-wrap: wrap;
   }
+  .sync-status {
+    font-size: 11px;
+    color: #8b949e;
+  }
+  .sync-status.ok  { color: #3fb950; }
+  .sync-status.err { color: #f85149; }
+  .sync-status.ing { color: #e2b96b; }
+
+  /* 설정 모달 */
+  .settings-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75); z-index: 400;
+    align-items: flex-end; justify-content: center;
+  }
+  .settings-overlay.open { display: flex; }
+  .settings-box {
+    background: #161b22; border: 1px solid #30363d;
+    border-radius: 16px 16px 0 0; width: 100%; max-width: 600px;
+    padding: 20px 16px 36px; max-height: 88vh; overflow-y: auto;
+  }
+  .settings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .settings-title  { font-size: 16px; font-weight: 700; color: #e2b96b; }
+  .settings-close  { background: none; border: none; color: #8b949e; font-size: 22px; cursor: pointer; }
+
+  .settings-label  { font-size: 11px; color: #8b949e; font-weight: 600; margin-bottom: 5px; display: block; }
+  .settings-input  {
+    width: 100%; background: #0d1117; border: 1px solid #30363d;
+    border-radius: 8px; color: #e6edf3; padding: 9px 12px;
+    font-size: 13px; font-family: inherit; margin-bottom: 10px;
+  }
+  .settings-input:focus { outline: none; border-color: #e2b96b; }
+
+  .settings-btn-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .btn-sheets-pull {
+    flex: 1; padding: 11px; background: #238636;
+    border: none; border-radius: 8px; color: #fff;
+    font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
+    transition: opacity 0.2s;
+  }
+  .btn-sheets-pull:hover { opacity: 0.85; }
+  .btn-sheets-push {
+    flex: 1; padding: 11px; background: #1f6feb;
+    border: none; border-radius: 8px; color: #fff;
+    font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
+    transition: opacity 0.2s;
+  }
+  .btn-sheets-push:hover { opacity: 0.85; }
+
+  .settings-guide {
+    background: #0d1117; border: 1px solid #21262d; border-radius: 8px;
+    padding: 12px; font-size: 12px; color: #8b949e; line-height: 1.8;
+    margin-top: 4px;
+  }
+  .settings-guide strong { color: #e2b96b; }
+  .settings-guide ol { padding-left: 18px; }
+  .settings-guide li { margin-bottom: 4px; }
+  .settings-sync-log {
+    font-size: 11px; color: #8b949e; margin-top: 10px; text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -975,15 +1051,18 @@
     <div class="help-section">
       <h3>4️⃣ 연예산 탭</h3>
       <ul>
-        <li>연간 수입/지출 항목별 예산 입력</li>
+        <li>연간 수입/지출/저축 항목별 예산 입력</li>
         <li>수식 지원: <em>22만, 22.5만, 30*12</em> 등</li>
+        <li>수입 대비 % 분류 (고정지출 몇%, 저축 몇%) 자동 계산</li>
+        <li>아래로 스크롤하면 연간 진행 현황 확인 가능</li>
       </ul>
     </div>
 
     <div class="help-section">
-      <h3>5️⃣ 연진행 탭</h3>
+      <h3>5️⃣ 자산 탭</h3>
       <ul>
-        <li>올해 예산 대비 실제 지출 현황 (항목별 진행바)</li>
+        <li>자산(현금·적금·주식·부동산 등)과 부채 입력</li>
+        <li>순자산 = 자산 − 부채 자동 계산</li>
       </ul>
     </div>
 
@@ -1014,9 +1093,11 @@
   <div class="header-row">
     <h1>💰 나만의 가계부</h1>
     <button class="btn-help" onclick="openHelp()" title="사용 설명서">❓</button>
+    <button class="btn-settings" onclick="openSettings()" title="구글 시트 연동 설정">⚙️</button>
   </div>
   <div class="header-bottom">
     <div class="balance">이번 달 잔액 <span id="headerBalance">0원</span></div>
+    <div class="sync-status" id="syncStatus"></div>
   </div>
 </div>
 
@@ -1040,6 +1121,7 @@
     <div class="type-toggle">
       <button class="type-btn active-income" id="btnIncome" onclick="setType('income')">+ 수입</button>
       <button class="type-btn" id="btnExpense" onclick="setType('expense')">- 지출</button>
+      <button class="type-btn" id="btnSaving" onclick="setType('saving')">↓ 저축</button>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -1090,7 +1172,8 @@
   <div class="month-summary">
     <div class="summary-chip chip-income"><div class="chip-label">수입</div><div class="chip-val" id="chipIncome">0원</div></div>
     <div class="summary-chip chip-expense"><div class="chip-label">지출</div><div class="chip-val" id="chipExpense">0원</div></div>
-    <div class="summary-chip chip-balance"><div class="chip-label">잔액</div><div class="chip-val" id="chipBalance">0원</div></div>
+    <div class="summary-chip chip-saving"><div class="chip-label" id="chipSavingLabel">저축</div><div class="chip-val" id="chipSaving">0원</div></div>
+    <div class="summary-chip chip-balance"><div class="chip-label">가용잔액</div><div class="chip-val" id="chipBalance">0원</div></div>
   </div>
 
   <!-- 거래 목록 -->
@@ -1243,6 +1326,7 @@
     <div class="type-toggle">
       <button class="type-btn" id="editBtnIncome" onclick="setEditType('income')">+ 수입</button>
       <button class="type-btn active-expense" id="editBtnExpense" onclick="setEditType('expense')">- 지출</button>
+      <button class="type-btn" id="editBtnSaving" onclick="setEditType('saving')">↓ 저축</button>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -1269,6 +1353,46 @@
       <input type="text" id="editMemo" placeholder="내용">
     </div>
     <button class="btn-save" onclick="saveEdit()">저장</button>
+  </div>
+</div>
+
+<!-- 설정 모달 (구글 시트 연동) -->
+<div class="settings-overlay" id="settingsModal" onclick="closeSettingsOutside(event)">
+  <div class="settings-box">
+    <div class="settings-header">
+      <span class="settings-title">⚙️ 구글 시트 연동 설정</span>
+      <button class="settings-close" onclick="closeSettings()">✕</button>
+    </div>
+
+    <label class="settings-label">구글 Apps Script 웹앱 URL</label>
+    <input class="settings-input" type="url" id="sheetsUrlInput"
+      placeholder="https://script.google.com/macros/s/.../exec">
+
+    <div class="settings-btn-row">
+      <button class="btn-sheets-pull" onclick="pullFromSheets()" id="btnPull"></button>
+      <button class="btn-sheets-push" onclick="pushToSheets()" id="btnPush"></button>
+    </div>
+
+    <button class="btn-save" onclick="saveSettingsUrl()" style="margin-bottom:14px">URL 저장</button>
+
+    <div class="settings-sync-log" id="syncLog"></div>
+
+    <div class="settings-guide">
+      <strong>📋 구글 시트 연동 설정 방법</strong>
+      <ol>
+        <li><strong>구글 시트</strong>를 하나 새로 만드세요.</li>
+        <li>상단 메뉴 → <strong>확장 프로그램 → Apps Script</strong> 클릭</li>
+        <li>기존 내용 지우고 <strong>구글시트_스크립트.gs</strong> 파일의 내용을 붙여넣기</li>
+        <li>저장(💾) 후 → <strong>배포 → 새 배포</strong> 클릭</li>
+        <li>유형: <strong>웹 앱</strong>, 액세스: <strong>모든 사용자</strong> 선택 후 배포</li>
+        <li>생성된 URL을 위 입력창에 붙여넣고 <strong>URL 저장</strong></li>
+      </ol>
+      <br>
+      💡 <strong>사용 방법:</strong><br>
+      · 폰에서 입력 후 → <strong>폰→PC 불러오기</strong><br>
+      · PC에서 입력 후 → <strong>PC→폰 올리기</strong><br>
+      · 저장할 때마다 구글 시트에 자동 백업됩니다.
+    </div>
   </div>
 </div>
 
@@ -1390,9 +1514,28 @@
       <span><span id="yr-special-total" style="color:#d2a8ff">0원</span> / <span id="yr-special-month" style="color:#d2a8ff">0원</span></span>
     </div>
   </div>
+
+  <!-- 저축 -->
+  <div class="card yr-section">
+    <div class="yr-section-header">
+      <span style="color:#79c0ff;font-weight:700">💙 저축</span>
+      <button class="yr-add-btn" onclick="addYrRow('saving')">+ 항목 추가</button>
+    </div>
+    <div class="yr-col-head">
+      <span>항목</span><span>수식 (00원*0개월)</span><span>연합계</span>
+    </div>
+    <div id="yr-saving-list"></div>
+    <div class="yr-total-row">
+      <span>연합계 / 월평균</span>
+      <span><span id="yr-saving-year" style="color:#79c0ff">0원</span> / <span id="yr-saving-month" style="color:#79c0ff">0원</span></span>
+    </div>
+  </div>
+
+  <!-- 연진행 현황 (예산 대비 실제 사용) -->
+  <div id="yr-progress"></div>
 </div>
 
-<!-- 탭5: 연간 진행 -->
+<!-- 탭5: 자산 -->
 <div id="tab5" class="tab-content">
   <div id="tab5Content"></div>
 </div>
@@ -1417,7 +1560,7 @@
     <span class="icon">📅</span>연예산
   </button>
   <button id="nav5" onclick="switchTab(5)">
-    <span class="icon">🎯</span>연진행
+    <span class="icon">🏦</span>자산
   </button>
   <button id="nav6" onclick="switchTab(6)">
     <span class="icon">🔄</span>구독
@@ -1432,9 +1575,9 @@ const TX_ORDER_KEY  = 'my_tx_order';
 let currentType = 'income';
 let currentMonth; // YYYY-MM
 let catMonth;
-let analysisMonth;
+let analysisMonth; // YYYY-MM (분석 탭 기준월)
 let categoryChartInstance = null;
-let activeTabN = 1;
+let activeTabN = 1; // 현재 보이는 탭 번호
 
 const CATEGORY_GROUPS = {
   '고정':   { color: '#f85149', label: '🔴 고정'   },
@@ -1450,7 +1593,8 @@ const CATEGORIES = {
     '변동':   ['식비','외식','생필품·마트','교통비','의료비','의류·미용','모임비'],
     '교육':   ['학원비','교육비','육아비','도서·콘텐츠','임장비용'],
     '비정기': ['경조사','여행·숙박','전자제품','기타'],
-  }
+  },
+  saving: ['적금','펀드·ETF','주식','연금','기타저축'],
 };
 
 // 연예산 섹션키 → 한글 그룹명
@@ -1465,6 +1609,7 @@ const SEC_OPTIONS_EXPENSE = [
 // 연예산 항목명으로 섹션키 반환
 function getCategoryBudgetKey(cat, type) {
   if (type === 'income') return 'income';
+  if (type === 'saving') return 'saving';
   const d = getYearData();
   for (const sec of ['fixed','variable','edu','special']) {
     if ((d[sec]||[]).some(r => r.name === cat)) return sec;
@@ -1473,6 +1618,7 @@ function getCategoryBudgetKey(cat, type) {
 }
 
 // 카테고리 → 그룹 반환 (내역 목록 뱃지용)
+// 항목→그룹 캐시 (연예산 저장 시 무효화)
 let _groupCache = null;
 
 function _buildGroupCache() {
@@ -1483,6 +1629,7 @@ function _buildGroupCache() {
       if (r.name) cache[r.name] = kor;
     }
   }
+  // 구형 하드코딩 fallback
   for (const [group, cats] of Object.entries(CATEGORIES.expense)) {
     for (const cat of cats) { if (!cache[cat]) cache[cat] = group; }
   }
@@ -1506,6 +1653,8 @@ function getItemsForGroup(secKey) {
 function buildGroupSelect(type, groupSelId, itemSelId, selGroup) {
   const opts = type === 'income'
     ? [{ key:'income', label:'💰 수입' }]
+    : type === 'saving'
+    ? [{ key:'saving', label:'💙 저축' }]
     : SEC_OPTIONS_EXPENSE;
   const groupSel = document.getElementById(groupSelId);
   groupSel.innerHTML = opts.map(o =>
@@ -1518,6 +1667,8 @@ function buildGroupSelect(type, groupSelId, itemSelId, selGroup) {
 function buildItemSelect(secKey, itemSelId, selItem) {
   const items = secKey === 'income'
     ? getYearData().income.map(r => r.name).filter(n => n)
+    : secKey === 'saving'
+    ? CATEGORIES.saving
     : getItemsForGroup(secKey);
   const sel = document.getElementById(itemSelId);
   if (!items.length) {
@@ -1540,6 +1691,7 @@ const CAT_ICONS = {
   '식비':'🍚','외식':'🍽️','생필품·마트':'🛒','교통비':'🚇','의료비':'🏥','의류·미용':'👗',
   '학원비':'📚','교육비':'🎓','육아비':'👶','도서·콘텐츠':'📖',
   '경조사':'🎀','여행·숙박':'✈️','전자제품':'💻','기타':'📦',
+  '적금':'🏦','펀드·ETF':'📊','주식':'📈','연금':'🏛️','기타저축':'💙',
 };
 
 const CHART_COLORS = ['#e2b96b','#58a6ff','#3fb950','#f85149','#d2a8ff','#ffa657','#79c0ff','#56d364','#ff7b72','#bc8cff'];
@@ -1575,7 +1727,17 @@ function isMobile() {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 }
 
+function setSyncBtnLabels() {
+  const mobile = isMobile();
+  const pull = document.getElementById('btnPull');
+  const push = document.getElementById('btnPush');
+  if (pull) pull.textContent = mobile ? '🖥️ PC에서 가져오기' : '📱 폰에서 가져오기';
+  if (push) push.textContent = mobile ? '📤 내 데이터 올리기' : '📤 내 데이터 올리기';
+}
+
 // ===== 자연어 빠른 입력 =====
+
+// 한글 숫자 → 정수 (오만→50000, 이십만→200000, 삼만오천→35000 등)
 function parseKoreanNum(str) {
   const dig = {'일':1,'이':2,'삼':3,'사':4,'오':5,'육':6,'칠':7,'팔':8,'구':9,'영':0,'공':0};
   function chunk(s) {
@@ -1597,28 +1759,39 @@ function parseKoreanNum(str) {
   total += chunk(s);
   return total;
 }
+
+// 텍스트에서 금액 추출
 function extractNLAmount(text) {
   let m;
+  // 숫자+억+(만)+(천)
   m = text.match(/([\d,.]+억(?:[일이삼사오육칠팔구십백천\d,.]*만)?(?:[일이삼사오육칠팔구십백천\d,.]*천)?)\s*원/);
   if (m) { const v = parseKoreanNum(m[1]); if (v>0) return {full:m[0], val:v}; }
+  // 한글/숫자+만+(천)
   m = text.match(/([일이삼사오육칠팔구십백천\d,.]+만(?:[일이삼사오육칠팔구십백천\d]*천)?)\s*원/);
   if (m) { const v = parseKoreanNum(m[1]); if (v>0) return {full:m[0], val:v}; }
+  // 한글/숫자+천
   m = text.match(/([일이삼사오육칠팔구십백천\d,.]+천)\s*원/);
   if (m) { const v = parseKoreanNum(m[1]); if (v>0) return {full:m[0], val:v}; }
+  // 순수 숫자(쉼표 포함)
   m = text.match(/([\d,]+)\s*원/);
   if (m) { const v = parseInt(m[1].replace(/,/g,'')); if (v>0) return {full:m[0], val:v}; }
+  // 순수 한글 숫자 (오천원 등)
   m = text.match(/([일이삼사오육칠팔구십백천]+)\s*원/);
   if (m) { const v = parseKoreanNum(m[1]); if (v>0) return {full:m[0], val:v}; }
   return null;
 }
+
+// NL 파싱용 전체 카테고리 목록 (연예산 커스텀 + 기본)
 function getAllNLItems() {
   const items = [];
+  // 수입
   (getYearData().income||[]).filter(r=>r.name).forEach(r =>
     items.push({name:r.name, type:'income', groupKey:'income'})
   );
   CATEGORIES.income.forEach(n => {
     if (!items.some(i=>i.name===n)) items.push({name:n, type:'income', groupKey:'income'});
   });
+  // 지출
   ['fixed','variable','edu','special'].forEach(sec => {
     const yr = (getYearData()[sec]||[]).filter(r=>r.name);
     yr.forEach(r => items.push({name:r.name, type:'expense', groupKey:sec}));
@@ -1629,54 +1802,121 @@ function getAllNLItems() {
   });
   return items;
 }
+
 function parseNL() {
   const raw = document.getElementById('nlInput').value.trim();
   if (!raw) return;
   const resEl = document.getElementById('nlResult');
+
+  // 종결어미 제거
   let text = raw
     .replace(/\s*(입력해줘|저장해줘|넣어줘|추가해줘|입력해|저장해|넣어|해줘요|해줘|해주세요)\s*[.!]*\s*$/, '')
     .replace(/[.!。,，]\s*$/, '')
     .trim();
-  const res = { date: new Date().toISOString().slice(0,10), type:'expense', groupKey:'', category:'', amount:0, memo:'' };
+
+  const res = {
+    date: new Date().toISOString().slice(0,10),
+    type: 'expense',
+    groupKey: '',
+    category: '',
+    amount: 0,
+    memo: '',
+  };
+
+  // === 날짜 ===
   text = text.replace(/오늘/, '');
-  if (/어제/.test(text)) { const d=new Date(); d.setDate(d.getDate()-1); res.date=d.toISOString().slice(0,10); text=text.replace(/어제/,''); }
-  else if (/그제|그저께/.test(text)) { const d=new Date(); d.setDate(d.getDate()-2); res.date=d.toISOString().slice(0,10); text=text.replace(/그제|그저께/,''); }
+  if (/어제/.test(text)) {
+    const d = new Date(); d.setDate(d.getDate()-1);
+    res.date = d.toISOString().slice(0,10);
+    text = text.replace(/어제/, '');
+  } else if (/그제|그저께/.test(text)) {
+    const d = new Date(); d.setDate(d.getDate()-2);
+    res.date = d.toISOString().slice(0,10);
+    text = text.replace(/그제|그저께/, '');
+  }
   const mdm = text.match(/(\d{1,2})월\s*(\d{1,2})일/);
-  if (mdm) { res.date=`${new Date().getFullYear()}-${mdm[1].padStart(2,'0')}-${mdm[2].padStart(2,'0')}`; text=text.replace(mdm[0],''); }
+  if (mdm) {
+    res.date = `${new Date().getFullYear()}-${mdm[1].padStart(2,'0')}-${mdm[2].padStart(2,'0')}`;
+    text = text.replace(mdm[0], '');
+  }
+
+  // === 금액 ===
   const amtR = extractNLAmount(text);
-  if (amtR) { res.amount=amtR.val; text=text.replace(amtR.full,''); }
-  if (/수입/.test(text)) { res.type='income'; text=text.replace(/수입/,''); }
+  if (amtR) { res.amount = amtR.val; text = text.replace(amtR.full, ''); }
+
+  // === 수입 여부 ===
+  if (/수입/.test(text)) { res.type = 'income'; text = text.replace(/수입/, ''); }
+
+  // === 그룹 ===
   const grpToKey = {'고정':'fixed','변동':'variable','교육':'edu','비정기':'special'};
-  for (const [g,k] of Object.entries(grpToKey)) { if (text.includes(g)) { res.groupKey=k; text=text.replace(g,''); break; } }
-  const allItems = getAllNLItems().sort((a,b)=>b.name.length-a.name.length);
-  const tryMatch = (pool) => { for (const item of pool) { if (text.includes(item.name)) { res.category=item.name; if (!res.groupKey) res.groupKey=item.groupKey; if (item.type==='income') res.type='income'; text=text.replace(item.name,''); return true; } } return false; };
+  for (const [g, k] of Object.entries(grpToKey)) {
+    if (text.includes(g)) { res.groupKey = k; text = text.replace(g, ''); break; }
+  }
+
+  // === 카테고리 (긴 이름 우선, 그룹 일치 우선) ===
+  const allItems = getAllNLItems().sort((a,b) => b.name.length - a.name.length);
+  const tryMatch = (pool) => {
+    for (const item of pool) {
+      if (text.includes(item.name)) {
+        res.category = item.name;
+        if (!res.groupKey) res.groupKey = item.groupKey;
+        if (item.type === 'income') res.type = 'income';
+        text = text.replace(item.name, '');
+        return true;
+      }
+    }
+    return false;
+  };
+  // 그룹이 정해진 경우 해당 그룹 우선 매칭
   if (res.groupKey) tryMatch(allItems.filter(i=>i.groupKey===res.groupKey));
   if (!res.category) tryMatch(allItems);
-  const memo = text.replace(/[,，、。.!\s]+/g,' ').replace(/\s*(으로|로|에서|에|은|는|을|를|이|가|의)\s*$/,'').trim();
+
+  // === 남은 텍스트 → 메모 ===
+  const memo = text
+    .replace(/[,，、。.!\s]+/g, ' ')
+    .replace(/\s*(으로|로|에서|에|은|는|을|를|이|가|의)\s*$/, '')
+    .trim();
   res.memo = memo;
-  if (!res.amount) { resEl.textContent='❌ 금액을 찾지 못했어요. 예) 배스킨라빈스 변동 외식 4700원'; resEl.style.color='#f85149'; return; }
+
+  // === 유효성 체크 ===
+  if (!res.amount) {
+    resEl.textContent = '❌ 금액을 찾지 못했어요. 예) 배스킨라빈스 변동 외식 4700원';
+    resEl.style.color = '#f85149';
+    return;
+  }
+
+  // === 폼 자동입력 ===
   document.getElementById('inputDate').value = res.date;
   document.getElementById('inputAmount').value = res.amount;
   document.getElementById('inputMemo').value = res.memo;
-  setType(res.type);
-  if (res.type==='expense' && res.groupKey) {
+  setType(res.type);  // buildGroupSelect 내부 호출됨
+
+  if (res.type === 'expense' && res.groupKey) {
     const grpSel = document.getElementById('inputGroup');
-    if ([...grpSel.options].some(o=>o.value===res.groupKey)) { grpSel.value=res.groupKey; buildItemSelect(res.groupKey,'inputCategory'); }
+    if ([...grpSel.options].some(o=>o.value===res.groupKey)) {
+      grpSel.value = res.groupKey;
+      buildItemSelect(res.groupKey, 'inputCategory');
+    }
   }
-  if (res.category) { const catSel=document.getElementById('inputCategory'); const opt=[...catSel.options].find(o=>o.value===res.category); if (opt) catSel.value=res.category; }
-  const grpLabel = res.groupKey?(SEC_TO_GROUP[res.groupKey]||''):(res.type==='income'?'수입':'');
-  const parts = [res.date, res.type==='income'?'💚 수입':'🔴 지출', grpLabel, res.category, formatKRW(res.amount), res.memo?`"${res.memo}"`:''].filter(Boolean);
-  resEl.textContent = '✅ '+parts.join(' · ')+'  —  확인 후 저장 누르세요!';
+  if (res.category) {
+    const catSel = document.getElementById('inputCategory');
+    const opt = [...catSel.options].find(o=>o.value===res.category);
+    if (opt) catSel.value = res.category;
+  }
+
+  // 결과 표시
+  const grpLabel = res.groupKey ? (SEC_TO_GROUP[res.groupKey]||'') : (res.type==='income'?'수입':'');
+  const parts = [
+    res.date,
+    res.type==='income' ? '💚 수입' : '🔴 지출',
+    grpLabel, res.category,
+    formatKRW(res.amount),
+    res.memo ? `"${res.memo}"` : '',
+  ].filter(Boolean);
+  resEl.textContent = '✅ ' + parts.join(' · ') + '  —  확인 후 저장 누르세요!';
   resEl.style.color = '#3fb950';
   document.getElementById('nlInput').value = '';
   document.getElementById('inputDate').scrollIntoView({ behavior:'smooth', block:'center' });
-}
-
-function openHelp() { document.getElementById('helpOverlay').classList.add('show'); }
-function closeHelp(e) {
-  if (!e || e.target === document.getElementById('helpOverlay') || !e.target.closest) {
-    document.getElementById('helpOverlay').classList.remove('show');
-  }
 }
 
 function init() {
@@ -1686,14 +1926,16 @@ function init() {
   analysisMonth = toYM(now);
   document.getElementById('inputDate').value = now.toISOString().slice(0, 10);
   setType('expense');
+  setSyncBtnLabels();
   autoAddSubscriptions(); // 매달 첫 실행 시 구독 자동 등록
   renderAll();
 }
 
 function setType(type) {
   currentType = type;
-  document.getElementById('btnIncome').className = 'type-btn' + (type === 'income' ? ' active-income' : '');
+  document.getElementById('btnIncome').className  = 'type-btn' + (type === 'income'  ? ' active-income'  : '');
   document.getElementById('btnExpense').className = 'type-btn' + (type === 'expense' ? ' active-expense' : '');
+  document.getElementById('btnSaving').className  = 'type-btn' + (type === 'saving'  ? ' active-saving'  : '');
   buildGroupSelect(type, 'inputGroup', 'inputCategory');
 }
 
@@ -1791,6 +2033,7 @@ function switchTab(n) {
 
 function renderAll() {
   migrateFormulasToMan();
+  // 지금 보이는 탭만 다시 그림 (나머지는 탭 전환 시 렌더)
   if      (activeTabN === 1) renderTab1();
   else if (activeTabN === 2) renderTab2();
   else if (activeTabN === 3) renderTab3();
@@ -1802,9 +2045,13 @@ function getMonthTx(ym) {
 }
 
 function calcSummary(txs) {
-  let income = 0, expense = 0;
-  txs.forEach(t => { if (t.type === 'income') income += t.amount; else expense += t.amount; });
-  return { income, expense, balance: income - expense };
+  let income = 0, expense = 0, saving = 0;
+  txs.forEach(t => {
+    if (t.type === 'income') income += t.amount;
+    else if (t.type === 'expense') expense += t.amount;
+    else if (t.type === 'saving') saving += t.amount;
+  });
+  return { income, expense, saving, balance: income - expense - saving };
 }
 
 function updateHeader() {
@@ -1824,10 +2071,13 @@ function formatDateHeader(dateStr) {
 function renderTab1() {
   document.getElementById('monthLabel').textContent = getMonthLabel(currentMonth);
   const txs = getMonthTx(currentMonth);
-  const { income, expense, balance } = calcSummary(txs);
+  const { income, expense, saving, balance } = calcSummary(txs);
+  const savingRate = income > 0 ? Math.round(saving / income * 100) : 0;
 
-  document.getElementById('chipIncome').textContent = formatKRW(income);
+  document.getElementById('chipIncome').textContent  = formatKRW(income);
   document.getElementById('chipExpense').textContent = formatKRW(expense);
+  document.getElementById('chipSaving').textContent  = formatKRW(saving);
+  document.getElementById('chipSavingLabel').textContent = saving > 0 ? `저축 (${savingRate}%)` : '저축';
   document.getElementById('chipBalance').textContent = formatKRW(balance);
 
   const sorted = [...txs].sort((a, b) => b.date.localeCompare(a.date));
@@ -1862,9 +2112,11 @@ function renderTab1() {
   list.innerHTML = Object.entries(groups).map(([date, dayTxs]) => {
     const dayIncome  = dayTxs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const dayExpense = dayTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const daySaving  = dayTxs.filter(t => t.type === 'saving').reduce((s, t) => s + t.amount, 0);
     const daySummary = (dayIncome  ? `<span style="color:#3fb950">+${formatKRW(dayIncome)}</span>` : '') +
                        (dayIncome && dayExpense ? ' ' : '') +
-                       (dayExpense ? `<span style="color:#f85149">-${formatKRW(dayExpense)}</span>` : '');
+                       (dayExpense ? `<span style="color:#f85149">-${formatKRW(dayExpense)}</span>` : '') +
+                       (daySaving  ? `<span style="color:#79c0ff"> ↓${formatKRW(daySaving)}</span>` : '');
 
     const items = dayTxs.map(t => {
       const grp = t.type === 'expense' ? getCategoryGroup(t.category) : null;
@@ -1881,7 +2133,7 @@ function renderTab1() {
         <div class="tx-info">
           <div class="tx-top">
             <span class="tx-cat">${t.memo || t.category}</span>
-            <span class="tx-amount">${t.type === 'income' ? '+' : '-'}${formatKRW(t.amount)}</span>
+            <span class="tx-amount">${t.type === 'income' ? '+' : t.type === 'saving' ? '↓' : '-'}${formatKRW(t.amount)}</span>
           </div>
           <div class="tx-bottom">
             <span class="tx-memo">${badge}${t.category}</span>
@@ -2041,7 +2293,7 @@ function renderTab2() {
 
   const thisTxs  = getMonthTx(nowYM);
   const prevTxs  = getMonthTx(prevYM);
-  const { income, expense } = calcSummary(thisTxs);
+  const { income, expense, saving } = calcSummary(thisTxs);
   const { expense: prevExp } = calcSummary(prevTxs);
 
   const yr = getYearData();
@@ -2062,7 +2314,7 @@ function renderTab2() {
   });
 
   // ── 총평 ──
-  const saveRate  = income > 0 ? Math.round((income - expense) / income * 100) : null;
+  const saveRate  = income > 0 ? Math.round(saving / income * 100) : null;
   const expDiff   = expense - prevExp;
   const totalBudget = Object.values(budgetMap).reduce((s,v)=>s+v,0);
   const overBudget  = totalBudget > 0 && expense > totalBudget;
@@ -2111,7 +2363,7 @@ function renderTab2() {
     <div class="analysis-card">
       <div class="analysis-card-title">📊 ${isCurrentMonth ? '이번 달' : getMonthLabel(nowYM)} 총평</div>
       <div class="analysis-verdict" style="color:${verdictColor}">${verdict}</div>
-      ${saveRate !== null ? `<div class="analysis-line">수입 <b>${formatKRW(income)}</b> 중 <b>${formatKRW(expense)}</b> 지출 → 저축률 <b style="color:${saveRate>=20?'#3fb950':saveRate>=0?'#e2b96b':'#f85149'}">${saveRate}%</b></div>` : ''}
+      ${saveRate !== null ? `<div class="analysis-line">수입 <b>${formatKRW(income)}</b> · 지출 <b>${formatKRW(expense)}</b> · 저축 <b style="color:#79c0ff">${formatKRW(saving)}</b> → 저축률 <b style="color:${saveRate>=20?'#3fb950':saveRate>=0?'#e2b96b':'#f85149'}">${saveRate}%</b></div>` : ''}
       ${totalBudget > 0 ? `<div class="analysis-line">총 예산 대비 <b style="color:${overBudget?'#f85149':'#3fb950'}">${totalBudget>0?Math.round(expense/totalBudget*100):0}%</b> 사용</div>` : ''}
     </div>
 
@@ -2122,6 +2374,7 @@ function renderTab2() {
         const amt    = grpExp[g];
         const budget = budgetMap[g];
         const pct    = budget > 0 ? Math.round(amt/budget*100) : null;
+        const incPct = income > 0 ? Math.round(amt/income*100) : 0;
         const prev   = grpPrev[g];
         const diff   = amt - prev;
         const diffTxt = prev > 0 ? (diff > 0 ? `↑${formatKRW(diff)}` : diff < 0 ? `↓${formatKRW(-diff)}` : '') : '';
@@ -2133,10 +2386,16 @@ function renderTab2() {
         return `
         <div class="analysis-group-row">
           <span style="color:${info.color}">${info.label}</span>
-          <span style="color:#8b949e;font-size:12px">${amt>0?formatKRW(amt):'없음'} <span style="font-size:11px">${diffTxt}</span></span>
+          <span style="color:#8b949e;font-size:12px">${amt>0?formatKRW(amt):'없음'}${income>0&&amt>0?` <span style="font-size:10px;color:#58a6ff">(수입의 ${incPct}%)</span>`:''} <span style="font-size:11px">${diffTxt}</span></span>
           <span class="analysis-badge ${cls}">${badge}</span>
         </div>`;
       }).join('')}
+      ${saving > 0 ? `
+      <div class="analysis-group-row" style="border-top:1px solid #30363d;margin-top:6px;padding-top:6px">
+        <span style="color:#79c0ff">💙 저축</span>
+        <span style="color:#8b949e;font-size:12px">${formatKRW(saving)}${income>0?` <span style="font-size:10px;color:#58a6ff">(수입의 ${Math.round(saving/income*100)}%)</span>`:''}</span>
+        <span class="analysis-badge badge-good">저축률 ${income>0?Math.round(saving/income*100):0}%</span>
+      </div>` : ''}
     </div>
 
     ${points.length ? `
@@ -2419,6 +2678,7 @@ function setEditType(type, selGroup, selItem) {
   editType = type;
   document.getElementById('editBtnIncome').className  = 'type-btn' + (type === 'income'  ? ' active-income'  : '');
   document.getElementById('editBtnExpense').className = 'type-btn' + (type === 'expense' ? ' active-expense' : '');
+  document.getElementById('editBtnSaving').className  = 'type-btn' + (type === 'saving'  ? ' active-saving'  : '');
   buildGroupSelect(type, 'editGroup', 'editCategory', selGroup);
   if (selItem) {
     const sel = document.getElementById('editCategory');
@@ -2893,22 +3153,22 @@ function parseMultipleTransactions(rawText) {
       continue;
     }
 
+    // 날짜 헤더: MM.DD 또는 MM/DD
+    const dh = line.match(/^(\d{1,2})[./](\d{2})$/);
+    if (dh) {
+      currentDate = `${year}-${dh[1].padStart(2,'0')}-${dh[2].padStart(2,'0')}`;
+      continue;
+    }
+
     // ── 삼성페이 카드내역: "가맹점명 ₩N,NNN" 형식 (₩ / W / \ 모두 대응) ──
     const cardLine = line.match(/^(.+?)\s+[₩W\\]([\d,]+)$/);
     if (cardLine) {
       const merchant = cardLine[1].trim();
       const amt = parseInt(cardLine[2].replace(/,/g, ''));
       if (amt < 100) continue;
-      if (/^\d{4}$/.test(merchant)) continue;
-      if (/^[₩W\\]/.test(merchant)) continue;
+      if (/^\d{4}$/.test(merchant)) continue; // 연도 같은 숫자 제외
+      if (/^[₩W\\]/.test(merchant)) continue; // 금액만인 줄 제외
       results.push({ date: currentDate, merchant: merchant.slice(0, 40), amount: amt, type: 'expense', checked: true });
-      continue;
-    }
-
-    // 날짜 헤더: MM.DD 또는 MM/DD
-    const dh = line.match(/^(\d{1,2})[./](\d{2})$/);
-    if (dh) {
-      currentDate = `${year}-${dh[1].padStart(2,'0')}-${dh[2].padStart(2,'0')}`;
       continue;
     }
 
@@ -3202,11 +3462,173 @@ function confirmOCRImport() {
   alert('추가됐어요! ✅');
 }
 
-// ===== (구글 시트 연동 제거됨 - 공유용 버전) =====
+// ===== 구글 시트 연동 =====
+const SHEETS_URL_KEY = 'my_sheets_url';
 
-// (공유용 버전: 구글 시트 연동 없음)
-function setSyncStatus() {} // 호환용 빈 함수
-function autoSync() {}     // 호환용 빈 함수
+function getSheetsUrl() {
+  return localStorage.getItem(SHEETS_URL_KEY) || '';
+}
+
+function openHelp() { document.getElementById('helpOverlay').classList.add('show'); }
+function closeHelp(e) {
+  if (!e || e.target === document.getElementById('helpOverlay') || !e.target.closest) {
+    document.getElementById('helpOverlay').classList.remove('show');
+  }
+}
+
+function openSettings() {
+  document.getElementById('sheetsUrlInput').value = getSheetsUrl();
+  document.getElementById('syncLog').textContent = '';
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('open');
+}
+
+function closeSettingsOutside(e) {
+  if (e.target === document.getElementById('settingsModal')) closeSettings();
+}
+
+function saveSettingsUrl() {
+  const url = document.getElementById('sheetsUrlInput').value.trim();
+  localStorage.setItem(SHEETS_URL_KEY, url);
+  setSyncStatus(url ? 'ok' : '', url ? 'URL 저장됨' : '');
+  document.getElementById('syncLog').textContent = url ? '✅ URL이 저장되었습니다.' : 'URL이 삭제되었습니다.';
+}
+
+function setSyncStatus(state, msg) {
+  const el = document.getElementById('syncStatus');
+  el.className = 'sync-status' + (state ? ' ' + state : '');
+  el.textContent = msg;
+}
+
+// 저장 때마다 자동으로 구글 시트에 백업
+function autoSync(data) {
+  const url = getSheetsUrl();
+  if (!url) return;
+  fetch(url, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).catch(() => {});
+  setSyncStatus('ing', '🔄 동기화 중...');
+  // no-cors라 응답 확인 불가 → 2초 후 완료로 표시
+  setTimeout(() => {
+    const d = new Date();
+    const t = d.getHours() + ':' + String(d.getMinutes()).padStart(2,'0');
+    setSyncStatus('ok', '✅ ' + t + ' 저장됨');
+  }, 2000);
+}
+
+// 수동 업로드 (PC → 구글 시트) — 숨겨진 폼+iframe 방식 (file:// CORS 완전 우회)
+function pushToSheets() {
+  const url = document.getElementById('sheetsUrlInput').value.trim() || getSheetsUrl();
+  if (!url) { alert('URL을 먼저 입력해주세요.'); return; }
+  const log = document.getElementById('syncLog');
+  log.textContent = '📤 업로드 중...';
+
+  const payload = JSON.stringify({
+    transactions: loadData().transactions,
+    annual:       loadAnnual(),
+    learn:        loadBudgetLearn(),
+  });
+
+  // iframe (응답 수신용)
+  let iframe = document.getElementById('_pushIframe');
+  if (!iframe) {
+    iframe = document.createElement('iframe');
+    iframe.name = '_pushIframe';
+    iframe.id   = '_pushIframe';
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+  }
+
+  // 기존 폼 제거 후 새로 생성
+  const oldForm = document.getElementById('_pushForm');
+  if (oldForm) oldForm.remove();
+
+  const form = document.createElement('form');
+  form.id     = '_pushForm';
+  form.method = 'POST';
+  form.action = url;
+  form.target = '_pushIframe';
+  form.style.display = 'none';
+
+  const inp = document.createElement('input');
+  inp.type  = 'hidden';
+  inp.name  = 'data';
+  inp.value = payload;
+  form.appendChild(inp);
+  document.body.appendChild(form);
+
+  // 5초 후 완료로 간주 (iframe 응답은 CORS로 읽을 수 없으므로 타이머 사용)
+  setTimeout(() => {
+    log.textContent = '✅ 업로드 완료! (구글 시트에 저장됐어요)';
+    setSyncStatus('ok', '✅ 업로드됨');
+  }, 3000);
+
+  form.submit();
+}
+
+// 수동 다운로드 (구글 시트 → 앱) — JSONP 방식 (file:// CORS 우회)
+function pullFromSheets() {
+  const url = document.getElementById('sheetsUrlInput').value.trim() || getSheetsUrl();
+  if (!url) { alert('URL을 먼저 입력해주세요.'); return; }
+  const log = document.getElementById('syncLog');
+  log.textContent = '📥 불러오는 중...';
+
+  const cbName = '_gsCallback' + Date.now();
+  const script = document.createElement('script');
+  script.src = url + '?callback=' + cbName + '&t=' + Date.now();
+
+  const timer = setTimeout(() => {
+    cleanup();
+    log.textContent = '❌ 시간 초과. URL이 맞는지, 배포가 "모든 사용자" 접근인지 확인해주세요.';
+    setSyncStatus('err', '❌ 오류');
+  }, 15000);
+
+  function cleanup() {
+    clearTimeout(timer);
+    delete window[cbName];
+    if (script.parentNode) script.parentNode.removeChild(script);
+  }
+
+  window[cbName] = function(json) {
+    cleanup();
+    if (json.error) {
+      log.textContent = '❌ 오류: ' + json.error;
+      setSyncStatus('err', '❌ 오류');
+      return;
+    }
+    if (!json.transactions) {
+      log.textContent = '❌ 데이터 형식 오류';
+      setSyncStatus('err', '❌ 오류');
+      return;
+    }
+    const txCount = json.transactions.length;
+    const hasAnnual = !!json.annual;
+    if (!confirm(`구글 시트에서 ${txCount}건 + ${hasAnnual ? '연예산 포함' : '연예산 없음'} 불러올까요?\n현재 앱 데이터는 덮어씌워집니다.`)) {
+      log.textContent = '취소되었습니다.';
+      return;
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ transactions: json.transactions }));
+    if (json.annual) saveAnnual(json.annual);
+    if (json.learn)  saveBudgetLearn(json.learn);
+    renderAll();
+    log.textContent = `✅ ${txCount}건 불러오기 완료!${hasAnnual ? ' (연예산 포함)' : ''}`;
+    setSyncStatus('ok', '✅ 불러옴');
+  };
+
+  script.onerror = function() {
+    cleanup();
+    log.textContent = '❌ 연결 실패. URL을 확인해주세요.';
+    setSyncStatus('err', '❌ 오류');
+  };
+
+  document.head.appendChild(script);
+}
 
 // ===== 1년 예산 =====
 const ANNUAL_KEY = 'my_annual_budget';
@@ -3225,6 +3647,7 @@ function getYearData() {
   if (!d.variable) d.variable = [];
   if (!d.edu)      d.edu      = [];
   if (!d.special)  d.special  = [];
+  if (!d.saving)   d.saving   = [];
   return d;
 }
 function setYearData(d) {
@@ -3377,7 +3800,9 @@ function syncSubsToAnnual() {
 
   subs.forEach(s => {
     const nameTag = s.name + '(구독)';
+    // 이름 겹치면 스킵
     if (d.fixed.some(r => r.name === nameTag || r.name === s.name)) { skipped++; return; }
+    // 연간 금액 계산 (주기별)
     const mult = s.cycle === 'yearly' ? 1 : s.cycle === 'biannual' ? 2 : s.cycle === 'quarterly' ? 4 : 12;
     d.fixed.push({
       id: String(Date.now() + Math.random()),
@@ -3396,14 +3821,17 @@ function syncSubsToAnnual() {
   renderTab6();
 }
 
+// 이번 달(monthNum: 1~12)이 결제월인지 판단
 function isPaymentMonth(s, monthNum) {
   if (s.cycle === 'monthly')   return true;
   if (s.cycle === 'yearly')    return parseInt(s.payMonth || 1) === monthNum;
+  // 3개월·6개월: payMonth = 시작월, 그로부터 N개월마다
   const interval = s.cycle === 'quarterly' ? 3 : s.cycle === 'biannual' ? 6 : 1;
   const start = parseInt(s.payMonth || 1);
   return ((monthNum - start + 12) % 12) % interval === 0;
 }
 
+// 표시용 주기 레이블
 function getCycleLabel(s) {
   const d = s.payDay;
   if (s.cycle === 'monthly')   return `매월 ${d}일`;
@@ -3418,6 +3846,7 @@ function loadSubs() {
 }
 function saveSubs(arr) { localStorage.setItem(SUBS_KEY, JSON.stringify(arr)); }
 
+// 토스트 메시지
 function showToast(msg, color) {
   const el = document.getElementById('toastEl');
   if (!el) return;
@@ -3427,6 +3856,7 @@ function showToast(msg, color) {
   setTimeout(() => el.classList.remove('show'), 3000);
 }
 
+// 매달 첫 실행 시 구독 자동 등록
 function autoAddSubscriptions() {
   const subs = loadSubs();
   const activeSubs = subs.filter(s => s.status === 'active');
@@ -3435,7 +3865,7 @@ function autoAddSubscriptions() {
   const today = new Date();
   const ym = toYM(today);
   const lastAutoMonth = localStorage.getItem(AUTO_SUB_KEY) || '';
-  if (lastAutoMonth === ym) return;
+  if (lastAutoMonth === ym) return; // 이미 이번 달 자동 등록 완료
 
   const data = loadData();
   const addedIds = new Set(
@@ -3468,6 +3898,7 @@ function autoAddSubscriptions() {
 
   saveData(data);
   localStorage.setItem(AUTO_SUB_KEY, ym);
+  // 렌더링 후 토스트 (렌더링이 끝난 뒤 표시되도록 약간 지연)
   setTimeout(() => showToast(`🔄 ${toAdd.length}개 구독이 이번 달 내역에 자동 등록됐어요`), 600);
 }
 
@@ -3479,11 +3910,13 @@ function renderTab6() {
 
   const thisMonthNum = today.getMonth() + 1;
 
+  // 이번 달 구독 합계
   let monthlyTotal = 0;
   subs.forEach(s => {
     if (s.status === 'active' && isPaymentMonth(s, thisMonthNum)) monthlyTotal += s.amount;
   });
 
+  // 7일 이내 결제 예정 (이번 달이 결제월이고 payDay가 오늘~+7)
   const upcoming = subs.filter(s => {
     if (s.status !== 'active') return false;
     if (!isPaymentMonth(s, thisMonthNum)) return false;
@@ -3492,7 +3925,7 @@ function renderTab6() {
     return diff >= 0 && diff <= 7;
   });
 
-  // 이번 달 이미 가계부에 추가된 구독 id 목록
+  // 이번 달 이미 가계부에 추가된 구독 이름 목록
   const ym = toYM(today);
   const txs = loadData().transactions;
   const addedThisMonth = new Set(
@@ -3513,7 +3946,9 @@ function renderTab6() {
     </div>`;
   }
 
+  // 요약 카드
   const activeCount = subs.filter(s => s.status === 'active').length;
+  // 이번 달 결제 대상 중 아직 내역 미등록
   const notAddedCount = subs.filter(s => s.status === 'active' && isPaymentMonth(s, thisMonthNum) && !addedThisMonth.has(s.id)).length;
   html += `<div class="card" style="margin-bottom:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${notAddedCount > 0 ? '12px' : '0'}">
@@ -3530,6 +3965,7 @@ function renderTab6() {
     <button onclick="syncSubsToAnnual()" style="width:100%;margin-top:8px;background:rgba(63,185,80,0.1);color:#3fb950;border:1px solid #238636;border-radius:8px;padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 연예산 고정지출에 추가</button>
   </div>`;
 
+  // 7일 이내 결제 예정 알림
   if (upcoming.length > 0) {
     html += `<div class="card" style="border-color:#e2b96b;margin-bottom:12px">
       <div class="card-title" style="color:#e2b96b">⚠️ 7일 이내 결제 예정</div>`;
@@ -3542,6 +3978,7 @@ function renderTab6() {
     html += `</div>`;
   }
 
+  // 추가 폼
   html += `<div class="card" style="margin-bottom:12px">
     <div class="card-title">+ 구독 추가</div>
     <div style="display:flex;flex-direction:column;gap:8px">
@@ -3569,6 +4006,7 @@ function renderTab6() {
     </div>
   </div>`;
 
+  // 구독 목록
   const activeSubs = subs.filter(s => s.status === 'active');
   const pausedSubs = subs.filter(s => s.status !== 'active');
 
@@ -3593,6 +4031,7 @@ function renderTab6() {
 
   document.getElementById('tab6Content').innerHTML = html;
 
+  // 주기 변경 시 월 선택기 표시/숨김
   const cycleEl = document.getElementById('subCycle');
   if (cycleEl) {
     const updateCycleUI = () => {
@@ -3734,6 +4173,7 @@ function deleteSub(idx) {
   renderTab6();
 }
 
+// 구독 → 가계부 내역 등록
 function addSubToHistory(idx) {
   const subs = loadSubs();
   const s = subs[idx];
@@ -3743,11 +4183,13 @@ function addSubToHistory(idx) {
   const ym = toYM(today);
   const txs = loadData().transactions;
 
+  // 중복 체크: 이번 달에 같은 subId로 추가된 내역이 있으면 중단
   if (txs.some(t => t._subId === s.id && t.date.startsWith(ym))) {
     alert(`"${s.name}"은 이번 달에 이미 추가되어 있어요.`);
     return;
   }
 
+  // 결제일 기준 날짜 계산 (이번 달 결제일, 없으면 오늘)
   const payDay = parseInt(s.payDay || today.getDate());
   const maxDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
   const usedDay = Math.min(payDay, maxDay);
@@ -3770,6 +4212,7 @@ function addSubToHistory(idx) {
   updateHeader();
 }
 
+// 이번 달 미등록 구독 전체 추가
 function addAllSubsToHistory() {
   const subs = loadSubs();
   const today = new Date();
@@ -3806,6 +4249,7 @@ function addAllSubsToHistory() {
   updateHeader();
 }
 
+// 구독 탭 → 내역 탭 이동 + 해당 내역 하이라이트
 function goToSubTx(subId) {
   const ym = toYM(new Date());
   const tx = loadData().transactions.find(t => t._subId === subId && t.date.startsWith(ym));
@@ -3864,6 +4308,7 @@ function addYrRow(section) {
   else if (section === 'fixed') d.fixed.push({ id, name: '', formula: '' });
   else if (section === 'variable') d.variable.push({ id, name: '', formula: '' });
   else if (section === 'edu') d.edu.push({ id, name: '', formula: '' });
+  else if (section === 'saving') d.saving.push({ id, name: '', formula: '' });
   else d.income.push({ id, name: '', formula: '' });
   setYearData(d);
   renderTab4();
@@ -3915,6 +4360,7 @@ function saveYrRow(section, id) {
 function getFormulaHint(formula) {
   if (!formula || !formula.trim()) return '';
   const str = formula.trim();
+  // "숫자*숫자" 패턴 감지 (22만*12, 300000*12 등)
   const m = str.match(/^(.+?)\*(\d+\.?\d*)$/) || str.match(/^(\d+\.?\d*)\*(.+?)$/);
   if (m) {
     const a = evalFormula(m[1]);
@@ -3958,113 +4404,114 @@ function renderYrRows(rows, section) {
 }
 
 // ─── 탭5: 연간 예산 진행 ───────────────────────────────
+// ===== 자산 탭 =====
+const ASSETS_KEY = 'my_assets';
+function loadAssets() {
+  try { return JSON.parse(localStorage.getItem(ASSETS_KEY) || '{"assets":[],"liabilities":[]}'); }
+  catch { return { assets: [], liabilities: [] }; }
+}
+function saveAssets(d) { localStorage.setItem(ASSETS_KEY, JSON.stringify(d)); }
+
+function addAsset() {
+  const d = loadAssets();
+  const id = String(Date.now());
+  d.assets.push({ id, name: '', type: '현금·예금', amount: 0 });
+  saveAssets(d);
+  renderTab5();
+  setTimeout(() => { const el = document.getElementById('an-' + id); if (el) el.focus(); }, 50);
+}
+function addLiability() {
+  const d = loadAssets();
+  const id = String(Date.now());
+  d.liabilities.push({ id, name: '', amount: 0 });
+  saveAssets(d);
+  renderTab5();
+  setTimeout(() => { const el = document.getElementById('ln-' + id); if (el) el.focus(); }, 50);
+}
+function saveAssetRow(id) {
+  const d = loadAssets();
+  const row = d.assets.find(r => r.id === id);
+  if (!row) return;
+  row.name   = (document.getElementById('an-' + id)||{}).value || '';
+  row.type   = (document.getElementById('at-' + id)||{}).value || '현금·예금';
+  row.amount = parseInt((document.getElementById('aa-' + id)||{}).value || '0') || 0;
+  saveAssets(d);
+  renderTab5();
+}
+function saveLiabRow(id) {
+  const d = loadAssets();
+  const row = d.liabilities.find(r => r.id === id);
+  if (!row) return;
+  row.name   = (document.getElementById('ln-' + id)||{}).value || '';
+  row.amount = parseInt((document.getElementById('la-' + id)||{}).value || '0') || 0;
+  saveAssets(d);
+  renderTab5();
+}
+function deleteAsset(id) {
+  const d = loadAssets(); d.assets = d.assets.filter(r => r.id !== id); saveAssets(d); renderTab5();
+}
+function deleteLiability(id) {
+  const d = loadAssets(); d.liabilities = d.liabilities.filter(r => r.id !== id); saveAssets(d); renderTab5();
+}
+
 function renderTab5() {
-  const d = getYearData();
-  const data = loadData();
-  const yearStr = String(currentYear);
+  const d = loadAssets();
+  const ASSET_TYPES = ['현금·예금', '적금', '주식·ETF', '부동산', '연금·퇴직금', '기타'];
+  const TYPE_ICONS  = { '현금·예금':'💵', '적금':'🏦', '주식·ETF':'📈', '부동산':'🏠', '연금·퇴직금':'🏛️', '기타':'💼' };
 
-  // 올해 지출 내역을 카테고리별로 합산
-  const spent = {};
-  data.transactions.forEach(t => {
-    if (t.type === 'expense' && t.date.startsWith(yearStr)) {
-      spent[t.category] = (spent[t.category] || 0) + t.amount;
-    }
-  });
+  const totalAsset = d.assets.reduce((s, a) => s + (a.amount || 0), 0);
+  const totalLiab  = d.liabilities.reduce((s, l) => s + (l.amount || 0), 0);
+  const netWorth   = totalAsset - totalLiab;
 
-  const sections = [
-    { key: 'fixed',    label: '🔴 고정지출',   color: '#f85149' },
-    { key: 'variable', label: '🟢 변동지출',   color: '#3fb950' },
-    { key: 'edu',      label: '🟡 교육지출',   color: '#e2b96b' },
-    { key: 'special',  label: '🟣 비정기지출', color: '#d2a8ff' },
-  ];
-
-  let totalBudget = 0, totalSpent = 0;
-  // 먼저 합계 계산
-  sections.forEach(({ key }) => {
-    (d[key] || []).forEach(row => {
-      totalBudget += evalFormula(row.formula);
-      totalSpent  += spent[row.name] || 0;
-    });
-  });
-
-  const totalRemain  = totalBudget - totalSpent;
-  const totalPct     = totalBudget > 0 ? Math.min(100, Math.round(totalSpent / totalBudget * 100)) : 0;
-  const totalOver    = totalSpent > totalBudget;
-  const totalBarColor = totalOver ? '#f85149' : totalPct > 80 ? '#e2b96b' : '#58a6ff';
-
-  // 경과 월 (올해 지난 달수, 최소 1)
-  const now = new Date();
-  const elapsed = currentYear === now.getFullYear() ? Math.max(1, now.getMonth()) : 12; // 1월=0이라 getMonth()=경과월수
-
-  let html = `
-  <div style="font-size:13px;color:#8b949e;text-align:center;margin-bottom:12px">
-    ${currentYear}년 연간 예산 사용 현황
-  </div>
-
-  <!-- 전체 요약 카드 -->
-  <div class="card" style="margin-bottom:16px">
-    <div style="font-size:13px;color:#8b949e;margin-bottom:6px">📊 전체 지출 예산</div>
-    <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-      <span style="font-size:20px;font-weight:700;color:${totalOver ? '#f85149' : '#e6edf3'}">${formatKRW(totalSpent)}</span>
-      <span style="font-size:13px;color:#8b949e;align-self:flex-end">/ ${formatKRW(totalBudget)}</span>
+  const html = `<div style="padding:0 0 80px">
+    <div class="card" style="text-align:center;padding:20px 16px;margin-bottom:16px">
+      <div style="font-size:12px;color:#8b949e;margin-bottom:6px">📊 순자산 (자산 − 부채)</div>
+      <div style="font-size:28px;font-weight:700;color:${netWorth >= 0 ? '#58a6ff' : '#f85149'}">${formatKRW(netWorth)}</div>
+      <div style="font-size:12px;color:#8b949e;margin-top:8px">
+        자산 <span style="color:#3fb950;font-weight:600">${formatKRW(totalAsset)}</span>
+        &nbsp;·&nbsp;
+        부채 <span style="color:#f85149;font-weight:600">${formatKRW(totalLiab)}</span>
+      </div>
     </div>
-    <div style="background:#21262d;border-radius:6px;height:10px;margin-bottom:6px">
-      <div style="background:${totalBarColor};height:10px;border-radius:6px;width:${totalPct}%"></div>
+
+    <div class="card yr-section">
+      <div class="yr-section-header">
+        <span style="color:#3fb950;font-weight:700">💰 자산</span>
+        <button class="yr-add-btn" onclick="addAsset()">+ 추가</button>
+      </div>
+      ${d.assets.length === 0 ? '<div style="font-size:12px;color:#8b949e;padding:6px 0">자산 항목을 추가해주세요</div>' : ''}
+      ${d.assets.map(r => `
+      <div class="yr-item-row" style="align-items:center;gap:4px;flex-wrap:wrap">
+        <input class="yr-name-input" id="an-${r.id}" value="${r.name}" placeholder="항목명"
+          style="flex:2;min-width:80px" onchange="saveAssetRow('${r.id}')">
+        <select id="at-${r.id}" onchange="saveAssetRow('${r.id}')"
+          style="flex:2;min-width:90px;background:#161b22;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:12px;padding:6px 4px">
+          ${ASSET_TYPES.map(t => `<option value="${t}" ${r.type===t?'selected':''}>${TYPE_ICONS[t]} ${t}</option>`).join('')}
+        </select>
+        <input class="yr-formula-input" id="aa-${r.id}" type="number" value="${r.amount||''}" placeholder="금액"
+          style="flex:2;min-width:80px;text-align:right" onchange="saveAssetRow('${r.id}')">
+        <button class="yr-del-btn" onclick="deleteAsset('${r.id}')">✕</button>
+      </div>`).join('')}
+      <div class="yr-total-row"><span>합계</span><span style="color:#3fb950">${formatKRW(totalAsset)}</span></div>
     </div>
-    <div style="display:flex;justify-content:space-between;font-size:12px">
-      <span style="color:${totalOver ? '#f85149' : '#3fb950'}">${totalOver ? '⚠️ ' + formatKRW(-totalRemain) + ' 초과' : '✅ ' + formatKRW(totalRemain) + ' 남음'}</span>
-      <span style="color:#8b949e">${totalPct}% 사용 · ${elapsed}개월 경과</span>
+
+    <div class="card yr-section">
+      <div class="yr-section-header">
+        <span style="color:#f85149;font-weight:700">💸 부채</span>
+        <button class="yr-add-btn" onclick="addLiability()">+ 추가</button>
+      </div>
+      ${d.liabilities.length === 0 ? '<div style="font-size:12px;color:#8b949e;padding:6px 0">부채 항목을 추가해주세요</div>' : ''}
+      ${d.liabilities.map(r => `
+      <div class="yr-item-row" style="align-items:center;gap:4px">
+        <input class="yr-name-input" id="ln-${r.id}" value="${r.name}" placeholder="항목명"
+          style="flex:3" onchange="saveLiabRow('${r.id}')">
+        <input class="yr-formula-input" id="la-${r.id}" type="number" value="${r.amount||''}" placeholder="금액"
+          style="flex:2;text-align:right" onchange="saveLiabRow('${r.id}')">
+        <button class="yr-del-btn" onclick="deleteLiability('${r.id}')">✕</button>
+      </div>`).join('')}
+      <div class="yr-total-row"><span>합계</span><span style="color:#f85149">${formatKRW(totalLiab)}</span></div>
     </div>
   </div>`;
-
-  // 섹션별
-  sections.forEach(({ key, label, color }) => {
-    const rows = (d[key] || []).filter(r => evalFormula(r.formula) > 0 || spent[r.name]);
-    if (!rows.length) return;
-
-    html += `<div class="card" style="margin-bottom:12px">
-      <div style="font-size:14px;font-weight:700;color:${color};margin-bottom:12px">${label}</div>`;
-
-    rows.forEach(row => {
-      const budget  = evalFormula(row.formula);
-      const use     = spent[row.name] || 0;
-      const remain  = budget - use;
-      const pct     = budget > 0 ? Math.min(100, Math.round(use / budget * 100)) : (use > 0 ? 100 : 0);
-      const over    = use > budget && budget > 0;
-      const noBudget = budget === 0;
-      const barColor = over ? '#f85149' : pct > 80 ? '#e2b96b' : color;
-      const statusColor = over ? '#f85149' : noBudget ? '#8b949e' : remain === 0 ? '#e2b96b' : '#3fb950';
-      const statusText  = noBudget
-        ? (use > 0 ? '예산 미설정 · ' + formatKRW(use) + ' 사용' : '예산 미설정')
-        : over
-          ? '⚠️ ' + formatKRW(-remain) + ' 초과'
-          : remain === 0 ? '딱 맞음' : formatKRW(remain) + ' 남음';
-
-      html += `<div style="margin-bottom:14px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <span style="font-size:13px;font-weight:600">${row.name}</span>
-          <span style="font-size:12px;color:${statusColor}">${statusText}</span>
-        </div>
-        <div style="background:#21262d;border-radius:4px;height:7px;margin-bottom:4px">
-          <div style="background:${barColor};height:7px;border-radius:4px;width:${pct}%;transition:width 0.3s"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:#8b949e">
-          <span>사용 ${formatKRW(use)}${budget > 0 ? ' (' + pct + '%)' : ''}</span>
-          <span>${budget > 0 ? '연예산 ' + formatKRW(budget) : ''}</span>
-        </div>
-      </div>`;
-    });
-
-    html += `</div>`;
-  });
-
-  // 항목이 아예 없으면
-  const hasAny = sections.some(({ key }) => (d[key] || []).length > 0);
-  if (!hasAny) {
-    html += `<div style="text-align:center;color:#8b949e;padding:40px 0">
-      연예산 탭에서 항목을 먼저 추가해주세요 😊
-    </div>`;
-  }
 
   document.getElementById('tab5Content').innerHTML = html;
 }
@@ -4072,19 +4519,25 @@ function renderTab5() {
 function renderTab4() {
   document.getElementById('yearLabel').textContent = currentYear + '년';
   const d = getYearData();
+  const eff = getEffectiveMonths();
 
   const incomeTotal     = d.income.reduce((s,r)    => s + evalFormula(r.formula), 0);
   const fixedYearly     = d.fixed.reduce((s,r)     => s + evalFormula(r.formula), 0);
-  const fixedMonthly    = Math.round(fixedYearly / getEffectiveMonths());
+  const fixedMonthly    = Math.round(fixedYearly / eff);
   const variableYearly  = (d.variable||[]).reduce((s,r) => s + evalFormula(r.formula), 0);
-  const variableMonthly = Math.round(variableYearly / getEffectiveMonths());
+  const variableMonthly = Math.round(variableYearly / eff);
   const eduYearly       = (d.edu||[]).reduce((s,r) => s + evalFormula(r.formula), 0);
-  const eduMonthly      = Math.round(eduYearly / getEffectiveMonths());
+  const eduMonthly      = Math.round(eduYearly / eff);
   const specialTotal    = d.special.reduce((s,r)   => s + evalFormula(r.formula), 0);
-  const specialMonthly  = Math.round(specialTotal / getEffectiveMonths());
+  const specialMonthly  = Math.round(specialTotal / eff);
+  const savingYearly    = (d.saving||[]).reduce((s,r) => s + evalFormula(r.formula), 0);
+  const savingMonthly   = Math.round(savingYearly / eff);
   const totalExpense    = fixedYearly + variableYearly + eduYearly + specialTotal;
-  const netYearly       = incomeTotal - totalExpense;
-  const remainMonthly   = Math.round(netYearly / getEffectiveMonths());
+  const netYearly       = incomeTotal - totalExpense - savingYearly;
+  const remainMonthly   = Math.round(netYearly / eff);
+
+  // % 계산 (수입 기준)
+  const pct = v => incomeTotal > 0 ? Math.round(v / incomeTotal * 100) : 0;
 
   // 요약
   document.getElementById('yr-summary').innerHTML = `
@@ -4092,36 +4545,37 @@ function renderTab4() {
       <div class="yr-summary-row">
         <span>💰 연간 수입</span><span style="color:#3fb950;font-weight:700">${formatKRW(incomeTotal)}</span>
       </div>
-      <div class="yr-summary-row" style="border-top:1px solid #30363d;margin-top:4px;padding-top:8px">
-        <span>📊 총 지출 예산</span><span style="color:#f85149;font-weight:700">${formatKRW(totalExpense)}</span>
-      </div>
-      <div class="yr-summary-row">
-        <span style="font-weight:600">연간수입 − 총지출예산</span>
-        <span style="color:${netYearly >= 0 ? '#3fb950' : '#f85149'};font-weight:700;font-size:15px">${formatKRW(netYearly)}</span>
-      </div>
       <div class="yr-summary-row" style="border-top:1px solid #30363d;margin-top:4px;padding-top:8px;font-size:12px;color:#8b949e">
-        <span>🔴 고정 (월평균 ${formatKRW(fixedMonthly)})</span>
+        <span>🔴 고정지출 (${pct(fixedYearly)}%)</span>
         <span>${formatKRW(fixedYearly)}</span>
       </div>
       <div class="yr-summary-row" style="font-size:12px;color:#8b949e">
-        <span>🟢 변동 (월평균 ${formatKRW(variableMonthly)})</span>
+        <span>🟢 변동지출 (${pct(variableYearly)}%)</span>
         <span>${formatKRW(variableYearly)}</span>
       </div>
       <div class="yr-summary-row" style="font-size:12px;color:#8b949e">
-        <span>🟡 교육 (월평균 ${formatKRW(eduMonthly)})</span>
+        <span>🟡 교육지출 (${pct(eduYearly)}%)</span>
         <span>${formatKRW(eduYearly)}</span>
       </div>
       <div class="yr-summary-row" style="font-size:12px;color:#8b949e">
-        <span>🟣 비정기</span>
+        <span>🟣 비정기지출 (${pct(specialTotal)}%)</span>
         <span>${formatKRW(specialTotal)}</span>
+      </div>
+      <div class="yr-summary-row" style="font-size:12px;color:#8b949e">
+        <span>💙 저축 (${pct(savingYearly)}%)</span>
+        <span>${formatKRW(savingYearly)}</span>
+      </div>
+      <div class="yr-summary-row" style="border-top:1px solid #30363d;margin-top:4px;padding-top:8px">
+        <span style="font-weight:600">수입 − 지출 − 저축 = 가용잔액</span>
+        <span style="color:${netYearly >= 0 ? '#3fb950' : '#f85149'};font-weight:700;font-size:15px">${formatKRW(netYearly)}</span>
       </div>
       <div class="yr-summary-highlight">
         <div>
-          <div class="label">월 잔여 가용금액</div>
+          <div class="label">월 가용잔액</div>
           <div class="val" style="color:${netYearly >= 0 ? '#58a6ff' : '#f85149'}">${formatKRW(remainMonthly)}</div>
         </div>
         <div style="text-align:right">
-          <div class="label">연 잔여 가용금액</div>
+          <div class="label">연 가용잔액</div>
           <div class="val" style="font-size:13px;color:${netYearly >= 0 ? '#58a6ff' : '#f85149'}">${formatKRW(netYearly)}</div>
         </div>
       </div>
@@ -4172,6 +4626,114 @@ function renderTab4() {
     (d.special.length ? specialRows.join('') : '<div style="font-size:12px;color:#8b949e;padding:6px 0">항목을 추가해주세요</div>');
   document.getElementById('yr-special-total').textContent = formatKRW(specialTotal);
   document.getElementById('yr-special-month').textContent = formatKRW(specialMonthly);
+
+  // 저축 목록
+  document.getElementById('yr-saving-list').innerHTML = renderYrRows(d.saving||[], 'saving');
+  document.getElementById('yr-saving-year').textContent  = formatKRW(savingYearly);
+  document.getElementById('yr-saving-month').textContent = formatKRW(savingMonthly);
+
+  // ── 연진행 현황 (예산 대비 실제) ──────────────────────────
+  const data = loadData();
+  const yearStr = String(currentYear);
+  const spent = {};
+  data.transactions.forEach(t => {
+    if (t.type === 'expense' && t.date.startsWith(yearStr)) {
+      spent[t.category] = (spent[t.category] || 0) + t.amount;
+    }
+  });
+  const actualSaving = data.transactions
+    .filter(t => t.type === 'saving' && t.date.startsWith(yearStr))
+    .reduce((s,t) => s + t.amount, 0);
+
+  const progSections = [
+    { key: 'fixed',    label: '🔴 고정지출',   color: '#f85149' },
+    { key: 'variable', label: '🟢 변동지출',   color: '#3fb950' },
+    { key: 'edu',      label: '🟡 교육지출',   color: '#e2b96b' },
+    { key: 'special',  label: '🟣 비정기지출', color: '#d2a8ff' },
+  ];
+
+  let pgTotal = 0, pgSpent = 0;
+  progSections.forEach(({ key }) => {
+    (d[key] || []).forEach(row => {
+      pgTotal += evalFormula(row.formula);
+      pgSpent += spent[row.name] || 0;
+    });
+  });
+  const pgPct = pgTotal > 0 ? Math.min(100, Math.round(pgSpent / pgTotal * 100)) : 0;
+  const pgOver = pgSpent > pgTotal;
+  const pgColor = pgOver ? '#f85149' : pgPct > 80 ? '#e2b96b' : '#58a6ff';
+  const now2 = new Date();
+  const elapsed = currentYear === now2.getFullYear() ? Math.max(1, now2.getMonth()) : 12;
+
+  const savingPct = savingYearly > 0 ? Math.min(100, Math.round(actualSaving / savingYearly * 100)) : 0;
+
+  let pgHtml = `
+  <div style="font-size:14px;font-weight:700;color:#e6edf3;margin:24px 0 12px">📈 ${currentYear}년 연간 진행 현황</div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div style="font-size:13px;color:#8b949e;margin-bottom:6px">📊 전체 지출 예산</div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+      <span style="font-size:20px;font-weight:700;color:${pgOver ? '#f85149' : '#e6edf3'}">${formatKRW(pgSpent)}</span>
+      <span style="font-size:13px;color:#8b949e;align-self:flex-end">/ ${formatKRW(pgTotal)}</span>
+    </div>
+    <div style="background:#21262d;border-radius:6px;height:10px;margin-bottom:6px">
+      <div style="background:${pgColor};height:10px;border-radius:6px;width:${pgPct}%"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px">
+      <span style="color:${pgOver ? '#f85149' : '#3fb950'}">${pgOver ? '⚠️ ' + formatKRW(pgSpent - pgTotal) + ' 초과' : '✅ ' + formatKRW(pgTotal - pgSpent) + ' 남음'}</span>
+      <span style="color:#8b949e">${pgPct}% 사용 · ${elapsed}개월 경과</span>
+    </div>
+  </div>
+
+  ${savingYearly > 0 ? `
+  <div class="card" style="margin-bottom:12px">
+    <div style="font-size:14px;font-weight:700;color:#79c0ff;margin-bottom:8px">💙 저축 달성</div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+      <span style="font-size:18px;font-weight:700;color:#79c0ff">${formatKRW(actualSaving)}</span>
+      <span style="font-size:13px;color:#8b949e;align-self:flex-end">/ ${formatKRW(savingYearly)}</span>
+    </div>
+    <div style="background:#21262d;border-radius:6px;height:8px;margin-bottom:4px">
+      <div style="background:#79c0ff;height:8px;border-radius:6px;width:${savingPct}%"></div>
+    </div>
+    <div style="font-size:12px;color:#8b949e;text-align:right">${savingPct}% 달성</div>
+  </div>` : ''}`;
+
+  progSections.forEach(({ key, label, color }) => {
+    const rows = (d[key] || []).filter(r => evalFormula(r.formula) > 0 || spent[r.name]);
+    if (!rows.length) return;
+    pgHtml += `<div class="card" style="margin-bottom:12px">
+      <div style="font-size:14px;font-weight:700;color:${color};margin-bottom:12px">${label}</div>`;
+    rows.forEach(row => {
+      const budget  = evalFormula(row.formula);
+      const use     = spent[row.name] || 0;
+      const remain  = budget - use;
+      const pctRow  = budget > 0 ? Math.min(100, Math.round(use / budget * 100)) : (use > 0 ? 100 : 0);
+      const over    = use > budget && budget > 0;
+      const noBudget = budget === 0;
+      const barColor = over ? '#f85149' : pctRow > 80 ? '#e2b96b' : color;
+      const statusColor = over ? '#f85149' : noBudget ? '#8b949e' : remain === 0 ? '#e2b96b' : '#3fb950';
+      const statusText  = noBudget
+        ? (use > 0 ? '예산 미설정 · ' + formatKRW(use) : '예산 미설정')
+        : over ? '⚠️ ' + formatKRW(-remain) + ' 초과'
+        : remain === 0 ? '딱 맞음' : formatKRW(remain) + ' 남음';
+      pgHtml += `<div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:13px;font-weight:600">${row.name}</span>
+          <span style="font-size:12px;color:${statusColor}">${statusText}</span>
+        </div>
+        <div style="background:#21262d;border-radius:4px;height:7px;margin-bottom:4px">
+          <div style="background:${barColor};height:7px;border-radius:4px;width:${pctRow}%;transition:width 0.3s"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#8b949e">
+          <span>사용 ${formatKRW(use)}${budget > 0 ? ' (' + pctRow + '%)' : ''}</span>
+          <span>${budget > 0 ? '연예산 ' + formatKRW(budget) : ''}</span>
+        </div>
+      </div>`;
+    });
+    pgHtml += `</div>`;
+  });
+
+  document.getElementById('yr-progress').innerHTML = pgHtml;
 }
 
 // ===== 예산 (연예산에서 자동 계산) =====
