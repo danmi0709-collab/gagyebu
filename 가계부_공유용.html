@@ -1769,7 +1769,7 @@
 
 <script>
 const STORAGE_KEY   = 'my_budget_data';
-const TX_ORDER_KEY  = 'hanna_tx_order';
+const TX_ORDER_KEY  = 'my_tx_order';
 let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
 const NICKNAME_KEY = 'my_nickname';
@@ -3059,7 +3059,7 @@ function switchModalTab(n) {
 }
 
 // ===== 패턴 학습 =====
-const MERCHANT_MEM_KEY = 'hanna_merchant_cats';
+const MERCHANT_MEM_KEY = 'my_merchant_cats';
 
 function loadMerchantMem() {
   try { return JSON.parse(localStorage.getItem(MERCHANT_MEM_KEY) || '{}'); } catch { return {}; }
@@ -3759,7 +3759,7 @@ function confirmOCRImport() {
 }
 
 // ===== 구글 시트 연동 =====
-const SHEETS_URL_KEY = 'hanna_sheets_url';
+const SHEETS_URL_KEY = 'my_sheets_url';
 
 function getSheetsUrl() {
   return localStorage.getItem(SHEETS_URL_KEY) || '';
@@ -3934,7 +3934,7 @@ function pullFromSheets() {
 }
 
 // ===== 1년 예산 =====
-const ANNUAL_KEY = 'hanna_annual_budget';
+const ANNUAL_KEY = 'my_annual_budget';
 let currentYear = new Date().getFullYear();
 
 function loadAnnual() {
@@ -4044,7 +4044,7 @@ function autoFillFromMemo(val) {
 
 // ===== 구독서비스 탭 (Tab 6) =====
 const SUBS_KEY     = 'my_subscriptions';
-const AUTO_SUB_KEY = 'hanna_sub_auto_month';
+const AUTO_SUB_KEY = 'my_sub_auto_month';
 
 // 연예산에서 "(구독)" 표시된 항목 탐색
 function detectAnnualSubItems() {
@@ -4573,7 +4573,7 @@ function goToSubTx(subId) {
 }
 
 function migrateFormulasToMan() {
-  if (localStorage.getItem('hanna_formula_man_migrated')) return;
+  if (localStorage.getItem('my_formula_man_migrated')) return;
   function toMan(numStr) {
     const n = parseInt(numStr);
     if (n < 10000) return numStr;
@@ -4592,7 +4592,7 @@ function migrateFormulasToMan() {
     });
   });
   saveAnnual(all);
-  localStorage.setItem('hanna_formula_man_migrated', '1');
+  localStorage.setItem('my_formula_man_migrated', '1');
 }
 
 function evalFormula(str) {
