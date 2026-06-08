@@ -1444,12 +1444,6 @@
       </div>
     </div>
 
-    <!-- 버전 / 새로고침 — sheetsSection 위에 위치해야 deploy.py가 sheetsSection 제거 시 같이 삭제되지 않음 -->
-    <div style="margin-top:4px;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-      <span style="font-size:0.8rem;color:var(--text-muted)">앱 버전 <strong id="appVersionBadge"></strong></span>
-      <button onclick="forceUpdate()" style="font-size:0.8rem;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-family:inherit">🔄 최신버전으로</button>
-    </div>
-
     <div id="sheetsSection">
       <label class="settings-label">구글 Apps Script 웹앱 URL</label>
       <input class="settings-input" type="url" id="sheetsUrlInput"
@@ -1480,6 +1474,12 @@
         · PC에서 입력 후 → <strong>PC→폰 올리기</strong><br>
         · 저장할 때마다 구글 시트에 자동 백업됩니다.
       </div>
+    </div>
+
+    <!-- 버전 / 최신버전 버튼 — settings-box 맨 아래, sheetsSection 밖에 위치 -->
+    <div id="versionSection" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:0.8rem;color:var(--text-muted)">앱 버전 <strong id="appVersionBadge"></strong></span>
+      <button onclick="forceUpdate()" style="font-size:0.8rem;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-family:inherit">🔄 최신버전으로</button>
     </div>
   </div>
 </div>

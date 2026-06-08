@@ -1465,12 +1465,43 @@
       </div>
     </div>
 
-    <!-- 버전 / 새로고침 — sheetsSection 위에 위치해야 deploy.py가 sheetsSection 제거 시 같이 삭제되지 않음 -->
-    <div style="margin-top:4px;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+    <div id="sheetsSection">
+      <label class="settings-label">구글 Apps Script 웹앱 URL</label>
+      <input class="settings-input" type="url" id="sheetsUrlInput"
+        placeholder="https://script.google.com/macros/s/.../exec">
+
+      <div class="settings-btn-row">
+        <button class="btn-sheets-pull" onclick="pullFromSheets()" id="btnPull"></button>
+        <button class="btn-sheets-push" onclick="pushToSheets()" id="btnPush"></button>
+      </div>
+
+      <button class="btn-save" onclick="saveSettingsUrl()" style="margin-bottom:14px">URL 저장</button>
+
+      <div class="settings-sync-log" id="syncLog"></div>
+
+      <div class="settings-guide">
+        <strong>📋 구글 시트 연동 설정 방법</strong>
+        <ol>
+          <li><strong>구글 시트</strong>를 하나 새로 만드세요.</li>
+          <li>상단 메뉴 → <strong>확장 프로그램 → Apps Script</strong> 클릭</li>
+          <li>기존 내용 지우고 <strong>구글시트_스크립트.gs</strong> 파일의 내용을 붙여넣기</li>
+          <li>저장(💾) 후 → <strong>배포 → 새 배포</strong> 클릭</li>
+          <li>유형: <strong>웹 앱</strong>, 액세스: <strong>모든 사용자</strong> 선택 후 배포</li>
+          <li>생성된 URL을 위 입력창에 붙여넣고 <strong>URL 저장</strong></li>
+        </ol>
+        <br>
+        💡 <strong>사용 방법:</strong><br>
+        · 폰에서 입력 후 → <strong>폰→PC 불러오기</strong><br>
+        · PC에서 입력 후 → <strong>PC→폰 올리기</strong><br>
+        · 저장할 때마다 구글 시트에 자동 백업됩니다.
+      </div>
+    </div>
+
+    <!-- 버전 / 최신버전 버튼 — settings-box 맨 아래, sheetsSection 밖에 위치 -->
+    <div id="versionSection" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
       <span style="font-size:0.8rem;color:var(--text-muted)">앱 버전 <strong id="appVersionBadge"></strong></span>
       <button onclick="forceUpdate()" style="font-size:0.8rem;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-family:inherit">🔄 최신버전으로</button>
     </div>
-  </div>
   </div>
 </div>
 
@@ -1671,7 +1702,7 @@ const STORAGE_KEY   = 'my_budget_data';
 const TX_ORDER_KEY  = 'my_tx_order';
 let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
-const APP_VERSION = 'v27'; // deploy.py가 자동으로 올림
+const APP_VERSION = 'v28'; // deploy.py가 자동으로 올림
 const NICKNAME_KEY = 'my_nickname';
 
 let currentMonth; // YYYY-MM

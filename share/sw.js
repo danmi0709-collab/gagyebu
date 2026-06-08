@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v27';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '설정 모달 버전·새로고침 버튼 위치 수정 (공유앱에서 사라지던 버그 수정)';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v28';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '설정 모달 버전·새로고침 버튼 완전 수정 (deploy.py regex 제거로 근본 해결)';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
