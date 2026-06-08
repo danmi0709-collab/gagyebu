@@ -4866,8 +4866,9 @@ function migrateFormulasToMan() {
 
 function evalFormula(str) {
   if (!str) return 0;
-  // 콤마 제거 → 만 단위 변환 → 수식 계산
+  // 콤마 제거 → 억·만 단위 변환 → 수식 계산
   let s = String(str).replace(/,/g, '');
+  s = s.replace(/(\d+(?:\.\d+)?)억/g, (_, n) => Math.round(parseFloat(n) * 100000000));
   s = s.replace(/(\d+(?:\.\d+)?)만/g, (_, n) => Math.round(parseFloat(n) * 10000));
   const clean = s.replace(/[^0-9+\-*/().]/g, '');
   if (!clean) return 0;
@@ -4941,17 +4942,21 @@ function saveYrRow(section, id) {
 function getFormulaHint(formula) {
   if (!formula || !formula.trim()) return '';
   const str = formula.trim();
-  // "숫자*숫자" 패턴 감지 (22만*12, 300000*12 등)
+  if (/^[\d,]+$/.test(str)) return ''; // 순수 숫자는 힌트 불필요
+  const result = evalFormula(str);
+  if (!result) return '';
+  // "A*B" 단일 곱셈 패턴 → 세부 표시
   const m = str.match(/^(.+?)\*(\d+\.?\d*)$/) || str.match(/^(\d+\.?\d*)\*(.+?)$/);
   if (m) {
     const a = evalFormula(m[1]);
     const b = evalFormula(m[2]);
     if (a && b) {
       const unit = (Number.isInteger(b) && b >= 1 && b <= 12) ? `${b}개월` : `${b}`;
-      return `${formatKRW(a)} × ${unit} = ${formatKRW(Math.round(a * b))}`;
+      return `${formatKRW(a)} × ${unit} = ${formatKRW(result)}`;
     }
   }
-  return '';
+  // 복합 수식 → 결과만 표시
+  return `= ${formatKRW(result)}`;
 }
 
 function updateYrHint(section, id) {
@@ -5687,6 +5692,9 @@ function renderTab4() {
   });
 
   document.getElementById('yr-progress').innerHTML = pgHtml;
+
+  // 수식 입력칸 → 숫자 키보드 (inputmode 일괄 적용)
+  document.querySelectorAll('.yr-formula-input').forEach(el => el.inputMode = 'decimal');
 }
 
 // ===== 예산 (연예산에서 자동 계산) =====

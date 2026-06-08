@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v35';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '만료 구독 재구독 버튼 추가 (이름·금액 자동입력 후 폼으로 이동)';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v36';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '수식 개선: 억 단위 지원, 복합수식 힌트 표시, 수식입력칸 숫자키보드';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
