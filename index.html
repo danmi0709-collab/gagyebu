@@ -1163,7 +1163,7 @@
       </div>
       <div class="form-group">
         <label>금액 (원)</label>
-        <input type="number" id="inputAmount" placeholder="0" min="0" inputmode="numeric">
+        <input type="text" id="inputAmount" placeholder="0" inputmode="numeric" oninput="onNumInput(this)">
       </div>
     </div>
     <div class="form-memo">
@@ -2061,7 +2061,7 @@ function parseNL() {
 
   // === 폼 자동입력 ===
   document.getElementById('inputDate').value = res.date;
-  document.getElementById('inputAmount').value = res.amount;
+  document.getElementById('inputAmount').value = fmtN(res.amount || 0);
   document.getElementById('inputMemo').value = res.memo;
   setType(res.type);  // buildGroupSelect 내부 호출됨
 
@@ -2188,7 +2188,7 @@ function buildExpenseOptions(type) {
 
 function addTransaction() {
   const date = document.getElementById('inputDate').value;
-  const amount = parseInt(document.getElementById('inputAmount').value);
+  const amount = parseN(document.getElementById('inputAmount').value);
   const category = document.getElementById('inputCategory').value;
   const memo = document.getElementById('inputMemo').value.trim();
 
