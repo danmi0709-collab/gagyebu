@@ -2792,8 +2792,8 @@ function importJSON(e) {
   reader.onload = ev => {
     try {
       const d = JSON.parse(ev.target.result);
-      const txCount = (d.transactions || []).length;
-      if (txCount === 0 && !d.annual && !d.subscriptions) throw new Error();
+      if (!Array.isArray(d.transactions)) throw new Error();
+      const txCount = d.transactions.length;
       if (confirm(`거래내역 ${txCount}개 포함된 백업을 불러올까요?\n기존 데이터는 덮어씌워집니다.`)) {
         saveData({ transactions: d.transactions || [] });
         if (d.annual)       saveAnnual(d.annual);
