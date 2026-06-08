@@ -1873,16 +1873,6 @@ function loadData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-    // 공유앱: 이전 버전이 hanna_budget_data 키로 저장했을 경우 자동 마이그레이션
-    if (IS_SHARED) {
-      const legacy = localStorage.getItem('hanna_budget_data');
-      if (legacy) {
-        const d = JSON.parse(legacy);
-        localStorage.setItem(STORAGE_KEY, legacy);
-        localStorage.removeItem('hanna_budget_data');
-        return d;
-      }
-    }
     return { transactions: [] };
   } catch { return { transactions: [] }; }
 }
@@ -2103,7 +2093,43 @@ function parseNL() {
   document.getElementById('inputDate').scrollIntoView({ behavior:'smooth', block:'center' });
 }
 
+// 이전 버전(hanna_* 키) → 현재 버전(my_* 키) 자동 마이그레이션
+function migrateOldKeys() {
+  if (!IS_SHARED) return;
+  if (localStorage.getItem('my_migrated_v1')) return; // 이미 완료
+
+  const pairs = [
+    ['hanna_budget_data',          'my_budget_data'],
+    ['hanna_annual_budget',        'my_annual_budget'],
+    ['hanna_budget_learn',         'my_budget_learn'],
+    ['hanna_subscriptions',        'my_subscriptions'],
+    ['hanna_sub_auto_month',       'my_sub_auto_month'],
+    ['hanna_assets',               'my_assets'],
+    ['hanna_tx_order',             'my_tx_order'],
+    ['hanna_nickname',             'my_nickname'],
+    ['hanna_theme',                'my_theme'],
+    ['hanna_merchant_cats',        'my_merchant_cats'],
+    ['hanna_formula_man_migrated', 'my_formula_man_migrated'],
+  ];
+
+  let count = 0;
+  pairs.forEach(([old, nw]) => {
+    const oldVal = localStorage.getItem(old);
+    if (oldVal && !localStorage.getItem(nw)) {
+      localStorage.setItem(nw, oldVal);
+      localStorage.removeItem(old);
+      count++;
+    }
+  });
+
+  localStorage.setItem('my_migrated_v1', '1');
+  if (count > 0) {
+    setTimeout(() => showToast(`이전 데이터 복구 완료 ✅ (${count}개 항목)`, '#c07a3a'), 1200);
+  }
+}
+
 function init() {
+  migrateOldKeys();
   initTheme();
   checkNicknameOnLoad();
   const now = new Date();

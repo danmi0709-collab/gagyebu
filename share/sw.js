@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v9';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = 'Samsung 구글바 겹침 완전 해결 (하단 고정 여백 34px 추가)';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v10';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '이전 버전 데이터 자동 복구 (hanna_* → my_* 전체 마이그레이션)';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
