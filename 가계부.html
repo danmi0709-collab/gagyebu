@@ -5670,21 +5670,22 @@ async function forceUpdate() {
     // 1. 대기 중인 SW가 있으면 즉시 활성화
     if (swReg && swReg.waiting) {
       swReg.waiting.postMessage({ type: 'SKIP_WAITING' });
-      return; // controllerchange 이벤트가 자동으로 reload
+      return;
     }
-    // 2. 캐시 전체 삭제
+    // 2. SW 캐시 전체 삭제
     if ('caches' in window) {
       const keys = await caches.keys();
       await Promise.all(keys.map(k => caches.delete(k)));
     }
-    // 3. SW 등록 완전 해제 (다음 로드 시 네트워크에서 직접 받음)
+    // 3. SW 등록 완전 해제
     if ('serviceWorker' in navigator) {
       const regs = await navigator.serviceWorker.getRegistrations();
       await Promise.all(regs.map(r => r.unregister()));
     }
-    location.reload();
+    // 4. 타임스탬프 붙인 URL로 이동 → 어떤 캐시도 히트하지 않아 반드시 최신 받음
+    location.replace(location.pathname + '?r=' + Date.now());
   } catch(e) {
-    location.reload();
+    location.replace(location.pathname + '?r=' + Date.now());
   }
 }
 

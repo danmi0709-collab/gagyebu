@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v25';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '최신버전으로 버튼: SW 완전 해제 후 새로고침으로 확실하게 업데이트';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v26';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '최신버전 버튼: 타임스탬프 URL로 캐시 완전 우회 + SW fetch reload 전략으로 변경';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
@@ -20,12 +20,12 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
-// 네트워크 우선 (HTTP 캐시 무시)
+// 네트워크 우선 (브라우저 HTTP 캐시도 완전 우회)
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   const isLocal = e.request.url.startsWith(self.location.origin);
   e.respondWith(
-    fetch(e.request, isLocal ? { cache: 'no-cache' } : {})
+    fetch(e.request, isLocal ? { cache: 'reload' } : {})
       .then((res) => {
         if (res && res.status === 200) {
           const clone = res.clone();
