@@ -1720,8 +1720,8 @@ const STORAGE_KEY   = 'my_budget_data';
 const TX_ORDER_KEY  = 'my_tx_order';
 let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
-const APP_VERSION = 'v33'; // deploy.py가 자동으로 올림
-const RELEASE_HISTORY_APP = ["v33: 연도 복사 버튼 추가 (작년 항목→올해), 설정탭 최근 3회 업데이트 내역 표시", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
+const APP_VERSION = 'v34'; // deploy.py가 자동으로 올림
+const RELEASE_HISTORY_APP = ["v34: 구독 종료달 필드 추가: 만료 자동 비활성화·이력 보존·3분류 표시", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
 const NICKNAME_KEY = 'my_nickname';
 
 let currentMonth; // YYYY-MM
@@ -4369,8 +4369,15 @@ function syncSubsToAnnual() {
   renderTab6();
 }
 
+// 만료 여부: endDate(YYYY-MM)가 현재 달보다 과거면 만료
+function isExpired(s) {
+  if (!s.endDate) return false;
+  return toYM(new Date()) > s.endDate;
+}
+
 // 이번 달(monthNum: 1~12)이 결제월인지 판단
 function isPaymentMonth(s, monthNum) {
+  if (isExpired(s)) return false; // 만료된 구독은 결제 없음
   if (s.cycle === 'monthly')   return true;
   if (s.cycle === 'yearly')    return parseInt(s.payMonth || 1) === monthNum;
   // 3개월·6개월: payMonth = 시작월, 그로부터 N개월마다
@@ -4382,11 +4389,17 @@ function isPaymentMonth(s, monthNum) {
 // 표시용 주기 레이블
 function getCycleLabel(s) {
   const d = s.payDay;
-  if (s.cycle === 'monthly')   return `매월 ${d}일`;
-  if (s.cycle === 'quarterly') return `3개월마다 ${d}일 (${s.payMonth}월~)`;
-  if (s.cycle === 'biannual')  return `6개월마다 ${d}일 (${s.payMonth}월~)`;
-  if (s.cycle === 'yearly')    return `${s.payMonth}월 ${d}일 (연간)`;
-  return `${d}일`;
+  let label = '';
+  if (s.cycle === 'monthly')        label = `매월 ${d}일`;
+  else if (s.cycle === 'quarterly') label = `3개월마다 ${d}일 (${s.payMonth}월~)`;
+  else if (s.cycle === 'biannual')  label = `6개월마다 ${d}일 (${s.payMonth}월~)`;
+  else if (s.cycle === 'yearly')    label = `${s.payMonth}월 ${d}일 (연간)`;
+  else                              label = `${d}일`;
+  if (s.endDate) {
+    const [ey, em] = s.endDate.split('-');
+    label += ` · ${ey}년 ${parseInt(em)}월까지`;
+  }
+  return label;
 }
 
 function loadSubs() {
@@ -4407,7 +4420,7 @@ function showToast(msg, color) {
 // 매달 첫 실행 시 구독 자동 등록
 function autoAddSubscriptions() {
   const subs = loadSubs();
-  const activeSubs = subs.filter(s => s.status === 'active');
+  const activeSubs = subs.filter(s => s.status === 'active' && !isExpired(s));
   if (activeSubs.length === 0) return;
 
   const today = new Date();
@@ -4458,15 +4471,15 @@ function renderTab6() {
 
   const thisMonthNum = today.getMonth() + 1;
 
-  // 이번 달 구독 합계
+  // 이번 달 구독 합계 (만료된 건 제외)
   let monthlyTotal = 0;
   subs.forEach(s => {
-    if (s.status === 'active' && isPaymentMonth(s, thisMonthNum)) monthlyTotal += s.amount;
+    if (s.status === 'active' && !isExpired(s) && isPaymentMonth(s, thisMonthNum)) monthlyTotal += s.amount;
   });
 
   // 7일 이내 결제 예정 (이번 달이 결제월이고 payDay가 오늘~+7)
   const upcoming = subs.filter(s => {
-    if (s.status !== 'active') return false;
+    if (s.status !== 'active' || isExpired(s)) return false;
     if (!isPaymentMonth(s, thisMonthNum)) return false;
     const payDay = parseInt(s.payDay || 1);
     const diff = payDay - todayD;
@@ -4495,9 +4508,9 @@ function renderTab6() {
   }
 
   // 요약 카드
-  const activeCount = subs.filter(s => s.status === 'active').length;
+  const activeCount = subs.filter(s => s.status === 'active' && !isExpired(s)).length;
   // 이번 달 결제 대상 중 아직 내역 미등록
-  const notAddedCount = subs.filter(s => s.status === 'active' && isPaymentMonth(s, thisMonthNum) && !addedThisMonth.has(s.id)).length;
+  const notAddedCount = subs.filter(s => s.status === 'active' && !isExpired(s) && isPaymentMonth(s, thisMonthNum) && !addedThisMonth.has(s.id)).length;
   html += `<div class="card" style="margin-bottom:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${notAddedCount > 0 ? '12px' : '0'}">
       <div>
@@ -4550,30 +4563,33 @@ function renderTab6() {
           ${[...Array(31)].map((_,i)=>`<option value="${i+1}">${i+1}일</option>`).join('')}
         </select>
       </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label style="font-size:13px;color:var(--text2);white-space:nowrap">종료달 (선택)</label>
+        <input type="month" id="subEndDate" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px;color:var(--text);font-family:inherit;font-size:13px" placeholder="">
+      </div>
       <button onclick="addSub()" style="background:var(--accent);color:var(--bg);border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">추가하기</button>
     </div>
   </div>`;
 
-  // 구독 목록
-  const activeSubs = subs.filter(s => s.status === 'active');
-  const pausedSubs = subs.filter(s => s.status !== 'active');
+  // 구독 목록 (활성 / 만료됨 / 해지됨)
+  const activeSubs   = subs.filter(s => s.status === 'active' && !isExpired(s));
+  const expiredSubs  = subs.filter(s => isExpired(s));
+  const cancelledSubs = subs.filter(s => s.status !== 'active' && !isExpired(s));
 
-  if (activeSubs.length === 0 && pausedSubs.length === 0) {
+  if (activeSubs.length === 0 && expiredSubs.length === 0 && cancelledSubs.length === 0) {
     html += `<div style="text-align:center;color:var(--text2);padding:30px 0">구독 중인 서비스가 없어요 🙂</div>`;
   } else {
     if (activeSubs.length > 0) {
       html += `<div class="card-title" style="margin-bottom:8px">🟢 구독 중 (${activeSubs.length})</div>`;
-      activeSubs.forEach((s) => {
-        const realIdx = subs.indexOf(s);
-        html += renderSubRow(s, realIdx, today, addedThisMonth);
-      });
+      activeSubs.forEach(s => { html += renderSubRow(s, subs.indexOf(s), today, addedThisMonth); });
     }
-    if (pausedSubs.length > 0) {
-      html += `<div class="card-title" style="margin:16px 0 8px;color:var(--text2)">⏸ 해지됨 (${pausedSubs.length})</div>`;
-      pausedSubs.forEach((s) => {
-        const realIdx = subs.indexOf(s);
-        html += renderSubRow(s, realIdx, today, addedThisMonth);
-      });
+    if (expiredSubs.length > 0) {
+      html += `<div class="card-title" style="margin:16px 0 8px;color:#e2b96b">⏰ 만료됨 (${expiredSubs.length})</div>`;
+      expiredSubs.forEach(s => { html += renderSubRow(s, subs.indexOf(s), today, addedThisMonth); });
+    }
+    if (cancelledSubs.length > 0) {
+      html += `<div class="card-title" style="margin:16px 0 8px;color:var(--text2)">⏸ 해지됨 (${cancelledSubs.length})</div>`;
+      cancelledSubs.forEach(s => { html += renderSubRow(s, subs.indexOf(s), today, addedThisMonth); });
     }
   }
 
@@ -4597,10 +4613,12 @@ function renderTab6() {
 let _editSubIdx = -1;
 
 function renderSubRow(s, idx, today, addedThisMonth) {
-  const isActive = s.status === 'active';
+  const expired  = isExpired(s);
+  const isActive = s.status === 'active' && !expired;
   const cycleLabel = getCycleLabel(s);
   const amtColor = isActive ? 'var(--text)' : 'var(--text2)';
   const nameStyle = isActive ? '' : 'text-decoration:line-through;color:var(--text2)';
+  const rowOpacity = isActive ? '' : 'opacity:0.5';
   const alreadyAdded = addedThisMonth && addedThisMonth.has(s.id);
   const thisMonthPay = isPaymentMonth(s, today.getMonth() + 1);
   const addBtn = isActive && thisMonthPay
@@ -4609,6 +4627,11 @@ function renderSubRow(s, idx, today, addedThisMonth) {
         : `<button onclick="addSubToHistory(${idx})" style="background:rgba(88,166,255,0.15);color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">내역 추가</button>`)
     : isActive && !thisMonthPay
       ? `<span style="font-size:11px;color:var(--text3)">이번 달 아님</span>`
+      : '';
+  const statusBadge = expired
+    ? `<span style="font-size:10px;background:rgba(226,185,107,0.2);color:#e2b96b;border:1px solid #e2b96b;border-radius:4px;padding:2px 6px;margin-left:6px">만료</span>`
+    : !isActive
+      ? `<span style="font-size:10px;background:var(--card2);color:var(--text2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;margin-left:6px">해지</span>`
       : '';
 
   // 수정 폼 (펼쳐진 상태)
@@ -4633,6 +4656,10 @@ function renderSubRow(s, idx, today, addedThisMonth) {
         <div id="editSubPayMonthWrap" style="display:${showPayMonth?'':'none'}">
           <select id="editSubPayMonth" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px;color:var(--text);font-family:inherit;font-size:14px">${monthOpts}</select>
         </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="font-size:13px;color:var(--text2);white-space:nowrap">종료달</label>
+          <input type="month" id="editSubEndDate" value="${s.endDate || ''}" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px;color:var(--text);font-family:inherit;font-size:13px">
+        </div>
         <div style="display:flex;gap:8px">
           <button onclick="saveSubEdit(${idx})" style="flex:1;background:var(--accent);color:var(--bg);border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">저장</button>
           <button onclick="cancelSubEdit()" style="flex:1;background:var(--border);color:var(--text2);border:none;border-radius:8px;padding:9px;font-size:13px;cursor:pointer;font-family:inherit">취소</button>
@@ -4641,18 +4668,18 @@ function renderSubRow(s, idx, today, addedThisMonth) {
     </div>`;
   }
 
-  return `<div class="card" style="margin-bottom:8px;padding:12px 14px;${isActive ? '' : 'opacity:0.6'}">
+  return `<div class="card" style="margin-bottom:8px;padding:12px 14px;${rowOpacity}">
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <div style="font-size:14px;font-weight:600;${nameStyle}">${s.name}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600;${nameStyle}">${s.name}${statusBadge}</div>
         <div style="font-size:12px;color:var(--text2);margin-top:2px">${cycleLabel}</div>
       </div>
-      <div style="text-align:right">
+      <div style="text-align:right;flex-shrink:0;margin-left:8px">
         <div style="font-size:15px;font-weight:700;color:${amtColor}">${formatKRW(s.amount)}</div>
         <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">
           ${addBtn}
           <button onclick="editSub(${idx})" style="background:rgba(88,166,255,0.15);color:var(--accent);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">수정</button>
-          <button onclick="toggleSubStatus(${idx})" style="background:${isActive ? 'var(--border)' : 'rgba(63,185,80,0.15)'};color:${isActive ? 'var(--text2)' : '#3fb950'};border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">${isActive ? '해지' : '복구'}</button>
+          ${!expired ? `<button onclick="toggleSubStatus(${idx})" style="background:${isActive ? 'var(--border)' : 'rgba(63,185,80,0.15)'};color:${isActive ? 'var(--text2)' : '#3fb950'};border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">${isActive ? '해지' : '복구'}</button>` : ''}
           <button onclick="deleteSub(${idx})" style="background:rgba(248,81,73,0.15);color:#f85149;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit">삭제</button>
         </div>
       </div>
@@ -4680,7 +4707,8 @@ function saveSubEdit(idx) {
 
   const subs = loadSubs();
   if (!subs[idx]) return;
-  subs[idx] = { ...subs[idx], name, amount, cycle, payDay, payMonth };
+  const endDate = (document.getElementById('editSubEndDate').value || '').trim() || null;
+  subs[idx] = { ...subs[idx], name, amount, cycle, payDay, payMonth, endDate };
   saveSubs(subs);
   _editSubIdx = -1;
   renderTab6();
@@ -4698,8 +4726,9 @@ function addSub() {
   if (!name) { alert('서비스명을 입력해주세요'); return; }
   if (!amount || amount <= 0) { alert('금액을 입력해주세요'); return; }
 
+  const endDate = (document.getElementById('subEndDate').value || '').trim() || null;
   const subs = loadSubs();
-  subs.push({ id: String(Date.now()), name, amount, cycle, payDay, payMonth, status: 'active' });
+  subs.push({ id: String(Date.now()), name, amount, cycle, payDay, payMonth, endDate, status: 'active' });
   saveSubs(subs);
   renderTab6();
 }
