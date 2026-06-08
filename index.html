@@ -4690,7 +4690,7 @@ function saveAssets(d) { localStorage.setItem(ASSETS_KEY, JSON.stringify(d)); }
 function addAsset() {
   const d = loadAssets();
   const id = String(Date.now());
-  d.assets.push({ id, name: '', type: '현금·예금', amount: 0 });
+  d.assets.push({ id, name: '', type: '현금·예금', amount: 0, jeonse: 0 });
   saveAssets(d);
   renderTab5();
   setTimeout(() => { const el = document.getElementById('an-' + id); if (el) el.focus(); }, 50);
@@ -4710,8 +4710,17 @@ function saveAssetRow(id) {
   row.name   = (document.getElementById('an-' + id)||{}).value || '';
   row.type   = (document.getElementById('at-' + id)||{}).value || '현금·예금';
   row.amount = parseInt((document.getElementById('aa-' + id)||{}).value || '0') || 0;
+  row.jeonse = parseInt((document.getElementById('aj-' + id)||{}).value || '0') || 0;
   saveAssets(d);
   renderTab5();
+}
+
+// 부동산 선택 시 전세금 필드 표시/숨김
+function onAssetTypeChange(id) {
+  const type = (document.getElementById('at-' + id)||{}).value;
+  const jRow = document.getElementById('ajrow-' + id);
+  if (jRow) jRow.style.display = type === '부동산' ? 'flex' : 'none';
+  saveAssetRow(id);
 }
 function saveLiabRow(id) {
   const d = loadAssets();
@@ -4770,9 +4779,14 @@ function renderTab5() {
   const TYPE_ICONS  = { '현금·예금':'💵', '적금':'🏦', '주식·ETF':'📈', '부동산':'🏠', '연금·퇴직금':'🏛️', '기타':'💼' };
   const TYPE_COLORS = { '현금·예금':'var(--accent)', '적금':'#79c0ff', '주식·ETF':'#3fb950', '부동산':'#e2b96b', '연금·퇴직금':'#d2a8ff', '기타':'var(--text2)' };
 
-  const totalAsset = d.assets.reduce((s, a) => s + (a.amount || 0), 0);
-  const totalLiab  = d.liabilities.reduce((s, l) => s + (l.amount || 0), 0);
-  const netWorth   = totalAsset - totalLiab;
+  const totalAsset  = d.assets.reduce((s, a) => s + (a.amount || 0), 0);
+  const totalLiab   = d.liabilities.reduce((s, l) => s + (l.amount || 0), 0);
+  const netWorth    = totalAsset - totalLiab;
+  // 전세레버리지 집계
+  const reAssets    = d.assets.filter(a => a.type === '부동산' && (a.jeonse || 0) > 0);
+  const totalJeonse = reAssets.reduce((s, a) => s + (a.jeonse || 0), 0);
+  const totalREVal  = reAssets.reduce((s, a) => s + (a.amount || 0), 0);
+  const totalEquity = totalREVal - totalJeonse;
 
   // 유형별 합계
   const byType = {};
@@ -4876,6 +4890,30 @@ function renderTab5() {
       </div>` : ''}
     </div>
 
+    <!-- 전세레버리지 요약 (전세금 있는 부동산이 있을 때만) -->
+    ${totalJeonse > 0 ? `
+    <div class="card" style="margin-bottom:16px;border-color:#e2b96b44">
+      <div style="font-size:13px;font-weight:700;color:#e2b96b;margin-bottom:12px">🏠 전세레버리지 현황</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+        <div style="background:var(--card2);border-radius:8px;padding:10px 6px">
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">부동산 시세</div>
+          <div style="font-size:13px;font-weight:700;color:#e2b96b">${formatKRW(totalREVal)}</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:10px 6px">
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">전세금(레버리지)</div>
+          <div style="font-size:13px;font-weight:700;color:#79c0ff">${formatKRW(totalJeonse)}</div>
+        </div>
+        <div style="background:var(--card2);border-radius:8px;padding:10px 6px">
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">실투자금</div>
+          <div style="font-size:13px;font-weight:700;color:var(--accent)">${formatKRW(totalEquity)}</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text2);display:flex;justify-content:space-between;align-items:center">
+        <span>전세가율 <strong style="color:${totalREVal>0&&totalJeonse/totalREVal>0.8?'#f85149':'#3fb950'}">${totalREVal > 0 ? Math.round(totalJeonse/totalREVal*100) : 0}%</strong></span>
+        <span style="color:var(--text3);font-size:10px">전세금은 임차인 반환 의무 있음 → 부채에 추가 권장</span>
+      </div>
+    </div>` : ''}
+
     <!-- 자산 입력 -->
     <div class="card yr-section">
       <div class="yr-section-header">
@@ -4883,18 +4921,32 @@ function renderTab5() {
         <button class="yr-add-btn" onclick="addAsset()">+ 추가</button>
       </div>
       ${d.assets.length === 0 ? '<div style="font-size:12px;color:var(--text2);padding:6px 0">위 안내를 참고해서 자산을 추가해주세요</div>' : ''}
-      ${d.assets.map(r => `
-      <div class="yr-item-row" style="align-items:center;gap:4px;flex-wrap:wrap">
-        <input class="yr-name-input" id="an-${r.id}" value="${r.name}" placeholder="항목명 (예: 신한은행)"
-          style="flex:2;min-width:80px" onchange="saveAssetRow('${r.id}')">
-        <select id="at-${r.id}" onchange="saveAssetRow('${r.id}')"
-          style="flex:2;min-width:90px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:6px 4px">
-          ${ASSET_TYPES.map(t => `<option value="${t}" ${r.type===t?'selected':''}>${TYPE_ICONS[t]} ${t}</option>`).join('')}
-        </select>
-        <input class="yr-formula-input" id="aa-${r.id}" type="number" value="${r.amount||''}" placeholder="금액"
-          style="flex:2;min-width:80px;text-align:right" onchange="saveAssetRow('${r.id}')">
-        <button class="yr-del-btn" onclick="deleteAsset('${r.id}')">✕</button>
-      </div>`).join('')}
+      ${d.assets.map(r => {
+        const isRE = r.type === '부동산';
+        const jeonse = r.jeonse || 0;
+        const equity = isRE && jeonse > 0 ? (r.amount||0) - jeonse : null;
+        return `
+      <div style="border-bottom:1px solid var(--card2);padding:6px 0">
+        <div class="yr-item-row" style="align-items:center;gap:4px;flex-wrap:nowrap;margin-bottom:${isRE?'4px':'0'}">
+          <input class="yr-name-input" id="an-${r.id}" value="${r.name}" placeholder="항목명"
+            style="flex:2;min-width:70px" onchange="saveAssetRow('${r.id}')">
+          <select id="at-${r.id}" onchange="onAssetTypeChange('${r.id}')"
+            style="flex:2;min-width:90px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:6px 4px">
+            ${ASSET_TYPES.map(t => `<option value="${t}" ${r.type===t?'selected':''}>${TYPE_ICONS[t]} ${t}</option>`).join('')}
+          </select>
+          <input class="yr-formula-input" id="aa-${r.id}" type="number" value="${r.amount||''}" placeholder="시세(원)"
+            style="flex:2;min-width:80px;text-align:right" onchange="saveAssetRow('${r.id}')">
+          <button class="yr-del-btn" onclick="deleteAsset('${r.id}')">✕</button>
+        </div>
+        <!-- 전세금 입력 (부동산 전용) -->
+        <div id="ajrow-${r.id}" style="display:${isRE?'flex':'none'};align-items:center;gap:4px;padding-left:4px;flex-wrap:nowrap">
+          <span style="font-size:11px;color:#e2b96b;white-space:nowrap;min-width:52px">🏷️ 전세금</span>
+          <input id="aj-${r.id}" type="number" value="${jeonse||''}" placeholder="전세보증금(원)"
+            style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:5px 8px;text-align:right"
+            onchange="saveAssetRow('${r.id}')">
+          ${equity !== null ? `<span style="font-size:11px;color:var(--text2);white-space:nowrap">실투자 <strong style="color:var(--accent)">${formatKRW(equity)}</strong></span>` : '<span style="font-size:11px;color:var(--text3)">입력하면 실투자금 계산</span>'}
+        </div>
+      </div>`;}).join('')}
       <div class="yr-total-row"><span>자산 합계</span><span style="color:#3fb950">${formatKRW(totalAsset)}</span></div>
     </div>
 
