@@ -1,5 +1,5 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v2';  // 버전 올리면 이전 캐시 자동 삭제
+const CACHE_NAME = 'gagyebu-v3';  // 버전 올리면 이전 캐시 자동 삭제
 
 // 설치: 핵심 파일 캐시
 self.addEventListener('install', (e) => {
