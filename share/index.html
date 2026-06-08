@@ -1664,7 +1664,7 @@ const STORAGE_KEY   = 'my_budget_data';
 const TX_ORDER_KEY  = 'my_tx_order';
 let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
-const APP_VERSION = 'v24'; // deploy.py가 자동으로 올림
+const APP_VERSION = 'v25'; // deploy.py가 자동으로 올림
 const NICKNAME_KEY = 'my_nickname';
 
 let currentMonth; // YYYY-MM
@@ -5648,19 +5648,23 @@ function closeUpdateBanner() {
 }
 
 async function forceUpdate() {
-  showToast('🔄 최신 버전 확인 중...', '#888');
+  showToast('🔄 최신 버전으로 업데이트 중...', '#888');
   try {
-    // 대기 중인 SW가 있으면 즉시 활성화
+    // 1. 대기 중인 SW가 있으면 즉시 활성화
     if (swReg && swReg.waiting) {
       swReg.waiting.postMessage({ type: 'SKIP_WAITING' });
-      return; // controllerchange 이벤트가 location.reload() 실행함
+      return; // controllerchange 이벤트가 자동으로 reload
     }
-    // 없으면 캐시 전체 삭제 후 새로고침
+    // 2. 캐시 전체 삭제
     if ('caches' in window) {
       const keys = await caches.keys();
       await Promise.all(keys.map(k => caches.delete(k)));
     }
-    if (swReg) await swReg.update();
+    // 3. SW 등록 완전 해제 (다음 로드 시 네트워크에서 직접 받음)
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
     location.reload();
   } catch(e) {
     location.reload();
