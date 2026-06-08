@@ -1347,6 +1347,20 @@
   </div>
 </div>
 
+<!-- 닉네임 설정 모달 -->
+<div class="modal-overlay" id="nicknameModal" onclick="if(event.target===this&&getNickname())closeNicknameModal()">
+  <div class="modal-box" style="max-width:340px;text-align:center">
+    <div style="font-size:40px;margin-bottom:12px">✏️</div>
+    <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">닉네임을 입력해주세요</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:20px">앱 제목에 표시됩니다<br>예) <span id="nicknamePreview">나</span>의 가계부</div>
+    <input id="nicknameInput" type="text" maxlength="10" placeholder="닉네임 (최대 10자)"
+      style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;padding:10px 14px;text-align:center;margin-bottom:14px;font-family:inherit"
+      oninput="document.getElementById('nicknamePreview').textContent=this.value||'나'"
+      onkeydown="if(event.key==='Enter')saveNickname()">
+    <button onclick="saveNickname()" style="width:100%;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:15px;font-weight:700;padding:12px;cursor:pointer">저장하기</button>
+  </div>
+</div>
+
 <!-- 거래 편집 모달 -->
 <div class="edit-modal-overlay" id="editModal" onclick="closeEditModalOutside(event)">
   <div class="edit-modal-box">
@@ -1623,12 +1637,50 @@
 const STORAGE_KEY   = 'my_budget_data';
 const TX_ORDER_KEY  = 'hanna_tx_order';
 let currentType = 'income';
+const IS_SHARED = true; // 공유용에서는 true로 변환됨
+const NICKNAME_KEY = 'my_nickname';
+
 let currentMonth; // YYYY-MM
 let catMonth;
 let analysisMonth; // YYYY-MM (분석 탭 기준월)
 let categoryChartInstance = null;
 let netWorthChartInstance = null;
 let activeTabN = 1; // 현재 보이는 탭 번호
+
+function getNickname() {
+  return localStorage.getItem(NICKNAME_KEY) || '';
+}
+function applyNickname() {
+  const name = getNickname();
+  const h1 = document.querySelector('.header h1');
+  if (h1 && IS_SHARED) {
+    h1.textContent = name ? '💰 ' + name + '의 가계부' : '💰 나만의 가계부';
+  }
+}
+function openNicknameModal() {
+  document.getElementById('nicknameModal').classList.add('open');
+  const saved = getNickname();
+  document.getElementById('nicknameInput').value = saved;
+  setTimeout(() => document.getElementById('nicknameInput').focus(), 100);
+}
+function closeNicknameModal() {
+  document.getElementById('nicknameModal').classList.remove('open');
+}
+function saveNickname() {
+  const val = document.getElementById('nicknameInput').value.trim();
+  if (!val) { showToast('닉네임을 입력해주세요'); return; }
+  localStorage.setItem(NICKNAME_KEY, val);
+  applyNickname();
+  closeNicknameModal();
+  showToast('✅ ' + val + '의 가계부로 설정됐어요!');
+}
+function checkNicknameOnLoad() {
+  if (!IS_SHARED) return;
+  applyNickname();
+  if (!getNickname()) {
+    setTimeout(() => openNicknameModal(), 500);
+  }
+}
 
 function themeColor(name) {
   return getComputedStyle(document.documentElement).getPropertyValue('--' + name).trim();
@@ -1998,6 +2050,7 @@ function parseNL() {
 
 function init() {
   initTheme();
+  checkNicknameOnLoad();
   const now = new Date();
   currentMonth = toYM(now);
   catMonth = toYM(now);
@@ -5215,5 +5268,6 @@ init();
 </script>
 </body>
 </html>
+
 
 
