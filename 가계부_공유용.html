@@ -1361,6 +1361,26 @@
   </div>
 </div>
 
+<!-- 응원 팝업 -->
+<div id="cheerModal" onclick="closeCheerModal()" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;cursor:pointer">
+  <div style="background:var(--card);border-radius:24px;padding:40px 36px;max-width:320px;width:90%;text-align:center;cursor:default;animation:cheerIn 0.4s ease" onclick="event.stopPropagation()">
+    <div style="font-size:52px;margin-bottom:16px">🎯</div>
+    <div id="cheerName" style="font-size:22px;font-weight:800;color:var(--accent);margin-bottom:8px"></div>
+    <div style="font-size:16px;color:var(--text);line-height:1.8;margin-bottom:24px">
+      당신의 자산목표 달성을<br>
+      <strong style="color:var(--accent)">진심으로 응원합니다</strong> 💪
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:20px">매일 꾸준히 기록하면<br>목표에 가까워져요 ✨</div>
+    <button onclick="closeCheerModal()" style="background:var(--accent);border:none;border-radius:12px;color:#fff;font-size:14px;font-weight:700;padding:12px 32px;cursor:pointer;font-family:inherit">시작할게요!</button>
+  </div>
+</div>
+<style>
+@keyframes cheerIn {
+  from { transform: scale(0.8) translateY(20px); opacity: 0; }
+  to   { transform: scale(1) translateY(0);       opacity: 1; }
+}
+</style>
+
 <!-- 거래 편집 모달 -->
 <div class="edit-modal-overlay" id="editModal" onclick="closeEditModalOutside(event)">
   <div class="edit-modal-box">
@@ -1407,6 +1427,16 @@
     <div class="settings-header">
       <span class="settings-title">⚙️ 구글 시트 연동 설정</span>
       <button class="settings-close" onclick="closeSettings()">✕</button>
+    </div>
+
+    <!-- 닉네임 변경 (공유용 전용) -->
+    <div id="nicknameSettingsSection" style="display:none;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)">
+      <label class="settings-label">✏️ 닉네임 변경</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-size:13px;color:var(--text2)">현재: </span>
+        <span id="currentNicknameDisplay" style="font-size:14px;font-weight:700;color:var(--accent)"></span>
+        <button onclick="closeSettings();openNicknameModal()" style="margin-left:auto;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;padding:6px 14px;cursor:pointer;font-family:inherit">변경하기</button>
+      </div>
     </div>
 
     <label class="settings-label">구글 Apps Script 웹앱 URL</label>
@@ -1672,7 +1702,17 @@ function saveNickname() {
   localStorage.setItem(NICKNAME_KEY, val);
   applyNickname();
   closeNicknameModal();
-  showToast('✅ ' + val + '의 가계부로 설정됐어요!');
+  // 응원 팝업
+  const modal = document.getElementById('cheerModal');
+  const nameEl = document.getElementById('cheerName');
+  if (modal && nameEl) {
+    nameEl.textContent = val + '님,';
+    modal.style.display = 'flex';
+  }
+}
+function closeCheerModal() {
+  const modal = document.getElementById('cheerModal');
+  if (modal) modal.style.display = 'none';
 }
 function checkNicknameOnLoad() {
   if (!IS_SHARED) return;
@@ -3631,6 +3671,13 @@ function closeHelp(e) {
 function openSettings() {
   document.getElementById('sheetsUrlInput').value = getSheetsUrl();
   document.getElementById('syncLog').textContent = '';
+  // 닉네임 섹션: 공유용에서만 표시
+  const ns = document.getElementById('nicknameSettingsSection');
+  if (ns) {
+    ns.style.display = IS_SHARED ? 'block' : 'none';
+    const nd = document.getElementById('currentNicknameDisplay');
+    if (nd) nd.textContent = getNickname() || '(미설정)';
+  }
   document.getElementById('settingsModal').classList.add('open');
 }
 
