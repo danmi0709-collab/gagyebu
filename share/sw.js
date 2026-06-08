@@ -19,18 +19,21 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();  // 열려있는 탭도 즉시 새 SW 적용
 });
 
-// 네트워크 요청: 항상 네트워크 먼저 → 실패 시 캐시 (오프라인 대비)
+// 네트워크 요청: HTTP 캐시 무시하고 항상 서버에서 새로 받음 → 실패 시 캐시
 self.addEventListener('fetch', (e) => {
+  if (e.request.method !== 'GET') return;
+
+  const isLocal = e.request.url.startsWith(self.location.origin);
+
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, isLocal ? { cache: 'no-cache' } : {})
       .then((res) => {
-        // 성공 시 캐시 갱신
-        if (res && res.status === 200 && e.request.method === 'GET') {
+        if (res && res.status === 200) {
           const clone = res.clone();
           caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
         }
         return res;
       })
-      .catch(() => caches.match(e.request))  // 오프라인이면 캐시에서
+      .catch(() => caches.match(e.request))
   );
 });
