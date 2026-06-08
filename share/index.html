@@ -5310,7 +5310,219 @@ function renderBudgetBars() {
 }
 
 init();
+
+// ══════════════════════════════════════════
+// SW 업데이트 감지 + 설치 유도 배너
+// ══════════════════════════════════════════
+
+// ── 공통 유틸 ──
+function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+function isSafariBrowser() { return /^((?!chrome|android).)*safari/i.test(navigator.userAgent); }
+function isInStandaloneMode() {
+  return window.matchMedia('(display-mode: standalone)').matches || !!window.navigator.standalone;
+}
+
+// ── SW 등록 & 업데이트 감지 ──
+let swReg = null;
+
+if (IS_SHARED && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    swReg = reg;
+
+    // 이미 waiting 중인 새 SW가 있으면 바로 알림
+    if (reg.waiting && navigator.serviceWorker.controller) {
+      getReleaseNotes(reg.waiting).then(notes => showUpdateBanner(notes));
+    }
+
+    // 새 SW 설치 시작 감지
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          getReleaseNotes(newWorker).then(notes => showUpdateBanner(notes));
+        }
+      });
+    });
+  }).catch(() => {});
+
+  // SW 교체 완료 → 자동 새로고침
+  navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
+}
+
+function getReleaseNotes(worker) {
+  return new Promise(resolve => {
+    try {
+      const mc = new MessageChannel();
+      mc.port1.onmessage = e => resolve((e.data && e.data.notes) || '');
+      mc.port1.onerror  = () => resolve('');
+      worker.postMessage({ type: 'GET_RELEASE_NOTES' }, [mc.port2]);
+      setTimeout(() => resolve(''), 1500); // 타임아웃
+    } catch(e) { resolve(''); }
+  });
+}
+
+function showUpdateBanner(notes) {
+  const banner = document.getElementById('updateBanner');
+  if (!banner) return;
+  if (notes) {
+    const nd = document.getElementById('updateNotes');
+    if (nd) { nd.textContent = '변경사항: ' + notes; nd.style.display = 'block'; }
+  }
+  banner.style.display = 'flex';
+  setTimeout(() => banner.classList.add('show'), 80);
+}
+
+function doUpdate() {
+  if (swReg && swReg.waiting) {
+    swReg.waiting.postMessage({ type: 'SKIP_WAITING' });
+  } else {
+    location.reload();
+  }
+}
+
+function closeUpdateBanner() {
+  const b = document.getElementById('updateBanner');
+  if (b) { b.classList.remove('show'); setTimeout(() => b.style.display='none', 300); }
+}
+
+// ── PWA 설치 유도 배너 ──
+const PWA_PROMPT_KEY = 'my_pwa_prompt_shown';
+let pwaDeferred = null;
+
+function showInstallBanner() {
+  if (!IS_SHARED) return;
+  if (isInStandaloneMode()) return;
+  if (localStorage.getItem(PWA_PROMPT_KEY)) return;
+  if (isIOS() && !isSafariBrowser()) return;
+  const banner = document.getElementById('installBanner');
+  if (banner) setTimeout(() => banner.classList.add('show'), 2500);
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault(); pwaDeferred = e; showInstallBanner();
+});
+window.addEventListener('load', () => { if (IS_SHARED && isIOS()) showInstallBanner(); });
+
+async function doInstall() {
+  if (pwaDeferred) {
+    pwaDeferred.prompt();
+    await pwaDeferred.userChoice.catch(()=>{});
+    pwaDeferred = null;
+  }
+  localStorage.setItem(PWA_PROMPT_KEY, '1');
+  const b = document.getElementById('installBanner');
+  if (b) { b.classList.remove('show'); }
+}
+
+function closeInstallBanner() {
+  localStorage.setItem(PWA_PROMPT_KEY, '1');
+  const b = document.getElementById('installBanner');
+  if (b) b.classList.remove('show');
+}
+
 </script>
+
+<!-- ── 업데이트 알림 배너 ── -->
+<style>
+#updateBanner {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: linear-gradient(135deg, #c07a3a, #a06030);
+  color: #fff;
+  padding: 10px 14px;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 9998;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  transform: translateY(-100%);
+  transition: transform .3s ease;
+}
+#updateBanner.show { transform: translateY(0); }
+#updateBannerRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#updateBannerRow span { flex: 1; font-size: 14px; font-weight: 600; }
+#updateBannerRow button {
+  border: none; cursor: pointer; border-radius: 6px;
+  padding: 5px 10px; font-size: 13px; font-weight: 600;
+}
+#updateRefreshBtn { background: #fff; color: #c07a3a; }
+#updateCloseBtn   { background: rgba(255,255,255,.25); color: #fff; min-width: 28px; }
+#updateNotes {
+  display: none;
+  font-size: 12px;
+  color: rgba(255,255,255,.85);
+  padding: 2px 2px 0;
+  line-height: 1.4;
+}
+
+/* ── 설치 유도 배너 ── */
+#installBanner {
+  position: fixed;
+  bottom: 70px; left: 50%; transform: translateX(-50%) translateY(120px);
+  background: #fff;
+  border: 1.5px solid #c07a3a;
+  border-radius: 14px;
+  padding: 12px 16px;
+  width: min(320px, calc(100vw - 32px));
+  box-shadow: 0 4px 20px rgba(0,0,0,.15);
+  z-index: 9997;
+  transition: transform .35s ease, opacity .35s ease;
+  opacity: 0;
+}
+#installBanner.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+.install-banner-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.install-banner-icon { font-size: 28px; }
+.install-banner-text { flex: 1; }
+.install-banner-text b { display: block; font-size: 14px; color: #333; margin-bottom: 2px; }
+.install-banner-text small { font-size: 12px; color: #777; }
+.install-banner-close {
+  border: none; background: none; font-size: 18px; color: #aaa;
+  cursor: pointer; padding: 0; line-height: 1;
+}
+.install-banner-btns { margin-top: 10px; display: flex; gap: 8px; }
+.install-banner-btns button {
+  flex: 1; padding: 8px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer; border: none;
+}
+.install-btn-ok  { background: #c07a3a; color: #fff; }
+.install-btn-no  { background: #f0ece6; color: #666; }
+</style>
+
+<div id="updateBanner">
+  <div id="updateBannerRow">
+    <span>✨ 새 버전이 있어요!</span>
+    <button id="updateRefreshBtn" onclick="doUpdate()">지금 새로고침</button>
+    <button id="updateCloseBtn"   onclick="closeUpdateBanner()">✕</button>
+  </div>
+  <div id="updateNotes"></div>
+</div>
+
+<div id="installBanner">
+  <div class="install-banner-row">
+    <span class="install-banner-icon">📲</span>
+    <div class="install-banner-text">
+      <b>홈 화면에 추가하면 더 편리해요!</b>
+      <small>앱처럼 바로 열 수 있어요</small>
+    </div>
+    <button class="install-banner-close" onclick="closeInstallBanner()">✕</button>
+  </div>
+  <div class="install-banner-btns">
+    <button class="install-btn-ok" onclick="doInstall()">홈에 추가하기</button>
+    <button class="install-btn-no" onclick="closeInstallBanner()">다음에</button>
+  </div>
+</div>
+
 </body>
 </html>
 
