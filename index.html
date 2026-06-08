@@ -1870,7 +1870,18 @@ const CHART_COLORS = ['#e2b96b','var(--accent)','#3fb950','#f85149','#d2a8ff','#
 function loadData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : { transactions: [] };
+    if (raw) return JSON.parse(raw);
+    // 공유앱: 이전 버전이 hanna_budget_data 키로 저장했을 경우 자동 마이그레이션
+    if (IS_SHARED) {
+      const legacy = localStorage.getItem('hanna_budget_data');
+      if (legacy) {
+        const d = JSON.parse(legacy);
+        localStorage.setItem(STORAGE_KEY, legacy);
+        localStorage.removeItem('hanna_budget_data');
+        return d;
+      }
+    }
+    return { transactions: [] };
   } catch { return { transactions: [] }; }
 }
 
@@ -2754,8 +2765,16 @@ function exportExcel(mode) {
 }
 
 function exportJSON() {
-  const data = loadData();
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const backup = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    transactions: loadData().transactions || [],
+    annual:       loadAnnual(),
+    subscriptions: loadSubs(),
+    assets:       loadAssets(),
+    budgetLearn:  loadBudgetLearn(),
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   const today = new Date().toISOString().slice(0, 10);
@@ -2771,10 +2790,15 @@ function importJSON(e) {
   const reader = new FileReader();
   reader.onload = ev => {
     try {
-      const data = JSON.parse(ev.target.result);
-      if (!data.transactions) throw new Error();
-      if (confirm(`${data.transactions.length}개의 내역을 불러올까요?\n기존 데이터는 덮어씌워집니다.`)) {
-        saveData(data);
+      const d = JSON.parse(ev.target.result);
+      const txCount = (d.transactions || []).length;
+      if (txCount === 0 && !d.annual && !d.subscriptions) throw new Error();
+      if (confirm(`거래내역 ${txCount}개 포함된 백업을 불러올까요?\n기존 데이터는 덮어씌워집니다.`)) {
+        saveData({ transactions: d.transactions || [] });
+        if (d.annual)       saveAnnual(d.annual);
+        if (d.subscriptions) saveSubs(d.subscriptions);
+        if (d.assets)        saveAssets(d.assets);
+        if (d.budgetLearn)   saveBudgetLearn(d.budgetLearn);
         renderAll();
         alert('데이터를 불러왔습니다!');
       }
