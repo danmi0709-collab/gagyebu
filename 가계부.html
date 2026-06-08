@@ -1227,6 +1227,7 @@
   <div class="backup-row" style="margin-top:6px">
     <button class="btn-backup" style="color:#e07b39;border-color:#e07b39;font-size:0.82rem" onclick="recoverLostData()">🔍 데이터 찾기 (복구 시도)</button>
   </div>
+  <div style="margin-top:10px;text-align:right;font-size:0.78rem;color:var(--text-muted);opacity:0.7">앱 버전 <span id="appVersionBadge"></span></div>
 </div>
 
 <!-- 카카오페이 가져오기 모달 -->
@@ -1675,6 +1676,7 @@ const STORAGE_KEY   = 'hanna_budget_data';
 const TX_ORDER_KEY  = 'hanna_tx_order';
 let currentType = 'income';
 const IS_SHARED = false; // 공유용에서는 true로 변환됨
+const APP_VERSION = 'v20'; // deploy.py가 자동으로 올림
 const NICKNAME_KEY = 'hanna_nickname';
 
 let currentMonth; // YYYY-MM
@@ -2140,6 +2142,8 @@ function init() {
   migrateOldKeys();
   initTheme();
   checkNicknameOnLoad();
+  const badge = document.getElementById('appVersionBadge');
+  if (badge) badge.textContent = APP_VERSION;
   const now = new Date();
   currentMonth = toYM(now);
   catMonth = toYM(now);

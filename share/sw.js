@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v20';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '백업 파일명에 거래건수 표시 (예: 가계부_백업_2026-06-08_47건.json)';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v21';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '설정 탭에 앱 버전 표시 (v숫자)';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
