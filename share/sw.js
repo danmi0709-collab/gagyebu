@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v30';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '복원 전 자동 임시저장+취소 버튼, 빈 연예산으로 덮어쓰기 방지';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v31';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '연예산 탭에 연예산 전용 백업/복원 버튼 추가 (전체 백업 파일도 지원)';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {

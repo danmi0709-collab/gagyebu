@@ -1643,6 +1643,13 @@
 
   <!-- 연진행 현황 (예산 대비 실제 사용) -->
   <div id="yr-progress"></div>
+
+  <!-- 연예산 백업/복원 -->
+  <div style="display:flex;gap:8px;margin-top:10px;padding:0 2px">
+    <button onclick="exportAnnual()" style="flex:1;padding:9px;background:rgba(88,166,255,0.1);color:#58a6ff;border:1px solid #58a6ff;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">📥 연예산 백업</button>
+    <button onclick="document.getElementById('importAnnualFile').click()" style="flex:1;padding:9px;background:rgba(192,122,58,0.1);color:#c07a3a;border:1px solid #c07a3a;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">📤 연예산 복원</button>
+    <input type="file" id="importAnnualFile" accept=".json" style="display:none" onchange="importAnnualJSON(event)">
+  </div>
 </div>
 
 <!-- 탭5: 자산 -->
@@ -2972,6 +2979,54 @@ function importJSON(e) {
         if (btn) btn.style.display = 'inline-block';
       }
     } catch { alert('올바른 백업 파일이 아닙니다.'); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ===== 연예산 단독 백업/복원 =====
+function exportAnnual() {
+  const annual = loadAnnual();
+  if (Object.keys(annual).length === 0) { showToast('저장된 연예산 데이터가 없어요', '#888'); return; }
+  const today = new Date().toISOString().slice(0, 10);
+  const data = { type: 'annual_only', exportedAt: new Date().toISOString(), annual };
+  const json = JSON.stringify(data, null, 2);
+  const fileName = `연예산_백업_${today}.json`;
+  try {
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fileName;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    showToast('📥 연예산 백업 완료!');
+  } catch(e) { alert('연예산 백업 내용:\n\n' + json); }
+}
+
+function importAnnualJSON(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      // 연예산 전용 파일(d.annual) 또는 전체 백업 파일(d.annual) 모두 지원
+      const annual = d.annual;
+      if (!annual || typeof annual !== 'object' || Array.isArray(annual)) throw new Error('annual 없음');
+      const years = Object.keys(annual).filter(k => /^\d{4}$/.test(k));
+      if (years.length === 0) throw new Error('연도 데이터 없음');
+      if (!confirm(`📅 ${years.join(', ')}년 연예산 데이터를 불러올까요?\n현재 연예산은 덮어씌워집니다.`)) {
+        e.target.value = ''; return;
+      }
+      saveUndoSnapshot();
+      saveAnnual(annual);
+      renderAll();
+      showToast(`✅ ${years.join(', ')}년 연예산 복원 완료!`);
+      const btn = document.getElementById('undoRestoreBtn');
+      if (btn) btn.style.display = 'inline-block';
+    } catch(err) {
+      alert('연예산 데이터를 찾을 수 없는 파일이에요.\n전체 백업 파일(.json)이나 연예산 전용 백업 파일을 선택해주세요.');
+    }
     e.target.value = '';
   };
   reader.readAsText(file);
