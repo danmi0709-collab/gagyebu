@@ -2805,6 +2805,10 @@ function recoverLostData() {
   const suspects = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
+    // 공유앱에선 hanna_* 키(한나 개인 데이터) 제외
+    if (IS_SHARED && key.startsWith('hanna_')) continue;
+    // 메인앱에선 my_* 키(공유앱 데이터) 제외
+    if (!IS_SHARED && key.startsWith('my_')) continue;
     try {
       const val = localStorage.getItem(key);
       if (!val || val.length < 20) continue;
