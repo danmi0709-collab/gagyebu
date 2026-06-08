@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v5';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '백업 버그 수정: 전체 데이터 백업 + 이전 키 자동 복구';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v6';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '하단 탭 버튼 구글검색 겹침 버그 수정 (safe-area-inset 적용)';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {

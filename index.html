@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>한나의 가계부</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -45,7 +45,7 @@
     color: var(--text);
     font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
     min-height: 100vh;
-    padding-bottom: 70px;
+    padding-bottom: calc(70px + env(safe-area-inset-bottom));
   }
 
   /* 헤더 */
@@ -74,6 +74,7 @@
     border-top: 1px solid var(--border);
     display: flex;
     z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
   }
   .bottom-nav button {
     flex: 1;
