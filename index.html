@@ -2833,10 +2833,9 @@ function recoverLostData() {
   const suspects = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    // 공유앱에선 hanna_* 키(한나 개인 데이터) 제외
-    if (IS_SHARED && key.startsWith('hanna_')) continue;
     // 메인앱에선 my_* 키(공유앱 데이터) 제외
     if (!IS_SHARED && key.startsWith('my_')) continue;
+    // 공유앱에서 hanna_* 키도 검색 (브라우저 혼용 시 여기 남아있을 수 있음)
     try {
       const val = localStorage.getItem(key);
       if (!val || val.length < 20) continue;
@@ -2847,7 +2846,7 @@ function recoverLostData() {
   }
 
   if (suspects.length === 0) {
-    alert('현재 기기에 저장된 거래 데이터를 찾지 못했어요.\n\n다른 브라우저나 다른 기기에 데이터가 있을 수 있어요.');
+    alert('이 브라우저에 저장된 거래 데이터를 찾지 못했어요.\n\n💡 브라우저마다 저장공간이 달라요.\n데이터를 입력했던 바로 그 브라우저에서 백업해주세요.');
     return;
   }
 
@@ -2906,6 +2905,18 @@ function exportJSON() {
   const today = new Date().toISOString().slice(0, 10);
   const txCount = (backup.transactions || []).length;
   const fileName = `가계부_백업_${today}_${txCount}건.json`;
+
+  // 0건이면 경고: 다른 브라우저 데이터일 가능성 안내
+  if (txCount === 0) {
+    const go = confirm(
+      '⚠️ 저장된 내역이 0건이에요!\n\n' +
+      '브라우저마다 저장공간이 따로 있어서,\n' +
+      '크롬에 입력한 데이터는 삼성 인터넷·사파리에서 보이지 않아요.\n\n' +
+      '👉 데이터를 입력했던 바로 그 브라우저에서 백업해주세요.\n\n' +
+      '그래도 빈 파일로 저장하시겠어요?'
+    );
+    if (!go) return;
+  }
 
   // Samsung 브라우저 등 Android 호환: blob URL 즉시 해제 금지
   try {
