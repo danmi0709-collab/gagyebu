@@ -3686,10 +3686,11 @@ function parseMultipleTransactions(rawText) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // ── 삼성페이 카드내역: "YYYY.M.DD. 오전/오후 H:MM:SS" 풀날짜 ──
-    const fullDate = line.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})\.\s*(오전|오후)/);
-    if (fullDate) {
-      currentDate = `${fullDate[1]}-${fullDate[2].padStart(2,'0')}-${fullDate[3].padStart(2,'0')}`;
+    // ── 풀날짜 단독 줄: "2026.06.11", "2026.6.11. 오후 8:52", "2026-06-11" → 날짜 설정 ──
+    // (금액/₩가 같이 있는 줄은 거래 줄이므로 제외)
+    const fdSelf = matchFullDate(line);
+    if (fdSelf && !/[\d,]+\s*원/.test(line) && !/[₩W\\]\s*[\d,]/.test(line)) {
+      currentDate = fdSelf;
       continue;
     }
 

@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v39';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '거래목록 날짜 인식 강화 - 사진 날짜 정확히 적용';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v40';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '상품권/토스 날짜형식(오전오후 없는 날짜, -N원) 인식 추가';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {

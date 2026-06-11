@@ -1722,8 +1722,8 @@ const STORAGE_KEY   = 'my_budget_data';
 const TX_ORDER_KEY  = 'my_tx_order';
 let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
-const APP_VERSION = 'v39'; // deploy.py가 자동으로 올림
-const RELEASE_HISTORY_APP = ["v39: 거래목록 날짜 인식 강화 - 사진 날짜 정확히 적용", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
+const APP_VERSION = 'v40'; // deploy.py가 자동으로 올림
+const RELEASE_HISTORY_APP = ["v40: 상품권/토스 날짜형식(오전오후 없는 날짜, -N원) 인식 추가", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
 const NICKNAME_KEY = 'my_nickname';
 
 let currentMonth; // YYYY-MM
@@ -3707,10 +3707,11 @@ function parseMultipleTransactions(rawText) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // ── 삼성페이 카드내역: "YYYY.M.DD. 오전/오후 H:MM:SS" 풀날짜 ──
-    const fullDate = line.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})\.\s*(오전|오후)/);
-    if (fullDate) {
-      currentDate = `${fullDate[1]}-${fullDate[2].padStart(2,'0')}-${fullDate[3].padStart(2,'0')}`;
+    // ── 풀날짜 단독 줄: "2026.06.11", "2026.6.11. 오후 8:52", "2026-06-11" → 날짜 설정 ──
+    // (금액/₩가 같이 있는 줄은 거래 줄이므로 제외)
+    const fdSelf = matchFullDate(line);
+    if (fdSelf && !/[\d,]+\s*원/.test(line) && !/[₩W\\]\s*[\d,]/.test(line)) {
+      currentDate = fdSelf;
       continue;
     }
 
