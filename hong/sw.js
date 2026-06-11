@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-hong-v44';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '홍개인용 홈화면 아이콘 빨간색으로 변경';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-hong-v45';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '월부앱에도 정밀 OCR 키 입력칸 추가 - 사용자별 자기 키 사용';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
