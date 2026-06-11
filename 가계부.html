@@ -3684,6 +3684,13 @@ function parseMultipleTransactions(rawText) {
   const isHeaderLine = (s) => /\(\s*\d+\s*건\s*\)|국내|해외|합계|총\s*액|결제\s*예정/.test(s || '');
   // 시각(13:43)/태그(#체크카드) 줄 판별 — 카카오뱅크 잔액 줄 구분용
   const isTimeOrTag = (s) => /^\d{1,2}:\d{2}/.test(s || '') || /^#/.test(s || '');
+  // 줄 맨 앞에 날짜가 붙어 있으면 떼어내기 ("2026.06.10 집밥청보리" → 날짜 + "집밥청보리")
+  const stripLeadingDate = (s) => {
+    const m = s.match(/^(\d{2,4})\s*[.\-]\s*(\d{1,2})\s*[.\-]\s*(\d{1,2})\.?\s+/);
+    if (!m) return { date: null, rest: s };
+    let y = m[1]; if (y.length === 2) y = '20' + y;
+    return { date: `${y}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`, rest: s.slice(m[0].length).trim() };
+  };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -3764,18 +3771,23 @@ function parseMultipleTransactions(rawText) {
     }
 
     // 같은 줄에 가맹점 + 금액: "이디야커피 잠실본동 -4,900원"
+    // (상품권: "2026.06.10 집밥청보리 -24,000원"처럼 날짜가 앞에 붙는 경우도 처리)
     const sameLine = line.match(/^(.+?)\s+([+-]?[\d,]+)\s*원$/);
     if (sameLine) {
-      const merchant = sameLine[1].trim();
+      let merchant = sameLine[1].trim();
       const amtRaw   = sameLine[2].replace(/,/g, '');
       const amt      = Math.abs(parseInt(amtRaw));
+      // 앞에 날짜가 붙어 있으면 떼어서 그 날짜 사용
+      const sd = stripLeadingDate(merchant);
+      let lineDate = currentDate;
+      if (sd.date && sd.rest) { lineDate = sd.date; currentDate = sd.date; merchant = sd.rest; }
       // 타임라인(HH:MM), 태그(#), 숫자만, 잔액 등 제외
       if (/^\d{1,2}:\d{2}/.test(merchant)) continue;   // 시각으로 시작 → 잔액 줄
       if (/^#/.test(merchant)) continue;
       if (/^\d+$/.test(merchant.replace(/,/g, ''))) continue;
       if (amt < 100) continue;
       const type = amtRaw.startsWith('-') ? 'expense' : 'income';
-      results.push({ date: currentDate, merchant: merchant.slice(0, 40), amount: amt, type, checked: true });
+      results.push({ date: lineDate, merchant: merchant.slice(0, 40), amount: amt, type, checked: true });
       continue;
     }
 

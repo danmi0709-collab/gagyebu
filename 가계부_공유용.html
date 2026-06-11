@@ -1722,8 +1722,8 @@ const STORAGE_KEY   = 'my_budget_data';
 const TX_ORDER_KEY  = 'my_tx_order';
 let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
-const APP_VERSION = 'v41'; // deploy.py가 자동으로 올림
-const RELEASE_HISTORY_APP = ["v41: 카카오뱅크 변동내역 인식 - 잔액 제외, 캐시백 수입 처리", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
+const APP_VERSION = 'v42'; // deploy.py가 자동으로 올림
+const RELEASE_HISTORY_APP = ["v42: 한 줄에 날짜+가맹점+금액 형식 인식 (거제사랑 등 상품권)", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
 const NICKNAME_KEY = 'my_nickname';
 
 let currentMonth; // YYYY-MM
@@ -3705,6 +3705,13 @@ function parseMultipleTransactions(rawText) {
   const isHeaderLine = (s) => /\(\s*\d+\s*건\s*\)|국내|해외|합계|총\s*액|결제\s*예정/.test(s || '');
   // 시각(13:43)/태그(#체크카드) 줄 판별 — 카카오뱅크 잔액 줄 구분용
   const isTimeOrTag = (s) => /^\d{1,2}:\d{2}/.test(s || '') || /^#/.test(s || '');
+  // 줄 맨 앞에 날짜가 붙어 있으면 떼어내기 ("2026.06.10 집밥청보리" → 날짜 + "집밥청보리")
+  const stripLeadingDate = (s) => {
+    const m = s.match(/^(\d{2,4})\s*[.\-]\s*(\d{1,2})\s*[.\-]\s*(\d{1,2})\.?\s+/);
+    if (!m) return { date: null, rest: s };
+    let y = m[1]; if (y.length === 2) y = '20' + y;
+    return { date: `${y}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`, rest: s.slice(m[0].length).trim() };
+  };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -3785,18 +3792,23 @@ function parseMultipleTransactions(rawText) {
     }
 
     // 같은 줄에 가맹점 + 금액: "이디야커피 잠실본동 -4,900원"
+    // (상품권: "2026.06.10 집밥청보리 -24,000원"처럼 날짜가 앞에 붙는 경우도 처리)
     const sameLine = line.match(/^(.+?)\s+([+-]?[\d,]+)\s*원$/);
     if (sameLine) {
-      const merchant = sameLine[1].trim();
+      let merchant = sameLine[1].trim();
       const amtRaw   = sameLine[2].replace(/,/g, '');
       const amt      = Math.abs(parseInt(amtRaw));
+      // 앞에 날짜가 붙어 있으면 떼어서 그 날짜 사용
+      const sd = stripLeadingDate(merchant);
+      let lineDate = currentDate;
+      if (sd.date && sd.rest) { lineDate = sd.date; currentDate = sd.date; merchant = sd.rest; }
       // 타임라인(HH:MM), 태그(#), 숫자만, 잔액 등 제외
       if (/^\d{1,2}:\d{2}/.test(merchant)) continue;   // 시각으로 시작 → 잔액 줄
       if (/^#/.test(merchant)) continue;
       if (/^\d+$/.test(merchant.replace(/,/g, ''))) continue;
       if (amt < 100) continue;
       const type = amtRaw.startsWith('-') ? 'expense' : 'income';
-      results.push({ date: currentDate, merchant: merchant.slice(0, 40), amount: amt, type, checked: true });
+      results.push({ date: lineDate, merchant: merchant.slice(0, 40), amount: amt, type, checked: true });
       continue;
     }
 
