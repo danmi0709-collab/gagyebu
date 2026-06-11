@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>한나의 가계부</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<title>한해살림</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -1362,7 +1363,7 @@
   <div class="modal-box" style="max-width:340px;text-align:center">
     <div style="font-size:40px;margin-bottom:12px">✏️</div>
     <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">닉네임을 입력해주세요</div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:20px">앱 제목에 표시됩니다<br>예) <span id="nicknamePreview">한나</span>의 가계부</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:20px">앱 제목에 표시됩니다<br>예) <span id="nicknamePreview">한나</span>의 한해살림</div>
     <input id="nicknameInput" type="text" maxlength="10" placeholder="닉네임 (최대 10자)"
       style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;padding:10px 14px;text-align:center;margin-bottom:14px;font-family:inherit"
       oninput="document.getElementById('nicknamePreview').textContent=this.value||'한나'"
@@ -1732,14 +1733,16 @@ function getNickname() {
 function applyNickname() {
   const name = getNickname();
   const h1 = document.querySelector('.header h1');
-  if (h1 && IS_SHARED) {
-    if (APP_TITLE) {
-      // 고정 앱 이름(월부앱/홍개인용) + 닉네임이 있으면 작게 병기
-      h1.textContent = '💰 ' + APP_TITLE;
-      document.title = APP_TITLE;
-    } else {
-      h1.textContent = name ? '💰 ' + name + '의 가계부' : '💰 나만의 가계부';
-    }
+  if (!h1) return;
+  if (!IS_SHARED) {
+    // 개인용: (닉네임)의 한해살림
+    h1.textContent = name ? '💰 ' + name + '의 한해살림' : '💰 한해살림';
+    document.title = name ? name + '의 한해살림' : '한해살림';
+  } else if (APP_TITLE) {
+    h1.textContent = '💰 ' + APP_TITLE;
+    document.title = APP_TITLE;
+  } else {
+    h1.textContent = name ? '💰 ' + name + '의 가계부' : '💰 나만의 가계부';
   }
 }
 function openNicknameModal() {
@@ -1770,9 +1773,8 @@ function closeCheerModal() {
   if (modal) modal.style.display = 'none';
 }
 function checkNicknameOnLoad() {
-  if (!IS_SHARED) return;
   applyNickname();
-  if (!APP_TITLE && !getNickname()) {   // 고정 앱 이름이면 닉네임 강제 안 함
+  if (!getNickname()) {
     setTimeout(() => openNicknameModal(), 500);
   }
 }
@@ -4171,10 +4173,10 @@ function openSettings() {
   if (ss) ss.style.display = IS_SHARED ? 'none' : 'block';
   const sui = document.getElementById('sheetsUrlInput');
   if (!IS_SHARED && sui) sui.value = getSheetsUrl();
-  // 닉네임 섹션: 공유용에서만 표시
+  // 닉네임 섹션: 항상 표시
   const ns = document.getElementById('nicknameSettingsSection');
   if (ns) {
-    ns.style.display = IS_SHARED ? 'block' : 'none';
+    ns.style.display = 'block';
     const nd = document.getElementById('currentNicknameDisplay');
     if (nd) nd.textContent = getNickname() || '(미설정)';
   }

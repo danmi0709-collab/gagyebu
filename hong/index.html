@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>홍개인용</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<title>한해살림</title>
 <!-- Open Graph (카카오톡·SNS 미리보기) -->
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="홍개인용">
-<meta property="og:title" content="홍개인용 💰">
+<meta property="og:site_name" content="한해살림">
+<meta property="og:title" content="한해살림 💰">
 <meta property="og:description" content="설치 없이 브라우저에서 바로 쓰는 무료 가계부. 수입·지출·저축 관리, 자산 추이 차트, 연예산 계획까지. 내 데이터는 내 기기에만 저장됩니다.">
 <meta property="og:image" content="https://danmi0709-collab.github.io/gagyebu/og-image.png">
 <meta property="og:image:width" content="1200">
@@ -15,7 +16,7 @@
 <meta property="og:url" content="https://danmi0709-collab.github.io/gagyebu/share">
 <meta name="description" content="설치 없이 브라우저에서 바로 쓰는 무료 가계부. 수입·지출·저축 관리, 자산 추이 차트, 연예산 계획까지.">
 <!-- 카카오톡 전용 -->
-<meta property="kakao:title" content="홍개인용 💰">
+<meta property="kakao:title" content="한해살림 💰">
 <meta property="kakao:description" content="설치 없이 바로 쓰는 무료 가계부. 내 데이터는 내 기기에만 저장됩니다.">
 <meta property="kakao:image" content="https://danmi0709-collab.github.io/gagyebu/og-image.png">
 <!-- PWA (홈 화면 설치) -->
@@ -1145,7 +1146,7 @@
 
 <div class="header">
   <div class="header-row">
-    <h1>💰 홍개인용</h1>
+    <h1>💰 한해살림</h1>
     <button id="btnTheme" class="btn-theme" onclick="toggleTheme()" title="테마 변경">🌙</button>
     <button class="btn-help" onclick="openHelp()" title="사용 설명서">❓</button>
     <button class="btn-settings" onclick="openSettings()" title="구글 시트 연동 설정">⚙️</button>
@@ -1383,7 +1384,7 @@
   <div class="modal-box" style="max-width:340px;text-align:center">
     <div style="font-size:40px;margin-bottom:12px">✏️</div>
     <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">닉네임을 입력해주세요</div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:20px">앱 제목에 표시됩니다<br>예) <span id="nicknamePreview">나</span>의 가계부</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:20px">앱 제목에 표시됩니다<br>예) <span id="nicknamePreview">나</span>의 한해살림</div>
     <input id="nicknameInput" type="text" maxlength="10" placeholder="닉네임 (최대 10자)"
       style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;padding:10px 14px;text-align:center;margin-bottom:14px;font-family:inherit"
       oninput="document.getElementById('nicknamePreview').textContent=this.value||'나'"
@@ -1734,10 +1735,10 @@ const STORAGE_KEY   = 'my_budget_data';
 const TX_ORDER_KEY  = 'my_tx_order';
 let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
-const APP_TITLE = '홍개인용'; // deploy.py가 변종별로 치환 (홍개인용 / 홍개인용). 비어있으면 닉네임 방식
+const APP_TITLE = '한해살림'; // deploy.py가 변종별로 치환 (한해살림 / 홍개인용). 비어있으면 닉네임 방식
 const ENABLE_PRECISION_OCR = true; // deploy.py가 홍개인용만 true로 치환 (정밀 OCR 사용)
-const APP_VERSION = 'v45'; // deploy.py가 자동으로 올림
-const RELEASE_HISTORY_APP = ["v45: 홍개인용에도 정밀 OCR 키 입력칸 추가 - 사용자별 자기 키 사용", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
+const APP_VERSION = 'v46'; // deploy.py가 자동으로 올림
+const RELEASE_HISTORY_APP = ["v46: 홍개인용을 한해살림으로 이름 변경", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
 const NICKNAME_KEY = 'my_nickname';
 
 let currentMonth; // YYYY-MM
@@ -1753,14 +1754,16 @@ function getNickname() {
 function applyNickname() {
   const name = getNickname();
   const h1 = document.querySelector('.header h1');
-  if (h1 && IS_SHARED) {
-    if (APP_TITLE) {
-      // 고정 앱 이름(홍개인용/홍개인용) + 닉네임이 있으면 작게 병기
-      h1.textContent = '💰 ' + APP_TITLE;
-      document.title = APP_TITLE;
-    } else {
-      h1.textContent = name ? '💰 ' + name + '의 가계부' : '💰 홍개인용';
-    }
+  if (!h1) return;
+  if (!IS_SHARED) {
+    // 개인용: (닉네임)의 한해살림
+    h1.textContent = name ? '💰 ' + name + '의 한해살림' : '💰 한해살림';
+    document.title = name ? name + '의 한해살림' : '한해살림';
+  } else if (APP_TITLE) {
+    h1.textContent = '💰 ' + APP_TITLE;
+    document.title = APP_TITLE;
+  } else {
+    h1.textContent = name ? '💰 ' + name + '의 가계부' : '💰 한해살림';
   }
 }
 function openNicknameModal() {
@@ -1791,9 +1794,8 @@ function closeCheerModal() {
   if (modal) modal.style.display = 'none';
 }
 function checkNicknameOnLoad() {
-  if (!IS_SHARED) return;
   applyNickname();
-  if (!APP_TITLE && !getNickname()) {   // 고정 앱 이름이면 닉네임 강제 안 함
+  if (!getNickname()) {
     setTimeout(() => openNicknameModal(), 500);
   }
 }
@@ -4192,10 +4194,10 @@ function openSettings() {
   if (ss) ss.style.display = IS_SHARED ? 'none' : 'block';
   const sui = document.getElementById('sheetsUrlInput');
   if (!IS_SHARED && sui) sui.value = getSheetsUrl();
-  // 닉네임 섹션: 공유용에서만 표시
+  // 닉네임 섹션: 항상 표시
   const ns = document.getElementById('nicknameSettingsSection');
   if (ns) {
-    ns.style.display = IS_SHARED ? 'block' : 'none';
+    ns.style.display = 'block';
     const nd = document.getElementById('currentNicknameDisplay');
     if (nd) nd.textContent = getNickname() || '(미설정)';
   }
