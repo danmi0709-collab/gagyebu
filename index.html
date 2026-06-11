@@ -338,6 +338,24 @@
     font-size: 12px;
     font-weight: 600;
   }
+  /* 하루 메모 (날짜별 한 줄 기록: "캠핑 간 날" 등) */
+  .day-note {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed var(--border);
+    color: var(--text);
+    font-size: 12px;
+    font-family: inherit;
+    padding: 2px 4px 5px;
+    margin-bottom: 4px;
+  }
+  .day-note::placeholder { color: var(--text3); }
+  .day-note:focus {
+    outline: none;
+    border-bottom-color: var(--accent);
+  }
+  .day-note.filled { color: var(--accent); font-weight: 600; }
 
   /* 카테고리 그룹 색상 */
   .group-badge {
@@ -2540,6 +2558,32 @@ function formatDateHeader(dateStr) {
   return `${m}월 ${d}일 (${dow})`;
 }
 
+// ── 하루 메모 (날짜별 한 줄 기록) ──────────────────────────
+const DAY_NOTES_KEY = 'my_day_notes';
+function loadDayNotes() {
+  try { return JSON.parse(localStorage.getItem(DAY_NOTES_KEY) || '{}'); } catch { return {}; }
+}
+function getDayNote(date) {
+  const n = loadDayNotes()[date];
+  return n ? String(n) : '';
+}
+function saveDayNoteFromInput(inp) {
+  saveDayNote(inp.dataset.date, inp.value.trim());
+  // 채워짐 표시 갱신
+  inp.classList.toggle('filled', !!inp.value.trim());
+}
+function saveDayNote(date, text) {
+  if (!date) return;
+  const notes = loadDayNotes();
+  if (text) notes[date] = text; else delete notes[date];
+  localStorage.setItem(DAY_NOTES_KEY, JSON.stringify(notes));
+}
+// 따옴표 등 속성 안전 처리
+function escAttr(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function renderTab1() {
   document.getElementById('monthLabel').textContent = getMonthLabel(currentMonth);
   const txs = getMonthTx(currentMonth);
@@ -2625,6 +2669,9 @@ function renderTab1() {
         <span class="date-header-label">${formatDateHeader(date)}</span>
         <span class="date-header-sum">${daySummary}</span>
       </div>
+      <input class="day-note${getDayNote(date) ? ' filled' : ''}" type="text" maxlength="40"
+        data-date="${date}" value="${escAttr(getDayNote(date))}"
+        placeholder="✏️ 이 날의 메모 (예: 캠핑 간 날)" onchange="saveDayNoteFromInput(this)">
       ${items}
     </div>`;
   }).join('');
