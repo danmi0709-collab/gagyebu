@@ -3661,6 +3661,22 @@ function parseMultipleTransactions(rawText) {
   let currentDate = new Date().toISOString().slice(0, 10);
   const results = [];
 
+  // 풀날짜 추출 헬퍼: "YYYY.M.DD. 오전/오후" → "YYYY-MM-DD"
+  const matchFullDate = (s) => {
+    const m = s && s.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})\.?/);
+    return m ? `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}` : null;
+  };
+  // 삼성페이는 날짜가 거래 "아래"에 옴 → 다음 1~2줄에서 날짜 찾기
+  const lookAheadDate = (i) => {
+    for (let j = i + 1; j <= Math.min(lines.length - 1, i + 2); j++) {
+      const d = matchFullDate(lines[j]);
+      if (d) return d;
+    }
+    return null;
+  };
+  // 합계/헤더 줄 판별 ("6월 | 국내(13건)", "합계" 등)
+  const isHeaderLine = (s) => /\(\s*\d+\s*건\s*\)|국내|해외|합계|총\s*액|결제\s*예정/.test(s || '');
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
@@ -3686,7 +3702,30 @@ function parseMultipleTransactions(rawText) {
       if (amt < 100) continue;
       if (/^\d{4}$/.test(merchant)) continue; // 연도 같은 숫자 제외
       if (/^[₩W\\]/.test(merchant)) continue; // 금액만인 줄 제외
-      results.push({ date: currentDate, merchant: merchant.slice(0, 40), amount: amt, type: 'expense', checked: true });
+      // 날짜는 아래쪽 줄을 우선 사용 (삼성페이: 날짜가 거래 아래)
+      const date = lookAheadDate(i) || currentDate;
+      results.push({ date, merchant: merchant.slice(0, 40), amount: amt, type: 'expense', checked: true });
+      continue;
+    }
+
+    // ── 삼성페이 카드내역 (줄바꿈 형): "₩N,NNN"만 단독, 가맹점은 윗줄 ──
+    const wonAlone = line.match(/^[₩W\\]\s*([\d,]+)$/);
+    if (wonAlone) {
+      const amt = parseInt(wonAlone[1].replace(/,/g, ''));
+      if (amt < 100) continue;
+      // 윗줄에서 가맹점 찾기 (날짜/금액/헤더 줄은 건너뜀)
+      let merchant = '';
+      for (let j = i - 1; j >= Math.max(0, i - 3); j--) {
+        const prev = lines[j];
+        if (matchFullDate(prev)) continue;
+        if (/^[₩W\\]/.test(prev) || /원$/.test(prev)) continue;
+        if (/^\d{1,2}[./]\d{2}$/.test(prev)) break;
+        if (isHeaderLine(prev)) break;            // 합계 줄이면 → 이건 합계금액, 제외
+        if (prev.length >= 2 && !/^\d+$/.test(prev.replace(/,/g, ''))) { merchant = prev.slice(0, 40); break; }
+      }
+      if (!merchant) continue;                     // 가맹점 못 찾으면 (합계 등) 제외
+      const date = lookAheadDate(i) || currentDate;
+      results.push({ date, merchant, amount: amt, type: 'expense', checked: true });
       continue;
     }
 
