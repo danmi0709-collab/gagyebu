@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-hong-v51';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '후원 버튼 누른 횟수 카운터 추가 (설정 버전 7번 탭하면 나만 보기)';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-hong-v52';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '월부앱에서 후원 기능 제거 (한해살림에만 유지)';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
