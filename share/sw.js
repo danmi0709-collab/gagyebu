@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v38';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '0건 백업 시 브라우저 저장공간 분리 안내 경고 추가';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v39';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '거래목록 날짜 인식 강화 - 사진 날짜 정확히 적용';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {

@@ -1359,11 +1359,13 @@
     <!-- 문자 붙여넣기 패널 -->
     <div class="modal-panel" id="mpanel2">
       <div class="import-desc">
-        <strong>카카오톡 결제 알림 문자를 복사해서 붙여넣으세요.</strong><br>
-        여러 건을 한꺼번에 붙여넣어도 됩니다.<br><br>
+        <strong>결제 알림 문자나 거래 목록을 복사해서 붙여넣으세요.</strong><br>
+        여러 건을 한꺼번에 붙여넣어도 됩니다.<br>
+        <span style="color:#e2b96b">📋 스크린샷 대신 글자를 직접 복사하면 100% 정확해요!</span><br><br>
         지원 형식 예시:<br>
         · [카카오페이] 스타벅스 6,500원 결제<br>
-        · 가맹점명: OO마트 / 결제금액: 35,000원
+        · 가맹점명: OO마트 / 결제금액: 35,000원<br>
+        · 토스·카카오뱅크·삼성페이 거래 목록 복사
       </div>
       <textarea class="modal-textarea" id="kakaoTextInput" placeholder="카카오페이 결제 알림 문자를 여기에 붙여넣으세요..."></textarea>
       <div class="import-preview" id="textPreview"></div>
@@ -1720,8 +1722,8 @@ const STORAGE_KEY   = 'my_budget_data';
 const TX_ORDER_KEY  = 'my_tx_order';
 let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
-const APP_VERSION = 'v38'; // deploy.py가 자동으로 올림
-const RELEASE_HISTORY_APP = ["v38: 0건 백업 시 브라우저 저장공간 분리 안내 경고 추가", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
+const APP_VERSION = 'v39'; // deploy.py가 자동으로 올림
+const RELEASE_HISTORY_APP = ["v39: 거래목록 날짜 인식 강화 - 사진 날짜 정확히 적용", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
 const NICKNAME_KEY = 'my_nickname';
 
 let currentMonth; // YYYY-MM
@@ -3498,10 +3500,33 @@ function parseKakaoText() {
     }
   }
 
+  // 패턴 3 (보강): 토스/카카오뱅크/삼성페이 등 "거래 목록"을 복사한 경우
+  // OCR용 강력 파서를 그대로 재활용해서 결과를 합친다.
+  try {
+    const multi = parseMultipleTransactions(raw);
+    multi.forEach((r, i) => {
+      const merchant = (r.merchant || '').trim();
+      const dup = txs.find(t => t.amount === r.amount && t.date === r.date && t.memo === merchant);
+      if (!dup) {
+        txs.push({
+          id: String(Date.now() + 5000 + i),
+          date: r.date,
+          type: r.type || 'expense',
+          category: guessCategory(merchant),
+          amount: r.amount,
+          memo: merchant
+        });
+      }
+    });
+  } catch (e) { /* 파서 실패해도 기존 결과는 유지 */ }
+
+  // 날짜 최신순 정렬
+  txs.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
   parsedTextTxs = txs;
   showImportPreview('textPreview', txs);
   document.getElementById('textImportBtn').style.display = txs.length ? 'block' : 'none';
-  if (!txs.length) alert('인식된 결제 내역이 없어요.\n카카오페이 알림 문자를 그대로 붙여넣어 주세요.');
+  if (!txs.length) alert('인식된 결제 내역이 없어요.\n결제 알림 문자나 거래 목록을 그대로 붙여넣어 주세요.');
 }
 
 function confirmTextImport() {
@@ -3657,6 +3682,28 @@ function parseMultipleTransactions(rawText) {
   let currentDate = new Date().toISOString().slice(0, 10);
   const results = [];
 
+  // 풀날짜 추출 헬퍼: "2026.6.11", "2026. 6. 11", "26.6.11", "2026-06-11" 모두 인식
+  const matchFullDate = (s) => {
+    if (!s) return null;
+    const m = s.match(/^(\d{2,4})\s*[.\-]\s*(\d{1,2})\s*[.\-]\s*(\d{1,2})/);
+    if (!m) return null;
+    let y = m[1]; if (y.length === 2) y = '20' + y;
+    return `${y}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  };
+  // 날짜는 거래 위 또는 아래에 올 수 있음 → 가까운 줄을 양방향으로 탐색
+  // (아래쪽을 먼저 봐서 삼성페이 "날짜가 거래 아래" 형식을 우선 처리)
+  const lookNearbyDate = (i) => {
+    const order = [i + 1, i - 1, i + 2, i - 2];
+    for (const j of order) {
+      if (j < 0 || j >= lines.length) continue;
+      const d = matchFullDate(lines[j]);
+      if (d) return d;
+    }
+    return null;
+  };
+  // 합계/헤더 줄 판별 ("6월 | 국내(13건)", "합계" 등)
+  const isHeaderLine = (s) => /\(\s*\d+\s*건\s*\)|국내|해외|합계|총\s*액|결제\s*예정/.test(s || '');
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
@@ -3682,7 +3729,30 @@ function parseMultipleTransactions(rawText) {
       if (amt < 100) continue;
       if (/^\d{4}$/.test(merchant)) continue; // 연도 같은 숫자 제외
       if (/^[₩W\\]/.test(merchant)) continue; // 금액만인 줄 제외
-      results.push({ date: currentDate, merchant: merchant.slice(0, 40), amount: amt, type: 'expense', checked: true });
+      // 날짜는 아래쪽 줄을 우선 사용 (삼성페이: 날짜가 거래 아래)
+      const date = lookNearbyDate(i) || currentDate;
+      results.push({ date, merchant: merchant.slice(0, 40), amount: amt, type: 'expense', checked: true });
+      continue;
+    }
+
+    // ── 삼성페이 카드내역 (줄바꿈 형): "₩N,NNN"만 단독, 가맹점은 윗줄 ──
+    const wonAlone = line.match(/^[₩W\\]\s*([\d,]+)$/);
+    if (wonAlone) {
+      const amt = parseInt(wonAlone[1].replace(/,/g, ''));
+      if (amt < 100) continue;
+      // 윗줄에서 가맹점 찾기 (날짜/금액/헤더 줄은 건너뜀)
+      let merchant = '';
+      for (let j = i - 1; j >= Math.max(0, i - 3); j--) {
+        const prev = lines[j];
+        if (matchFullDate(prev)) continue;
+        if (/^[₩W\\]/.test(prev) || /원$/.test(prev)) continue;
+        if (/^\d{1,2}[./]\d{2}$/.test(prev)) break;
+        if (isHeaderLine(prev)) break;            // 합계 줄이면 → 이건 합계금액, 제외
+        if (prev.length >= 2 && !/^\d+$/.test(prev.replace(/,/g, ''))) { merchant = prev.slice(0, 40); break; }
+      }
+      if (!merchant) continue;                     // 가맹점 못 찾으면 (합계 등) 제외
+      const date = lookNearbyDate(i) || currentDate;
+      results.push({ date, merchant, amount: amt, type: 'expense', checked: true });
       continue;
     }
 
