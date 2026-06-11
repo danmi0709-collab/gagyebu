@@ -1338,11 +1338,13 @@
     <!-- 문자 붙여넣기 패널 -->
     <div class="modal-panel" id="mpanel2">
       <div class="import-desc">
-        <strong>카카오톡 결제 알림 문자를 복사해서 붙여넣으세요.</strong><br>
-        여러 건을 한꺼번에 붙여넣어도 됩니다.<br><br>
+        <strong>결제 알림 문자나 거래 목록을 복사해서 붙여넣으세요.</strong><br>
+        여러 건을 한꺼번에 붙여넣어도 됩니다.<br>
+        <span style="color:#e2b96b">📋 스크린샷 대신 글자를 직접 복사하면 100% 정확해요!</span><br><br>
         지원 형식 예시:<br>
         · [카카오페이] 스타벅스 6,500원 결제<br>
-        · 가맹점명: OO마트 / 결제금액: 35,000원
+        · 가맹점명: OO마트 / 결제금액: 35,000원<br>
+        · 토스·카카오뱅크·삼성페이 거래 목록 복사
       </div>
       <textarea class="modal-textarea" id="kakaoTextInput" placeholder="카카오페이 결제 알림 문자를 여기에 붙여넣으세요..."></textarea>
       <div class="import-preview" id="textPreview"></div>
@@ -3477,10 +3479,33 @@ function parseKakaoText() {
     }
   }
 
+  // 패턴 3 (보강): 토스/카카오뱅크/삼성페이 등 "거래 목록"을 복사한 경우
+  // OCR용 강력 파서를 그대로 재활용해서 결과를 합친다.
+  try {
+    const multi = parseMultipleTransactions(raw);
+    multi.forEach((r, i) => {
+      const merchant = (r.merchant || '').trim();
+      const dup = txs.find(t => t.amount === r.amount && t.date === r.date && t.memo === merchant);
+      if (!dup) {
+        txs.push({
+          id: String(Date.now() + 5000 + i),
+          date: r.date,
+          type: r.type || 'expense',
+          category: guessCategory(merchant),
+          amount: r.amount,
+          memo: merchant
+        });
+      }
+    });
+  } catch (e) { /* 파서 실패해도 기존 결과는 유지 */ }
+
+  // 날짜 최신순 정렬
+  txs.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
   parsedTextTxs = txs;
   showImportPreview('textPreview', txs);
   document.getElementById('textImportBtn').style.display = txs.length ? 'block' : 'none';
-  if (!txs.length) alert('인식된 결제 내역이 없어요.\n카카오페이 알림 문자를 그대로 붙여넣어 주세요.');
+  if (!txs.length) alert('인식된 결제 내역이 없어요.\n결제 알림 문자나 거래 목록을 그대로 붙여넣어 주세요.');
 }
 
 function confirmTextImport() {

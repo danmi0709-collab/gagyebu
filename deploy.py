@@ -3,7 +3,7 @@
 실행: python deploy.py "커밋 메시지"
      python deploy.py  (메시지 없으면 직접 입력)
 """
-import re, sys, io, subprocess
+import re, sys, io, subprocess, json
 from pathlib import Path
 
 # Windows 콘솔 한국어 출력
@@ -16,6 +16,7 @@ SRC    = BASE / "가계부.html"
 SHARED = BASE / "가계부_공유용.html"
 IDX    = BASE / "index.html"
 SIDX   = BASE / "share" / "index.html"
+SW     = BASE / "share" / "sw.js"
 
 # ── 색상 ──
 G = "\033[92m"; R = "\033[91m"; Y = "\033[93m"
@@ -39,7 +40,7 @@ def run(cmd):
 # ══════════════════════════════════════════
 # STEP 1 — SYNC
 # ══════════════════════════════════════════
-def do_sync():
+def do_sync(commit_msg):
     step(1, "공유용 파일 동기화 (sync)")
 
     if not SRC.exists():
@@ -68,6 +69,7 @@ def do_sync():
         ("hanna_sheets_url",           "my_sheets_url"),
         ("hanna_sub_auto_month",       "my_sub_auto_month"),
         ("hanna_formula_man_migrated", "my_formula_man_migrated"),
+        ("hanna_undo_backup",          "my_undo_backup"),
     ]
     replaced = 0
     for old, new in KEY_MAP:
@@ -119,6 +121,62 @@ def do_sync():
         ok("OG + PWA 메타태그 주입")
     else:
         ok("OG + PWA 메타태그 이미 있음 (유지)")
+
+    # ── 공유앱 전용: 구글시트 섹션은 JS(openSettings)에서 display:none 처리 ──
+    # (HTML 제거 regex 제거 — regex가 인접 요소를 잘못 삭제하는 버그 있었음)
+    ok("구글시트 섹션 숨김: JS display:none 방식 유지")
+
+    # 설정 모달 타이틀 변경
+    c = c.replace("⚙️ 구글 시트 연동 설정", "⚙️ 설정")
+    c = c.replace("<!-- 설정 모달 (구글 시트 연동) -->", "<!-- 설정 모달 -->")
+
+    # 닉네임 섹션 기본 표시 (공유앱에선 항상 보임)
+    c = c.replace(
+        'id="nicknameSettingsSection" style="display:none;',
+        'id="nicknameSettingsSection" style="display:block;'
+    )
+
+    # 헤더 syncStatus 제거
+    c = re.sub(r'\s*<div class="sync-status" id="syncStatus"></div>', '', c)
+
+    ok("설정 모달 정리 (타이틀·닉네임섹션·syncStatus)")
+
+    # ── sw.js 캐시 버전 자동 증가 + RELEASE_NOTES 주입 ──
+    sw_text = SW.read_text(encoding="utf-8")
+    m = re.search(r"'gagyebu-v(\d+)'", sw_text)
+    if m:
+        old_v = int(m.group(1))
+        new_v = old_v + 1
+        sw_text = sw_text.replace(f"'gagyebu-v{old_v}'", f"'gagyebu-v{new_v}'")
+        ok(f"sw.js 캐시 버전: v{old_v} → v{new_v}")
+        # 가계부.html APP_VERSION도 동기화
+        c = re.sub(r"const APP_VERSION = 'v\d+';", f"const APP_VERSION = 'v{new_v}';", c)
+        ok(f"APP_VERSION: v{old_v} → v{new_v}")
+        # RELEASE_HISTORY_APP 업데이트 (최근 3개 유지)
+        rh_match = re.search(r"const RELEASE_HISTORY_APP = (\[.*?\]);", c, re.DOTALL)
+        if rh_match:
+            try:
+                history = json.loads(rh_match.group(1))
+            except Exception:
+                history = []
+            history.insert(0, f"v{new_v}: {commit_msg}")
+            history = history[:3]
+            history_json = json.dumps(history, ensure_ascii=False)
+            c = re.sub(r"const RELEASE_HISTORY_APP = \[.*?\];",
+                       f"const RELEASE_HISTORY_APP = {history_json};", c, flags=re.DOTALL)
+            ok(f"릴리즈 히스토리: {history[0]}")
+        else:
+            warn("RELEASE_HISTORY_APP 패턴 못 찾음")
+    else:
+        warn("sw.js 버전 패턴 못 찾음 — 수동 확인 필요")
+    # RELEASE_NOTES 주입 (커밋 메시지로 채움)
+    sw_text = re.sub(
+        r"const RELEASE_NOTES = '[^']*';",
+        f"const RELEASE_NOTES = '{commit_msg}';",
+        sw_text
+    )
+    SW.write_text(sw_text, encoding="utf-8")
+    ok(f"sw.js 릴리즈 노트: {commit_msg}")
 
     # 저장
     SHARED.write_text(c, encoding="utf-8")
@@ -207,7 +265,7 @@ def do_push(msg, changed):
     # add
     run(["git", "add",
          "가계부.html", "가계부_공유용.html",
-         "index.html", "share/index.html"])
+         "index.html", "share/index.html", "share/sw.js"])
     # 기타 변경 파일 추가
     for f in changed:
         run(["git", "add", f])
@@ -255,7 +313,7 @@ def main():
             commit_msg = "update: 가계부 앱 업데이트"
 
     # 4단계 실행
-    if not do_sync():
+    if not do_sync(commit_msg):
         print(f"\n{R}SYNC 실패. 종료.{X}\n"); sys.exit(1)
 
     if not do_check():
