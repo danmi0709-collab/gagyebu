@@ -1416,7 +1416,7 @@
 <!-- 시작 인사 화면 (공유앱 첫 실행 시 1회) -->
 <div id="introOverlay" style="display:none;position:fixed;inset:0;z-index:10000;background:var(--bg);overflow-y:auto">
   <div style="min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 26px;max-width:460px;margin:0 auto;text-align:center">
-    <div style="width:96px;height:96px;border-radius:26px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:50px;margin-bottom:18px;box-shadow:0 8px 24px rgba(0,0,0,0.18)">💰</div>
+    <img src="icon-192.png" alt="" onerror="this.style.display='none'" style="width:104px;height:104px;border-radius:26px;margin-bottom:18px;box-shadow:0 8px 24px rgba(0,0,0,0.18);object-fit:cover;background:#fff">
     <div id="introTitle" style="font-size:27px;font-weight:800;color:var(--text);margin-bottom:8px">한해살림</div>
     <div style="font-size:15px;color:var(--text2);line-height:1.6;margin-bottom:28px">사진 한 장이면 끝나는<br>가장 쉬운 가계부</div>
 
@@ -1767,8 +1767,8 @@ let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
 const APP_TITLE = '월부앱'; // deploy.py가 변종별로 치환 (월부앱 / 홍개인용). 비어있으면 닉네임 방식
 const ENABLE_PRECISION_OCR = true; // deploy.py가 홍개인용만 true로 치환 (정밀 OCR 사용)
-const APP_VERSION = 'v47'; // deploy.py가 자동으로 올림
-const RELEASE_HISTORY_APP = ["v47: 브랜딩: 첫 실행 시작화면(소개/사용법) 추가 - 한해살림 제품화 1단계", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
+const APP_VERSION = 'v48'; // deploy.py가 자동으로 올림
+const RELEASE_HISTORY_APP = ["v48: 한해살림 로고를 홈 아이콘+시작화면에 적용", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
 const NICKNAME_KEY = 'my_nickname';
 
 let currentMonth; // YYYY-MM
