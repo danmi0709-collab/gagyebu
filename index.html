@@ -3682,6 +3682,8 @@ function parseMultipleTransactions(rawText) {
   };
   // 합계/헤더 줄 판별 ("6월 | 국내(13건)", "합계" 등)
   const isHeaderLine = (s) => /\(\s*\d+\s*건\s*\)|국내|해외|합계|총\s*액|결제\s*예정/.test(s || '');
+  // 시각(13:43)/태그(#체크카드) 줄 판별 — 카카오뱅크 잔액 줄 구분용
+  const isTimeOrTag = (s) => /^\d{1,2}:\d{2}/.test(s || '') || /^#/.test(s || '');
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -3768,7 +3770,7 @@ function parseMultipleTransactions(rawText) {
       const amtRaw   = sameLine[2].replace(/,/g, '');
       const amt      = Math.abs(parseInt(amtRaw));
       // 타임라인(HH:MM), 태그(#), 숫자만, 잔액 등 제외
-      if (/^\d{2}:\d{2}/.test(merchant)) continue;
+      if (/^\d{1,2}:\d{2}/.test(merchant)) continue;   // 시각으로 시작 → 잔액 줄
       if (/^#/.test(merchant)) continue;
       if (/^\d+$/.test(merchant.replace(/,/g, ''))) continue;
       if (amt < 100) continue;
@@ -3784,15 +3786,16 @@ function parseMultipleTransactions(rawText) {
       const amt    = Math.abs(parseInt(amtRaw));
       if (amt < 100) continue;
       let merchant = '';
+      let crossedTime = false;
       for (let j = i - 1; j >= Math.max(0, i - 4); j--) {
         const prev = lines[j];
-        if (/^\d{2}:\d{2}/.test(prev)) continue;
-        if (/^#/.test(prev)) continue;
+        if (isTimeOrTag(prev)) { crossedTime = true; break; }  // 시각/태그 줄 만나면 잔액 → 중단
         if (/원$/.test(prev)) continue;
         if (/^\d{1,2}[./]\d{2}$/.test(prev)) break;
+        if (matchFullDate(prev)) break;
         if (prev.length >= 2 && !/^\d+$/.test(prev.replace(/,/g, ''))) { merchant = prev.slice(0, 40); break; }
       }
-      if (!merchant) continue;
+      if (crossedTime || !merchant) continue;   // 잔액이거나 가맹점 없음 → 제외
       const type = amtRaw.startsWith('-') ? 'expense' : 'income';
       results.push({ date: currentDate, merchant, amount: amt, type, checked: true });
     }

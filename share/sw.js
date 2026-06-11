@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v40';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '상품권/토스 날짜형식(오전오후 없는 날짜, -N원) 인식 추가';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v41';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '카카오뱅크 변동내역 인식 - 잔액 제외, 캐시백 수입 처리';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
