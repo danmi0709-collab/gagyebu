@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v52';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '월부앱에서 후원 기능 제거 (한해살림에만 유지)';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v53';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '개발자에게 한마디 버튼 추가 (월부앱+한해살림, 따뜻한 메시지 유도)';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {

@@ -1391,6 +1391,24 @@
 }
 </style>
 
+<!-- 개발자에게 한마디 팝업 -->
+<div id="feedbackModal" onclick="if(event.target===this)closeFeedback()" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;cursor:pointer;padding:20px">
+  <div style="background:var(--card);border-radius:22px;padding:28px 24px;max-width:360px;width:100%;cursor:default" onclick="event.stopPropagation()">
+    <div style="font-size:40px;text-align:center;margin-bottom:10px">💌</div>
+    <div style="font-size:18px;font-weight:800;color:var(--accent);text-align:center;margin-bottom:6px">개발자에게 한마디</div>
+    <div style="font-size:13px;color:var(--text2);text-align:center;line-height:1.6;margin-bottom:16px">
+      여러분의 따뜻한 한마디가<br>이 앱을 계속 만들어가는 힘이에요 🌱<br>
+      <span style="font-size:12px;color:var(--text3)">응원, 좋았던 점, 필요한 기능 무엇이든 좋아요</span>
+    </div>
+    <textarea id="feedbackText" rows="4" placeholder="예) 잘 쓰고 있어요, 고마워요! / OO 기능이 있으면 좋겠어요"
+      style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;padding:12px;font-family:inherit;resize:vertical;line-height:1.5"></textarea>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button onclick="closeFeedback()" style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:12px;color:var(--text2);font-size:14px;font-weight:700;padding:12px;cursor:pointer;font-family:inherit">닫기</button>
+      <button id="feedbackSendBtn" onclick="sendFeedback()" style="flex:2;background:var(--accent);border:none;border-radius:12px;color:#fff;font-size:14px;font-weight:700;padding:12px;cursor:pointer;font-family:inherit">보내기</button>
+    </div>
+  </div>
+</div>
+
 <!-- 후원 감사 팝업 -->
 <div id="thankModal" onclick="closeThankModal()" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;cursor:pointer">
   <div style="background:var(--card);border-radius:24px;padding:38px 32px;max-width:320px;width:90%;text-align:center;cursor:default;animation:cheerIn 0.4s ease" onclick="event.stopPropagation()">
@@ -1540,6 +1558,16 @@
       </div>
       <button onclick="openDonate()" style="width:100%;background:#FEE500;border:none;border-radius:12px;color:#3C1E1E;font-size:15px;font-weight:700;padding:13px;cursor:pointer;font-family:inherit">
         ☕ 개발자 커피 한 잔 사주기
+      </button>
+    </div>
+
+    <!-- 개발자에게 한마디 (공유앱 전용) -->
+    <div id="feedbackSection" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:10px">
+        쓰면서 좋았던 점, 있으면 좋겠는 기능<br>무엇이든 한마디 남겨주세요 💌
+      </div>
+      <button onclick="openFeedback()" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:15px;font-weight:700;padding:13px;cursor:pointer;font-family:inherit">
+        💬 개발자에게 한마디
       </button>
     </div>
 
@@ -1769,6 +1797,47 @@ const APP_VERSION = 'v20'; // deploy.py가 자동으로 올림
 const RELEASE_HISTORY_APP = ["v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼", "v30: 복원 전 자동 임시저장+취소 버튼"]; // deploy.py가 최근 3개 관리
 const NICKNAME_KEY = 'hanna_nickname';
 const DONATE_KAKAO = 'https://qr.kakaopay.com/Ej9IUfsMt'; // 후원(카카오페이) 링크
+const FEEDBACK_KEY = 'aae52359-50b2-4f8d-a95d-c5ea62e860e7'; // web3forms 액세스 키 (개발자에게 한마디)
+function openFeedback() {
+  const m = document.getElementById('feedbackModal');
+  if (m) m.style.display = 'flex';
+  setTimeout(() => { const t = document.getElementById('feedbackText'); if (t) t.focus(); }, 100);
+}
+function closeFeedback() {
+  const m = document.getElementById('feedbackModal');
+  if (m) m.style.display = 'none';
+}
+async function sendFeedback() {
+  const ta = document.getElementById('feedbackText');
+  const msg = (ta && ta.value || '').trim();
+  if (!msg) { showToast('내용을 적어주세요 🙂'); return; }
+  const btn = document.getElementById('feedbackSendBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '보내는 중...'; }
+  try {
+    const res = await fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        access_key: FEEDBACK_KEY,
+        subject: '[' + (APP_TITLE || '가계부') + '] 사용자 한마디',
+        from_name: (APP_TITLE || '가계부') + ' 사용자',
+        message: msg
+      })
+    });
+    const d = await res.json();
+    if (d && d.success) {
+      if (ta) ta.value = '';
+      closeFeedback();
+      showToast('💛 따뜻한 마음 잘 받았어요. 고맙습니다!');
+    } else {
+      throw new Error((d && d.message) || '전송 실패');
+    }
+  } catch (e) {
+    alert('전송에 실패했어요. 인터넷을 확인하고 다시 시도해주세요.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '보내기'; }
+  }
+}
 let pendingThanks = false;
 // 후원 버튼 누른 횟수 카운터 (서버 없는 무료 카운터). 추측 어렵게 임의 네임스페이스 사용.
 const DONATE_COUNTER = 'https://abacus.jasoncameron.dev';
@@ -4310,6 +4379,9 @@ function openSettings() {
   // 후원 섹션: 공유앱(월부앱/한해살림)에서만 표시
   const ds = document.getElementById('donateSection');
   if (ds) ds.style.display = (IS_SHARED && DONATE_KAKAO) ? 'block' : 'none';
+  // 개발자에게 한마디 섹션: 공유앱에서 표시
+  const fs = document.getElementById('feedbackSection');
+  if (fs) fs.style.display = (IS_SHARED && FEEDBACK_KEY) ? 'block' : 'none';
   // 최근 업데이트 내역 렌더
   const rh = document.getElementById('releaseHistoryEl');
   if (rh && typeof RELEASE_HISTORY_APP !== 'undefined' && RELEASE_HISTORY_APP.length) {
