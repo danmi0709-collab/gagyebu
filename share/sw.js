@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v55';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '지출 없는 날 무지출 데이 표시 + 응원 문구 자동 표시';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v56';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '거래 없는 날도 목록 표시(무지출 배지), 분석탭에 이번 달 무지출 데이 일수 표시';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {

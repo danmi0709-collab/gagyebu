@@ -2589,6 +2589,24 @@ function saveDayNote(date, text) {
   if (text) notes[date] = text; else delete notes[date];
   localStorage.setItem(DAY_NOTES_KEY, JSON.stringify(notes));
 }
+// 그 달의 날짜 목록 (최신순). 이번 달이면 오늘까지만.
+function getMonthDays(ym) {
+  const [y, m] = ym.split('-').map(Number);
+  const last = new Date(y, m, 0).getDate();
+  const now = new Date();
+  const end = (ym === toYM(now)) ? now.getDate() : last;
+  const arr = [];
+  for (let d = end; d >= 1; d--) arr.push(`${ym}-${String(d).padStart(2, '0')}`);
+  return arr;
+}
+// 이번 달 무지출 데이(지출 0원인 날) 일수
+function countNoExpenseDays(ym) {
+  const txs = getMonthTx(ym);
+  const exp = {};
+  txs.forEach(t => { if (t.type === 'expense') exp[t.date] = (exp[t.date] || 0) + t.amount; });
+  return getMonthDays(ym).filter(d => !(exp[d] > 0)).length;
+}
+
 // 무지출 데이 응원 문구 (날짜별로 고정되게 선택)
 const NO_EXPENSE_CHEERS = [
   '오늘 지갑이 푹 쉬었네요 👏',
@@ -2625,16 +2643,11 @@ function renderTab1() {
   document.getElementById('chipSavingLabel').textContent = saving > 0 ? `저축 (${savingRate}%)` : '저축';
   document.getElementById('chipBalance').textContent = formatKRW(balance);
 
-  const sorted = [...txs].sort((a, b) => b.date.localeCompare(a.date));
   const list = document.getElementById('txList');
-  if (sorted.length === 0) {
-    list.innerHTML = '<div class="empty-msg">이번 달 내역이 없어요 😊</div>';
-    return;
-  }
 
   // 날짜별 그룹핑
   const groups = {};
-  sorted.forEach(t => {
+  txs.forEach(t => {
     if (!groups[t.date]) groups[t.date] = [];
     groups[t.date].push(t);
   });
@@ -2654,7 +2667,9 @@ function renderTab1() {
     }
   });
 
-  list.innerHTML = Object.entries(groups).map(([date, dayTxs]) => {
+  // 그 달의 모든 날(최신순) — 거래 없는 날도 줄로 표시 (무지출 데이 배지용)
+  list.innerHTML = getMonthDays(currentMonth).map((date) => {
+    const dayTxs = groups[date] || [];
     const dayIncome  = dayTxs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const dayExpense = dayTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
     const daySaving  = dayTxs.filter(t => t.type === 'saving').reduce((s, t) => s + t.amount, 0);
@@ -2870,6 +2885,8 @@ function renderTab2() {
   const totalBudget = Object.values(budgetMap).reduce((s,v)=>s+v,0);
   const overBudget  = totalBudget > 0 && expense > totalBudget;
 
+  const noExpDays = countNoExpenseDays(nowYM);
+
   let verdict, verdictColor;
   if (saveRate === null)         { verdict = '수입 내역이 없어요'; verdictColor = 'var(--text2)'; }
   else if (saveRate >= 30)       { verdict = '절약 잘 하고 있어요 👍'; verdictColor = '#3fb950'; }
@@ -2916,6 +2933,7 @@ function renderTab2() {
       <div class="analysis-verdict" style="color:${verdictColor}">${verdict}</div>
       ${saveRate !== null ? `<div class="analysis-line">수입 <b>${formatKRW(income)}</b> · 지출 <b>${formatKRW(expense)}</b> · 저축 <b style="color:#79c0ff">${formatKRW(saving)}</b> → 저축률 <b style="color:${saveRate>=20?'#3fb950':saveRate>=0?'#e2b96b':'#f85149'}">${saveRate}%</b>${saveTargetRate!==null?` <span style="font-size:12px;color:var(--text2)">(목표 ${saveTargetRate}%)</span>`:''}</div>` : ''}
       ${totalBudget > 0 ? `<div class="analysis-line">총 예산 대비 <b style="color:${overBudget?'#f85149':'#3fb950'}">${totalBudget>0?Math.round(expense/totalBudget*100):0}%</b> 사용</div>` : ''}
+      <div class="analysis-line">🎉 무지출 데이 <b style="color:#3fb950">${noExpDays}일</b>${isCurrentMonth ? ' (오늘까지)' : ''} ${noExpDays >= 10 ? '— 정말 알뜰해요!' : noExpDays >= 5 ? '— 잘하고 있어요 👍' : ''}</div>
     </div>
 
     <div class="analysis-card">
