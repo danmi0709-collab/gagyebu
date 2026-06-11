@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v49';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '한해살림 카톡 공유 미리보기 이미지 적용';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v50';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '후원버튼+감사팝업, 가져오기 이름변경, 헤더를 (닉네임)의 한해살림으로';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
