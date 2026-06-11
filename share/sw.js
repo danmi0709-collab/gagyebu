@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v54';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '날짜별 한 줄 메모 추가 (캠핑 간 날, 이사날 등 기록)';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v55';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '지출 없는 날 무지출 데이 표시 + 응원 문구 자동 표시';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {

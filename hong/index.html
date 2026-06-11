@@ -378,6 +378,17 @@
     border-bottom-color: var(--accent);
   }
   .day-note.filled { color: var(--accent); font-weight: 600; }
+  /* 무지출 데이 응원 배지 */
+  .noexpense-badge {
+    font-size: 12px;
+    font-weight: 700;
+    color: #2ea043;
+    background: rgba(63,185,80,0.12);
+    border-radius: 8px;
+    padding: 6px 10px;
+    margin: 2px 0 6px;
+  }
+  body.ivory .noexpense-badge { color: #1a7f37; }
 
   /* 카테고리 그룹 색상 */
   .group-badge {
@@ -1832,8 +1843,8 @@ let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
 const APP_TITLE = '한해살림'; // deploy.py가 변종별로 치환 (한해살림 / 홍개인용). 비어있으면 닉네임 방식
 const ENABLE_PRECISION_OCR = true; // deploy.py가 홍개인용만 true로 치환 (정밀 OCR 사용)
-const APP_VERSION = 'v54'; // deploy.py가 자동으로 올림
-const RELEASE_HISTORY_APP = ["v54: 날짜별 한 줄 메모 추가 (캠핑 간 날, 이사날 등 기록)", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
+const APP_VERSION = 'v55'; // deploy.py가 자동으로 올림
+const RELEASE_HISTORY_APP = ["v55: 지출 없는 날 무지출 데이 표시 + 응원 문구 자동 표시", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
 const NICKNAME_KEY = 'my_nickname';
 const DONATE_KAKAO = 'https://qr.kakaopay.com/Ej9IUfsMt'; // 후원(카카오페이) 링크
 const FEEDBACK_KEY = 'aae52359-50b2-4f8d-a95d-c5ea62e860e7'; // web3forms 액세스 키 (개발자에게 한마디)
@@ -2599,6 +2610,24 @@ function saveDayNote(date, text) {
   if (text) notes[date] = text; else delete notes[date];
   localStorage.setItem(DAY_NOTES_KEY, JSON.stringify(notes));
 }
+// 무지출 데이 응원 문구 (날짜별로 고정되게 선택)
+const NO_EXPENSE_CHEERS = [
+  '오늘 지갑이 푹 쉬었네요 👏',
+  '한 푼도 안 쓴 멋진 하루!',
+  '절약 근육이 쑥쑥 자라요 💪',
+  '이런 날이 모여 목표에 가까워져요 ✨',
+  '잘 참았어요, 대단해요!',
+  '통장이 좋아하는 하루 💚',
+  '무지출 성공! 스스로 칭찬해요 🌟',
+  '돈 안 쓴 날도 기록이 돼요, 멋져요!'
+];
+function noExpenseCheer(date) {
+  // 날짜 글자 합으로 인덱스 → 같은 날은 항상 같은 문구
+  let h = 0;
+  for (let i = 0; i < date.length; i++) h += date.charCodeAt(i);
+  return NO_EXPENSE_CHEERS[h % NO_EXPENSE_CHEERS.length];
+}
+
 // 따옴표 등 속성 안전 처리
 function escAttr(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;')
@@ -2690,6 +2719,7 @@ function renderTab1() {
         <span class="date-header-label">${formatDateHeader(date)}</span>
         <span class="date-header-sum">${daySummary}</span>
       </div>
+      ${dayExpense === 0 ? `<div class="noexpense-badge">🎉 무지출 데이! · ${noExpenseCheer(date)}</div>` : ''}
       <input class="day-note${getDayNote(date) ? ' filled' : ''}" type="text" maxlength="40"
         data-date="${date}" value="${escAttr(getDayNote(date))}"
         placeholder="✏️ 이 날의 메모 (예: 캠핑 간 날)" onchange="saveDayNoteFromInput(this)">
