@@ -1413,6 +1413,36 @@
 }
 </style>
 
+<!-- 시작 인사 화면 (공유앱 첫 실행 시 1회) -->
+<div id="introOverlay" style="display:none;position:fixed;inset:0;z-index:10000;background:var(--bg);overflow-y:auto">
+  <div style="min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 26px;max-width:460px;margin:0 auto;text-align:center">
+    <div style="width:96px;height:96px;border-radius:26px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:50px;margin-bottom:18px;box-shadow:0 8px 24px rgba(0,0,0,0.18)">💰</div>
+    <div id="introTitle" style="font-size:27px;font-weight:800;color:var(--text);margin-bottom:8px">한해살림</div>
+    <div style="font-size:15px;color:var(--text2);line-height:1.6;margin-bottom:28px">사진 한 장이면 끝나는<br>가장 쉬운 가계부</div>
+
+    <div style="width:100%;text-align:left;display:flex;flex-direction:column;gap:16px;margin-bottom:32px">
+      <div style="display:flex;gap:13px;align-items:flex-start">
+        <span style="font-size:24px">📷</span>
+        <div><div style="font-weight:700;color:var(--text);font-size:15px">사진으로 자동 입력</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.5">카드·페이·상품권 내역을 찍으면 날짜·금액·가맹점을 자동으로 읽어요</div></div>
+      </div>
+      <div style="display:flex;gap:13px;align-items:flex-start">
+        <span style="font-size:24px">📊</span>
+        <div><div style="font-weight:700;color:var(--text);font-size:15px">예산이 한눈에</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.5">월예산·연예산, 저축률, 카테고리별 지출을 차트로 보여줘요</div></div>
+      </div>
+      <div style="display:flex;gap:13px;align-items:flex-start">
+        <span style="font-size:24px">🔒</span>
+        <div><div style="font-weight:700;color:var(--text);font-size:15px">내 데이터는 내 폰에만</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.5">서버에 올리지 않아요. 기록은 이 기기 안에만 안전하게 저장돼요</div></div>
+      </div>
+    </div>
+
+    <button onclick="closeIntro()" style="width:100%;background:var(--accent);border:none;border-radius:14px;color:#fff;font-size:16px;font-weight:700;padding:15px;cursor:pointer;font-family:inherit">시작하기</button>
+    <button onclick="closeIntro()" style="margin-top:12px;background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;font-family:inherit;text-decoration:underline">건너뛰기</button>
+  </div>
+</div>
+
 <!-- 거래 편집 모달 -->
 <div class="edit-modal-overlay" id="editModal" onclick="closeEditModalOutside(event)">
   <div class="edit-modal-box">
@@ -1737,8 +1767,8 @@ let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
 const APP_TITLE = '한해살림'; // deploy.py가 변종별로 치환 (한해살림 / 홍개인용). 비어있으면 닉네임 방식
 const ENABLE_PRECISION_OCR = true; // deploy.py가 홍개인용만 true로 치환 (정밀 OCR 사용)
-const APP_VERSION = 'v46'; // deploy.py가 자동으로 올림
-const RELEASE_HISTORY_APP = ["v46: 홍개인용을 한해살림으로 이름 변경", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
+const APP_VERSION = 'v47'; // deploy.py가 자동으로 올림
+const RELEASE_HISTORY_APP = ["v47: 브랜딩: 첫 실행 시작화면(소개/사용법) 추가 - 한해살림 제품화 1단계", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
 const NICKNAME_KEY = 'my_nickname';
 
 let currentMonth; // YYYY-MM
@@ -1795,9 +1825,34 @@ function closeCheerModal() {
 }
 function checkNicknameOnLoad() {
   applyNickname();
+  if (IS_SHARED && APP_TITLE) return;   // 고정 이름 앱(한해살림/한해살림)은 닉네임 강요 안 함 (시작화면이 안내)
   if (!getNickname()) {
     setTimeout(() => openNicknameModal(), 500);
   }
+}
+
+// 첫 실행 시 시작 인사 화면 (공유앱 전용, 기기당 1회)
+const INTRO_SEEN_KEY = 'my_intro_seen';
+function showIntroIfFirstRun() {
+  if (!IS_SHARED) return;
+  if (localStorage.getItem(INTRO_SEEN_KEY)) return;
+  const ov = document.getElementById('introOverlay');
+  if (!ov) return;
+  const t = document.getElementById('introTitle');
+  if (t && APP_TITLE) t.textContent = APP_TITLE;
+  ov.style.display = 'block';
+}
+function closeIntro() {
+  const ov = document.getElementById('introOverlay');
+  if (ov) ov.style.display = 'none';
+  localStorage.setItem(INTRO_SEEN_KEY, '1');
+}
+function openIntroAgain() {
+  const ov = document.getElementById('introOverlay');
+  if (!ov) return;
+  const t = document.getElementById('introTitle');
+  if (t && APP_TITLE) t.textContent = APP_TITLE;
+  ov.style.display = 'block';
 }
 
 function themeColor(name) {
@@ -2211,6 +2266,7 @@ function init() {
   migrateOldKeys();
   initTheme();
   checkNicknameOnLoad();
+  showIntroIfFirstRun();
   const badge = document.getElementById('appVersionBadge');
   if (badge) badge.textContent = APP_VERSION;
   const now = new Date();

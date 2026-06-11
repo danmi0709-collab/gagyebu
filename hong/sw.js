@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-hong-v46';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '홍개인용을 한해살림으로 이름 변경';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-hong-v47';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '브랜딩: 첫 실행 시작화면(소개/사용법) 추가 - 한해살림 제품화 1단계';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
