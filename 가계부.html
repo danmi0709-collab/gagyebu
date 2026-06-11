@@ -3661,14 +3661,20 @@ function parseMultipleTransactions(rawText) {
   let currentDate = new Date().toISOString().slice(0, 10);
   const results = [];
 
-  // 풀날짜 추출 헬퍼: "YYYY.M.DD. 오전/오후" → "YYYY-MM-DD"
+  // 풀날짜 추출 헬퍼: "2026.6.11", "2026. 6. 11", "26.6.11", "2026-06-11" 모두 인식
   const matchFullDate = (s) => {
-    const m = s && s.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})\.?/);
-    return m ? `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}` : null;
+    if (!s) return null;
+    const m = s.match(/^(\d{2,4})\s*[.\-]\s*(\d{1,2})\s*[.\-]\s*(\d{1,2})/);
+    if (!m) return null;
+    let y = m[1]; if (y.length === 2) y = '20' + y;
+    return `${y}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
   };
-  // 삼성페이는 날짜가 거래 "아래"에 옴 → 다음 1~2줄에서 날짜 찾기
-  const lookAheadDate = (i) => {
-    for (let j = i + 1; j <= Math.min(lines.length - 1, i + 2); j++) {
+  // 날짜는 거래 위 또는 아래에 올 수 있음 → 가까운 줄을 양방향으로 탐색
+  // (아래쪽을 먼저 봐서 삼성페이 "날짜가 거래 아래" 형식을 우선 처리)
+  const lookNearbyDate = (i) => {
+    const order = [i + 1, i - 1, i + 2, i - 2];
+    for (const j of order) {
+      if (j < 0 || j >= lines.length) continue;
       const d = matchFullDate(lines[j]);
       if (d) return d;
     }
@@ -3703,7 +3709,7 @@ function parseMultipleTransactions(rawText) {
       if (/^\d{4}$/.test(merchant)) continue; // 연도 같은 숫자 제외
       if (/^[₩W\\]/.test(merchant)) continue; // 금액만인 줄 제외
       // 날짜는 아래쪽 줄을 우선 사용 (삼성페이: 날짜가 거래 아래)
-      const date = lookAheadDate(i) || currentDate;
+      const date = lookNearbyDate(i) || currentDate;
       results.push({ date, merchant: merchant.slice(0, 40), amount: amt, type: 'expense', checked: true });
       continue;
     }
@@ -3724,7 +3730,7 @@ function parseMultipleTransactions(rawText) {
         if (prev.length >= 2 && !/^\d+$/.test(prev.replace(/,/g, ''))) { merchant = prev.slice(0, 40); break; }
       }
       if (!merchant) continue;                     // 가맹점 못 찾으면 (합계 등) 제외
-      const date = lookAheadDate(i) || currentDate;
+      const date = lookNearbyDate(i) || currentDate;
       results.push({ date, merchant, amount: amt, type: 'expense', checked: true });
       continue;
     }
