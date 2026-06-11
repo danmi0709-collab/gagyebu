@@ -1566,7 +1566,7 @@
 
     <!-- 버전 / 최신버전 버튼 — settings-box 맨 아래, sheetsSection 밖에 위치 -->
     <div id="versionSection" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-      <span style="font-size:0.8rem;color:var(--text-muted)">앱 버전 <strong id="appVersionBadge"></strong></span>
+      <span style="font-size:0.8rem;color:var(--text-muted)" onclick="onVersionTap()">앱 버전 <strong id="appVersionBadge"></strong></span>
       <button onclick="forceUpdate()" style="font-size:0.8rem;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-family:inherit">🔄 최신버전으로</button>
     </div>
     <!-- 최근 업데이트 내역 -->
@@ -1786,15 +1786,40 @@ let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
 const APP_TITLE = '한해살림'; // deploy.py가 변종별로 치환 (한해살림 / 홍개인용). 비어있으면 닉네임 방식
 const ENABLE_PRECISION_OCR = true; // deploy.py가 홍개인용만 true로 치환 (정밀 OCR 사용)
-const APP_VERSION = 'v50'; // deploy.py가 자동으로 올림
-const RELEASE_HISTORY_APP = ["v50: 후원버튼+감사팝업, 가져오기 이름변경, 헤더를 (닉네임)의 한해살림으로", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
+const APP_VERSION = 'v51'; // deploy.py가 자동으로 올림
+const RELEASE_HISTORY_APP = ["v51: 후원 버튼 누른 횟수 카운터 추가 (설정 버전 7번 탭하면 나만 보기)", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
 const NICKNAME_KEY = 'my_nickname';
 const DONATE_KAKAO = 'https://qr.kakaopay.com/Ej9IUfsMt'; // 후원(카카오페이) 링크
 let pendingThanks = false;
+// 후원 버튼 누른 횟수 카운터 (서버 없는 무료 카운터). 추측 어렵게 임의 네임스페이스 사용.
+const DONATE_COUNTER = 'https://abacus.jasoncameron.dev';
+const DONATE_NS = 'hanhaesalim-k7m3qz';
+const DONATE_KEY = 'coffee';
 function openDonate() {
   if (!DONATE_KAKAO) return;
   pendingThanks = true;            // 카카오페이 다녀오면 고맙다는 팝업 예약
+  // 누른 횟수 +1 (실패해도 무시)
+  fetch(`${DONATE_COUNTER}/hit/${DONATE_NS}/${DONATE_KEY}`).catch(() => {});
   window.open(DONATE_KAKAO, '_blank');
+}
+// 비밀 보기: 설정의 "앱 버전"을 7번 탭하면 후원 버튼 누른 횟수 표시 (나님만 아는 동작)
+let _verTaps = 0, _verTapTimer = null;
+function onVersionTap() {
+  _verTaps++;
+  clearTimeout(_verTapTimer);
+  _verTapTimer = setTimeout(() => { _verTaps = 0; }, 1500);
+  if (_verTaps >= 7) { _verTaps = 0; showDonorCount(); }
+}
+async function showDonorCount() {
+  try {
+    const r = await fetch(`${DONATE_COUNTER}/get/${DONATE_NS}/${DONATE_KEY}`);
+    let n = 0;
+    if (r.ok) { const d = await r.json(); n = (d && (d.value != null ? d.value : d.count)) || 0; }
+    // 404(아직 후원 0건)면 0으로 표시
+    alert(`☕ 지금까지 후원 버튼 누른 횟수: ${n}회\n\n※ 실제 송금 완료 건수는 카카오페이 앱에서 확인하세요.`);
+  } catch (e) {
+    alert('후원 수를 불러오지 못했어요. 인터넷을 확인해주세요.');
+  }
 }
 function showThankModal() { const m = document.getElementById('thankModal'); if (m) m.style.display = 'flex'; }
 function closeThankModal() { const m = document.getElementById('thankModal'); if (m) m.style.display = 'none'; }
