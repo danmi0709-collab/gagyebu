@@ -1,9 +1,9 @@
 {
-  "name": "월부앱",
-  "short_name": "월부앱",
+  "name": "홍개인용",
+  "short_name": "홍개인용",
   "description": "수입·지출·저축 관리, 자산 추이 차트, 연예산 계획까지.",
-  "start_url": "/gagyebu/share/",
-  "scope": "/gagyebu/share/",
+  "start_url": "/gagyebu/hong/",
+  "scope": "/gagyebu/hong/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#faf8f3",

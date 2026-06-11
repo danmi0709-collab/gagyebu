@@ -1,5 +1,5 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v43';  // deploy.py가 자동으로 올림
+const CACHE_NAME = 'gagyebu-hong-v43';  // deploy.py가 자동으로 올림
 const RELEASE_NOTES = '월부앱 이름변경+무료OCR개선(재시도/이미지보정), 홍개인용 정밀OCR(OCR.space) 추가';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치

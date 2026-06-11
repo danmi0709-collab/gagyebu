@@ -3,7 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>한나의 가계부</title>
+<title>홍개인용</title>
+<!-- Open Graph (카카오톡·SNS 미리보기) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="홍개인용">
+<meta property="og:title" content="홍개인용 💰">
+<meta property="og:description" content="설치 없이 브라우저에서 바로 쓰는 무료 가계부. 수입·지출·저축 관리, 자산 추이 차트, 연예산 계획까지. 내 데이터는 내 기기에만 저장됩니다.">
+<meta property="og:image" content="https://danmi0709-collab.github.io/gagyebu/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://danmi0709-collab.github.io/gagyebu/share">
+<meta name="description" content="설치 없이 브라우저에서 바로 쓰는 무료 가계부. 수입·지출·저축 관리, 자산 추이 차트, 연예산 계획까지.">
+<!-- 카카오톡 전용 -->
+<meta property="kakao:title" content="홍개인용 💰">
+<meta property="kakao:description" content="설치 없이 바로 쓰는 무료 가계부. 내 데이터는 내 기기에만 저장됩니다.">
+<meta property="kakao:image" content="https://danmi0709-collab.github.io/gagyebu/og-image.png">
+<!-- PWA (홈 화면 설치) -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#c07a3a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="가계부">
+<link rel="apple-touch-icon" href="icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -1123,14 +1145,13 @@
 
 <div class="header">
   <div class="header-row">
-    <h1>💰 한나의 가계부</h1>
+    <h1>💰 홍개인용</h1>
     <button id="btnTheme" class="btn-theme" onclick="toggleTheme()" title="테마 변경">🌙</button>
     <button class="btn-help" onclick="openHelp()" title="사용 설명서">❓</button>
     <button class="btn-settings" onclick="openSettings()" title="구글 시트 연동 설정">⚙️</button>
   </div>
   <div class="header-bottom">
     <div class="balance">이번 달 가용잔액 <span id="headerBalance">0원</span></div>
-    <div class="sync-status" id="syncStatus"></div>
   </div>
 </div>
 
@@ -1362,10 +1383,10 @@
   <div class="modal-box" style="max-width:340px;text-align:center">
     <div style="font-size:40px;margin-bottom:12px">✏️</div>
     <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">닉네임을 입력해주세요</div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:20px">앱 제목에 표시됩니다<br>예) <span id="nicknamePreview">한나</span>의 가계부</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:20px">앱 제목에 표시됩니다<br>예) <span id="nicknamePreview">나</span>의 가계부</div>
     <input id="nicknameInput" type="text" maxlength="10" placeholder="닉네임 (최대 10자)"
       style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;padding:10px 14px;text-align:center;margin-bottom:14px;font-family:inherit"
-      oninput="document.getElementById('nicknamePreview').textContent=this.value||'한나'"
+      oninput="document.getElementById('nicknamePreview').textContent=this.value||'나'"
       onkeydown="if(event.key==='Enter')saveNickname()">
     <button onclick="saveNickname()" style="width:100%;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:15px;font-weight:700;padding:12px;cursor:pointer">저장하기</button>
   </div>
@@ -1431,16 +1452,16 @@
   </div>
 </div>
 
-<!-- 설정 모달 (구글 시트 연동) -->
+<!-- 설정 모달 -->
 <div class="settings-overlay" id="settingsModal" onclick="closeSettingsOutside(event)">
   <div class="settings-box">
     <div class="settings-header">
-      <span class="settings-title">⚙️ 구글 시트 연동 설정</span>
+      <span class="settings-title">⚙️ 설정</span>
       <button class="settings-close" onclick="closeSettings()">✕</button>
     </div>
 
     <!-- 닉네임 변경 (공유용 전용) -->
-    <div id="nicknameSettingsSection" style="display:none;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)">
+    <div id="nicknameSettingsSection" style="display:block;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)">
       <label class="settings-label">✏️ 닉네임 변경</label>
       <div style="display:flex;gap:8px;align-items:center">
         <span style="font-size:13px;color:var(--text2)">현재: </span>
@@ -1709,15 +1730,15 @@
 <div id="toastEl" class="toast"></div>
 
 <script>
-const STORAGE_KEY   = 'hanna_budget_data';
-const TX_ORDER_KEY  = 'hanna_tx_order';
+const STORAGE_KEY   = 'my_budget_data';
+const TX_ORDER_KEY  = 'my_tx_order';
 let currentType = 'income';
-const IS_SHARED = false; // 공유용에서는 true로 변환됨
-const APP_TITLE = ''; // deploy.py가 변종별로 치환 (월부앱 / 홍개인용). 비어있으면 닉네임 방식
-const ENABLE_PRECISION_OCR = false; // deploy.py가 홍개인용만 true로 치환 (정밀 OCR 사용)
-const APP_VERSION = 'v20'; // deploy.py가 자동으로 올림
-const RELEASE_HISTORY_APP = ["v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼", "v30: 복원 전 자동 임시저장+취소 버튼"]; // deploy.py가 최근 3개 관리
-const NICKNAME_KEY = 'hanna_nickname';
+const IS_SHARED = true; // 공유용에서는 true로 변환됨
+const APP_TITLE = '홍개인용'; // deploy.py가 변종별로 치환 (홍개인용 / 홍개인용). 비어있으면 닉네임 방식
+const ENABLE_PRECISION_OCR = true; // deploy.py가 홍개인용만 true로 치환 (정밀 OCR 사용)
+const APP_VERSION = 'v43'; // deploy.py가 자동으로 올림
+const RELEASE_HISTORY_APP = ["v43: 홍개인용 이름변경+무료OCR개선(재시도/이미지보정), 홍개인용 정밀OCR(OCR.space) 추가", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
+const NICKNAME_KEY = 'my_nickname';
 
 let currentMonth; // YYYY-MM
 let catMonth;
@@ -1734,11 +1755,11 @@ function applyNickname() {
   const h1 = document.querySelector('.header h1');
   if (h1 && IS_SHARED) {
     if (APP_TITLE) {
-      // 고정 앱 이름(월부앱/홍개인용) + 닉네임이 있으면 작게 병기
+      // 고정 앱 이름(홍개인용/홍개인용) + 닉네임이 있으면 작게 병기
       h1.textContent = '💰 ' + APP_TITLE;
       document.title = APP_TITLE;
     } else {
-      h1.textContent = name ? '💰 ' + name + '의 가계부' : '💰 나만의 가계부';
+      h1.textContent = name ? '💰 ' + name + '의 가계부' : '💰 홍개인용';
     }
   }
 }
@@ -1781,14 +1802,14 @@ function themeColor(name) {
   return getComputedStyle(document.documentElement).getPropertyValue('--' + name).trim();
 }
 function initTheme() {
-  const saved = localStorage.getItem('hanna_theme') || 'ivory';
+  const saved = localStorage.getItem('my_theme') || 'ivory';
   document.body.classList.toggle('ivory', saved === 'ivory');
   const btn = document.getElementById('btnTheme');
   if (btn) btn.textContent = saved === 'ivory' ? '🌙' : '☀️';
 }
 function toggleTheme() {
   const isIvory = document.body.classList.toggle('ivory');
-  localStorage.setItem('hanna_theme', isIvory ? 'ivory' : 'dark');
+  localStorage.setItem('my_theme', isIvory ? 'ivory' : 'dark');
   const btn = document.getElementById('btnTheme');
   if (btn) btn.textContent = isIvory ? '🌙' : '☀️';
   // 차트가 있는 탭 다시 그리기
@@ -2149,17 +2170,17 @@ function migrateOldKeys() {
   if (!IS_SHARED) return;
 
   const pairs = [
-    ['hanna_budget_data',          'my_budget_data'],
-    ['hanna_annual_budget',        'my_annual_budget'],
-    ['hanna_budget_learn',         'my_budget_learn'],
-    ['hanna_subscriptions',        'my_subscriptions'],
-    ['hanna_sub_auto_month',       'my_sub_auto_month'],
-    ['hanna_assets',               'my_assets'],
-    ['hanna_tx_order',             'my_tx_order'],
-    ['hanna_nickname',             'my_nickname'],
-    ['hanna_theme',                'my_theme'],
-    ['hanna_merchant_cats',        'my_merchant_cats'],
-    ['hanna_formula_man_migrated', 'my_formula_man_migrated'],
+    ['my_budget_data',          'my_budget_data'],
+    ['my_annual_budget',        'my_annual_budget'],
+    ['my_budget_learn',         'my_budget_learn'],
+    ['my_subscriptions',        'my_subscriptions'],
+    ['my_sub_auto_month',       'my_sub_auto_month'],
+    ['my_assets',               'my_assets'],
+    ['my_tx_order',             'my_tx_order'],
+    ['my_nickname',             'my_nickname'],
+    ['my_theme',                'my_theme'],
+    ['my_merchant_cats',        'my_merchant_cats'],
+    ['my_formula_man_migrated', 'my_formula_man_migrated'],
   ];
 
   let count = 0;
@@ -2898,16 +2919,16 @@ function exportJSON() {
   migrateOldKeys();
 
   let txData = loadData();
-  // my_budget_data가 비어있으면 hanna_budget_data도 확인 (공유앱 전용)
+  // my_budget_data가 비어있으면 my_budget_data도 확인 (공유앱 전용)
   if (IS_SHARED && (txData.transactions || []).length === 0) {
     try {
-      const legacy = localStorage.getItem('hanna_budget_data');
+      const legacy = localStorage.getItem('my_budget_data');
       if (legacy) {
         const legacyParsed = JSON.parse(legacy);
         if ((legacyParsed.transactions || []).length > 0) {
           txData = legacyParsed;
           saveData(txData); // 올바른 키로 이전
-          localStorage.removeItem('hanna_budget_data');
+          localStorage.removeItem('my_budget_data');
           showToast('이전 거래 데이터 복구 완료 ✅', '#c07a3a');
         }
       }
@@ -2960,7 +2981,7 @@ function exportJSON() {
   }
 }
 
-const UNDO_KEY = IS_SHARED ? 'my_undo_backup' : 'hanna_undo_backup';
+const UNDO_KEY = IS_SHARED ? 'my_undo_backup' : 'my_undo_backup';
 
 function saveUndoSnapshot() {
   try {
@@ -3278,7 +3299,7 @@ function switchModalTab(n) {
 }
 
 // ===== 패턴 학습 =====
-const MERCHANT_MEM_KEY = 'hanna_merchant_cats';
+const MERCHANT_MEM_KEY = 'my_merchant_cats';
 
 function loadMerchantMem() {
   try { return JSON.parse(localStorage.getItem(MERCHANT_MEM_KEY) || '{}'); } catch { return {}; }
@@ -4150,7 +4171,7 @@ function confirmOCRImport() {
 }
 
 // ===== 구글 시트 연동 =====
-const SHEETS_URL_KEY = 'hanna_sheets_url';
+const SHEETS_URL_KEY = 'my_sheets_url';
 
 function getSheetsUrl() {
   return localStorage.getItem(SHEETS_URL_KEY) || '';
@@ -4350,7 +4371,7 @@ function pullFromSheets() {
 }
 
 // ===== 1년 예산 =====
-const ANNUAL_KEY = 'hanna_annual_budget';
+const ANNUAL_KEY = 'my_annual_budget';
 let currentYear = new Date().getFullYear();
 
 function loadAnnual() {
@@ -4431,7 +4452,7 @@ function toggleFixedItem(itemName, amount) {
 }
 
 // ===== 항목 자동 추천 =====
-const BUDGET_LEARN_KEY = 'hanna_budget_learn';
+const BUDGET_LEARN_KEY = 'my_budget_learn';
 // 키워드 → 항목명 고정 규칙
 const KEYWORD_ITEM_RULES = [
   { keywords: ['SRT','코레일','KTX','무궁화'], item: '임장비용' },
@@ -4484,8 +4505,8 @@ function autoFillFromMemo(val) {
 }
 
 // ===== 구독서비스 탭 (Tab 6) =====
-const SUBS_KEY     = 'hanna_subscriptions';
-const AUTO_SUB_KEY = 'hanna_sub_auto_month';
+const SUBS_KEY     = 'my_subscriptions';
+const AUTO_SUB_KEY = 'my_sub_auto_month';
 
 // 연예산에서 "(구독)" 표시된 항목 탐색
 function detectAnnualSubItems() {
@@ -5060,7 +5081,7 @@ function goToSubTx(subId) {
 }
 
 function migrateFormulasToMan() {
-  if (localStorage.getItem('hanna_formula_man_migrated')) return;
+  if (localStorage.getItem('my_formula_man_migrated')) return;
   function toMan(numStr) {
     const n = parseInt(numStr);
     if (n < 10000) return numStr;
@@ -5079,7 +5100,7 @@ function migrateFormulasToMan() {
     });
   });
   saveAnnual(all);
-  localStorage.setItem('hanna_formula_man_migrated', '1');
+  localStorage.setItem('my_formula_man_migrated', '1');
 }
 
 function evalFormula(str) {
@@ -5211,7 +5232,7 @@ function renderYrRows(rows, section) {
 
 // ─── 탭5: 연간 예산 진행 ───────────────────────────────
 // ===== 자산 탭 =====
-const ASSETS_KEY = 'hanna_assets';
+const ASSETS_KEY = 'my_assets';
 function loadAssets() {
   try { return JSON.parse(localStorage.getItem(ASSETS_KEY) || '{"assets":[],"liabilities":[],"history":[]}'); }
   catch { return { assets: [], liabilities: [], history: [] }; }

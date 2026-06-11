@@ -1449,6 +1449,18 @@
       </div>
     </div>
 
+    <!-- 정밀 OCR 키 (홍개인용 전용) -->
+    <div id="ocrKeySection" style="display:none;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)">
+      <label class="settings-label">🔍 정밀 글자인식 키 (OCR.space)</label>
+      <input class="settings-input" type="text" id="ocrKeyInput" placeholder="OCR.space 무료 키를 붙여넣으세요">
+      <button class="btn-save" onclick="saveOcrKey()" style="margin-top:8px">키 저장</button>
+      <div style="font-size:11px;color:var(--text2);margin-top:8px;line-height:1.6">
+        🌐 <strong>ocr.space/ocrapi</strong> 에서 이메일만 넣으면 무료 키를 즉시 받아요.<br>
+        키를 저장하면 스크린샷 인식이 훨씬 정확해집니다. (월 25,000장 무료)<br>
+        키가 없으면 무료 인식으로 자동 작동해요.
+      </div>
+    </div>
+
     <div id="sheetsSection">
       <label class="settings-label">구글 Apps Script 웹앱 URL</label>
       <input class="settings-input" type="url" id="sheetsUrlInput"
@@ -1701,6 +1713,8 @@ const STORAGE_KEY   = 'hanna_budget_data';
 const TX_ORDER_KEY  = 'hanna_tx_order';
 let currentType = 'income';
 const IS_SHARED = false; // 공유용에서는 true로 변환됨
+const APP_TITLE = ''; // deploy.py가 변종별로 치환 (월부앱 / 홍개인용). 비어있으면 닉네임 방식
+const ENABLE_PRECISION_OCR = false; // deploy.py가 홍개인용만 true로 치환 (정밀 OCR 사용)
 const APP_VERSION = 'v20'; // deploy.py가 자동으로 올림
 const RELEASE_HISTORY_APP = ["v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼", "v30: 복원 전 자동 임시저장+취소 버튼"]; // deploy.py가 최근 3개 관리
 const NICKNAME_KEY = 'hanna_nickname';
@@ -1719,7 +1733,13 @@ function applyNickname() {
   const name = getNickname();
   const h1 = document.querySelector('.header h1');
   if (h1 && IS_SHARED) {
-    h1.textContent = name ? '💰 ' + name + '의 가계부' : '💰 나만의 가계부';
+    if (APP_TITLE) {
+      // 고정 앱 이름(월부앱/홍개인용) + 닉네임이 있으면 작게 병기
+      h1.textContent = '💰 ' + APP_TITLE;
+      document.title = APP_TITLE;
+    } else {
+      h1.textContent = name ? '💰 ' + name + '의 가계부' : '💰 나만의 가계부';
+    }
   }
 }
 function openNicknameModal() {
@@ -1752,7 +1772,7 @@ function closeCheerModal() {
 function checkNicknameOnLoad() {
   if (!IS_SHARED) return;
   applyNickname();
-  if (!getNickname()) {
+  if (!APP_TITLE && !getNickname()) {   // 고정 앱 이름이면 닉네임 강제 안 함
     setTimeout(() => openNicknameModal(), 500);
   }
 }
@@ -3598,56 +3618,144 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+// 진행 표시 헬퍼
+function setOCRProgress(label, pct) {
+  const pl = document.getElementById('ocrProgressLabel');
+  const pb = document.getElementById('ocrProgressBar');
+  if (pl) pl.textContent = label;
+  if (pb) pb.style.width = pct + '%';
+}
+
+// 이미지 → 캔버스 (무료 OCR용: 2배 확대 + 회색조 + 약한 대비 → 인식률 향상)
+function preprocessForOCR(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const scale = Math.min(2, 2400 / Math.max(1, img.width)) || 1;
+        const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        const ctx = cv.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const d = ctx.getImageData(0, 0, w, h); const a = d.data;
+        for (let i = 0; i < a.length; i += 4) {
+          const g = 0.3 * a[i] + 0.59 * a[i+1] + 0.11 * a[i+2];
+          const v = g > 185 ? 255 : (g < 95 ? 0 : g);  // 약한 이진화
+          a[i] = a[i+1] = a[i+2] = v;
+        }
+        ctx.putImageData(d, 0, 0);
+        resolve(cv);
+      } catch (e) { reject(e); }
+    };
+    img.onerror = () => reject(new Error('이미지를 불러올 수 없어요'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// 이미지 → 압축된 base64 (정밀 OCR용: 가로 최대 1600px, JPEG → 1MB 이하)
+function compressToDataURL(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height)) || 1;
+        const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(cv.toDataURL('image/jpeg', quality || 0.85));
+      } catch (e) { reject(e); }
+    };
+    img.onerror = () => reject(new Error('이미지를 불러올 수 없어요'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// 무료 OCR (Tesseract) — 안정적인 langPath 지정 + 최대 3회 재시도
+async function createOCRWorkerWithRetry() {
+  const opts = {
+    langPath: 'https://tessdata.projectnaptha.com/4.0.0',
+    logger: m => {
+      if (m.status === 'loading language traineddata') {
+        setOCRProgress('한국어 데이터 다운로드 중...', Math.round(15 + (m.progress || 0) * 45));
+      } else if (m.status === 'initializing api') {
+        setOCRProgress('초기화 중...', 62);
+      } else if (m.status === 'recognizing text') {
+        setOCRProgress(`글자 인식 중... ${Math.round(70 + (m.progress || 0) * 30)}%`, 70 + (m.progress || 0) * 30);
+      }
+    }
+  };
+  let lastErr;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      setOCRProgress(attempt > 1 ? `엔진 준비 중... (재시도 ${attempt}/3)` : '엔진 준비 중...', 12);
+      return await Tesseract.createWorker('kor+eng', 1, opts);
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error('엔진 준비 실패');
+}
+
+async function runFreeOCR(file) {
+  if (!ocrWorker) ocrWorker = await createOCRWorkerWithRetry();
+  setOCRProgress('이미지 보정 중...', 66);
+  let input;
+  try { input = await preprocessForOCR(file); }
+  catch (e) { input = URL.createObjectURL(file); }   // 보정 실패 시 원본
+  setOCRProgress('글자 인식 중...', 72);
+  const result = await ocrWorker.recognize(input);
+  return result.data.text;
+}
+
+// 정밀 OCR (OCR.space) — 설정에 키가 있을 때만
+async function runPrecisionOCR(file, key) {
+  setOCRProgress('이미지 준비 중...', 25);
+  const b64 = await compressToDataURL(file, 1600, 0.85);
+  setOCRProgress('정밀 인식 중...', 55);
+  const form = new FormData();
+  form.append('base64Image', b64);
+  form.append('language', 'kor');
+  form.append('OCREngine', '2');
+  form.append('scale', 'true');
+  form.append('isTable', 'true');
+  const res = await fetch('https://api.ocr.space/parse/image', {
+    method: 'POST', headers: { apikey: key }, body: form
+  });
+  const data = await res.json();
+  if (data.IsErroredOnProcessing) {
+    const msg = [].concat(data.ErrorMessage || '정밀 OCR 오류').join(' ');
+    throw new Error(msg);
+  }
+  const parsed = (data.ParsedResults || []).map(r => r.ParsedText || '').join('\n');
+  if (!parsed.trim()) throw new Error('글자를 찾지 못했어요. 더 선명한 사진으로 시도해주세요.');
+  return parsed;
+}
+
 async function runOCR() {
   if (!ocrImageData) return;
   const runBtn = document.getElementById('ocrRunBtn');
   const progressWrap = document.getElementById('ocrProgressWrap');
-  const progressBar  = document.getElementById('ocrProgressBar');
-  const progressLabel = document.getElementById('ocrProgressLabel');
 
   runBtn.disabled = true;
   runBtn.textContent = '⏳ 인식 중...';
   progressWrap.classList.add('show');
-  progressBar.style.width = '0%';
-  progressLabel.textContent = '한국어 데이터 로딩 중...';
+  setOCRProgress('준비 중...', 5);
 
   try {
-    // 워커 초기화 (최초 1회만, 재사용)
-    if (!ocrWorker) {
-      ocrWorker = await Tesseract.createWorker('kor+eng', 1, {
-        logger: m => {
-          if (m.status === 'loading tesseract core' || m.status === 'initializing tesseract') {
-            progressLabel.textContent = '엔진 준비 중...';
-            progressBar.style.width = '15%';
-          } else if (m.status === 'loading language traineddata') {
-            progressLabel.textContent = '한국어 데이터 다운로드 중...';
-            progressBar.style.width = Math.round(15 + (m.progress || 0) * 50) + '%';
-          } else if (m.status === 'initializing api') {
-            progressLabel.textContent = '초기화 중...';
-            progressBar.style.width = '70%';
-          } else if (m.status === 'recognizing text') {
-            const pct = Math.round(70 + (m.progress || 0) * 30);
-            progressLabel.textContent = `글자 인식 중... ${pct}%`;
-            progressBar.style.width = pct + '%';
-          }
-        }
-      });
+    const key = (localStorage.getItem('my_ocr_key') || '').trim();
+    let rawText;
+    if (ENABLE_PRECISION_OCR && key) {
+      rawText = await runPrecisionOCR(ocrImageData, key);
     } else {
-      progressLabel.textContent = '글자 인식 중...';
-      progressBar.style.width = '70%';
+      rawText = await runFreeOCR(ocrImageData);
     }
-
-    const imgUrl = URL.createObjectURL(ocrImageData);
-    const result = await ocrWorker.recognize(imgUrl);
-    URL.revokeObjectURL(imgUrl);
-    progressBar.style.width = '100%';
-    progressLabel.textContent = '완료!';
-
-    const rawText = result.data.text;
+    setOCRProgress('완료!', 100);
     applyOCRResult(rawText);
-
   } catch (err) {
-    alert('OCR 오류: ' + err.message + '\n\n인터넷 연결을 확인하거나 다시 시도해주세요.');
+    const hint = (ENABLE_PRECISION_OCR && (localStorage.getItem('my_ocr_key') || '').trim())
+      ? '\n\nOCR 키가 올바른지, 인터넷 연결을 확인해주세요.'
+      : '\n\n인터넷 연결을 확인하고 다시 시도해주세요.';
+    alert('OCR 오류: ' + (err && err.message ? err.message : err) + hint);
   } finally {
     runBtn.disabled = false;
     runBtn.textContent = '🔍 다시 인식';
@@ -4070,6 +4178,13 @@ function openSettings() {
     const nd = document.getElementById('currentNicknameDisplay');
     if (nd) nd.textContent = getNickname() || '(미설정)';
   }
+  // 정밀 OCR 키 섹션: 홍개인용(ENABLE_PRECISION_OCR)에서만 표시
+  const oks = document.getElementById('ocrKeySection');
+  if (oks) {
+    oks.style.display = (typeof ENABLE_PRECISION_OCR !== 'undefined' && ENABLE_PRECISION_OCR) ? 'block' : 'none';
+    const oki = document.getElementById('ocrKeyInput');
+    if (oki) oki.value = localStorage.getItem('my_ocr_key') || '';
+  }
   // 최근 업데이트 내역 렌더
   const rh = document.getElementById('releaseHistoryEl');
   if (rh && typeof RELEASE_HISTORY_APP !== 'undefined' && RELEASE_HISTORY_APP.length) {
@@ -4085,6 +4200,12 @@ function closeSettings() {
 
 function closeSettingsOutside(e) {
   if (e.target === document.getElementById('settingsModal')) closeSettings();
+}
+
+function saveOcrKey() {
+  const key = (document.getElementById('ocrKeyInput').value || '').trim();
+  localStorage.setItem('my_ocr_key', key);
+  showToast(key ? '✅ 정밀 OCR 키 저장됨' : '키를 비웠어요 (무료 인식 사용)');
 }
 
 function saveSettingsUrl() {
