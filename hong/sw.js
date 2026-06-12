@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-hong-v58';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '한해살림 민트 색상 원래대로 복구';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-hong-v59';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '고정/변동을 생활비(고정/변동지출)로 변경, 활동지출(개인용돈) 그룹 신설';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
