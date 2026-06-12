@@ -424,6 +424,10 @@
   .branch .node .am { font-size: 10px; color: var(--text2); margin-left: 5px; }
   /* 수입통장 → 저축(자산통장) 세로 연결선 */
   .tree-down { width: 2px; height: 18px; background: var(--border); margin-left: 43px; }
+  /* 2줄 가지 (분석탭 그룹별 현황): 위=이름+배지, 아래=금액·% */
+  .branch .node.node2 { flex-direction: column; align-items: stretch; gap: 3px; }
+  .branch .node.node2 .r1 { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+  .branch .node.node2 .r2 { font-size: 11px; color: var(--text2); }
   /* 저축(자산통장) → 투자 / 대출상환 */
   .flow-save-head { margin-top: 12px; margin-bottom: 6px; text-align: center; font-size: 12px; font-weight: 700; color: #4493e0; }
   .flow-invest-row { display: flex; gap: 8px; }
@@ -3028,9 +3032,9 @@ function renderTab2() {
               else if (pct >= 80) { badge = `주의 ${pct}%`; cls = 'badge-warn'; }
               else                { badge = `양호 ${pct}%`; cls = 'badge-good'; }
               return `
-              <div class="branch"><div class="node" style="--bc:${info.color}">
-                <span class="nm">${info.label}</span>
-                <span class="rt"><span class="am">${amt>0?formatKRW(amt):'없음'}${incPct!==null?` ·수입${incPct}%`:''}</span> <span class="analysis-badge ${cls}">${badge}</span></span>
+              <div class="branch"><div class="node node2" style="--bc:${info.color}">
+                <div class="r1"><span class="nm">${info.label}</span><span class="analysis-badge ${cls}">${badge}</span></div>
+                <div class="r2">${amt>0?formatKRW(amt):'없음'}${incPct!==null?` · 수입 ${incPct}%`:''}</div>
               </div></div>`;
             }).join('')}
           </div>
@@ -3052,9 +3056,9 @@ function renderTab2() {
               else { sBadge = '저축 없음'; sCls = 'badge-none'; }
               const tgt = savingBudgetMonthly > 0 ? ` ·목표 ${formatKRW(savingBudgetMonthly)}` : '';
               return `
-              <div class="branch"><div class="node" style="--bc:#79c0ff">
-                <span class="nm">저축액</span>
-                <span class="rt"><span class="am">${saving>0?formatKRW(saving):'없음'}${tgt}</span> <span class="analysis-badge ${sCls}">${sBadge}</span></span>
+              <div class="branch"><div class="node node2" style="--bc:#79c0ff">
+                <div class="r1"><span class="nm">저축액</span><span class="analysis-badge ${sCls}">${sBadge}</span></div>
+                <div class="r2">${saving>0?formatKRW(saving):'없음'}${tgt}</div>
               </div></div>`;
             })()}
           </div>

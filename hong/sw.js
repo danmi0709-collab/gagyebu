@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-hong-v66';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '분석탭 그룹별 현황을 흐름표(트리) 스타일로 변경, 초과/양호 배지 유지';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-hong-v67';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '분석탭 그룹별 현황 2줄 표시 (이름+배지 / 금액·수입%)';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
