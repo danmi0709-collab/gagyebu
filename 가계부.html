@@ -1721,7 +1721,7 @@
   <!-- 고정지출 (연합계 기준) -->
   <div class="card yr-section">
     <div class="yr-section-header">
-      <span style="color:#f85149;font-weight:700">🔴 생활비(고정지출)</span>
+      <span style="color:#f85149;font-weight:700">🔴 생활비(고정)</span>
       <button class="yr-add-btn" onclick="addYrRow('fixed')">+ 항목 추가</button>
     </div>
     <div class="yr-col-head">
@@ -1737,7 +1737,7 @@
   <!-- 변동지출 (연합계 기준) -->
   <div class="card yr-section">
     <div class="yr-section-header">
-      <span style="color:#3fb950;font-weight:700">🟢 생활비(변동지출)</span>
+      <span style="color:#3fb950;font-weight:700">🟢 생활비(변동)</span>
       <button class="yr-add-btn" onclick="addYrRow('variable')">+ 항목 추가</button>
     </div>
     <div class="yr-col-head">
@@ -2082,8 +2082,8 @@ function toggleTheme() {
 }
 
 const CATEGORY_GROUPS = {
-  '고정':   { color: '#f85149', label: '🔴 생활비(고정지출)' },
-  '변동':   { color: '#3fb950', label: '🟢 생활비(변동지출)' },
+  '고정':   { color: '#f85149', label: '🔴 생활비(고정)' },
+  '변동':   { color: '#3fb950', label: '🟢 생활비(변동)' },
   '교육':   { color: '#e2b96b', label: '🟡 교육'   },
   '비정기': { color: '#d2a8ff', label: '🟣 비정기' },
   '활동':   { color: '#ff9e64', label: '🟠 활동지출(개인용돈)' },
@@ -2104,8 +2104,8 @@ const CATEGORIES = {
 // 연예산 섹션키 → 한글 그룹명
 const SEC_TO_GROUP = { fixed:'고정', variable:'변동', edu:'교육', special:'비정기', activity:'활동' };
 const SEC_OPTIONS_EXPENSE = [
-  { key:'fixed',    label:'🔴 생활비(고정지출)' },
-  { key:'variable', label:'🟢 생활비(변동지출)' },
+  { key:'fixed',    label:'🔴 생활비(고정)' },
+  { key:'variable', label:'🟢 생활비(변동)' },
   { key:'edu',      label:'🟡 교육' },
   { key:'special',  label:'🟣 비정기' },
   { key:'activity', label:'🟠 활동지출(개인용돈)' },
@@ -6053,11 +6053,11 @@ function renderTab4() {
         <span>💰 연간 수입</span><span style="color:#3fb950;font-weight:700">${formatKRW(incomeTotal)}</span>
       </div>
       <div class="yr-summary-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:8px;font-size:12px;color:var(--text2)">
-        <span>🔴 생활비(고정지출) (${pct(fixedYearly)}%)</span>
+        <span>🔴 생활비(고정) (${pct(fixedYearly)}%)</span>
         <span>${formatKRW(fixedYearly)}</span>
       </div>
       <div class="yr-summary-row" style="font-size:12px;color:var(--text2)">
-        <span>🟢 생활비(변동지출) (${pct(variableYearly)}%)</span>
+        <span>🟢 생활비(변동) (${pct(variableYearly)}%)</span>
         <span>${formatKRW(variableYearly)}</span>
       </div>
       <div class="yr-summary-row" style="font-size:12px;color:var(--text2)">
@@ -6099,8 +6099,8 @@ function renderTab4() {
 
   // ── 돈 흐름표 (수입 100% → 각 그룹 비율 자동) ──
   const flowRows = [
-    { nm: '🔴 생활비(고정지출)', v: fixedYearly,    c: '#f85149' },
-    { nm: '🟢 생활비(변동지출)', v: variableYearly, c: '#3fb950' },
+    { nm: '🔴 생활비(고정)', v: fixedYearly,    c: '#f85149' },
+    { nm: '🟢 생활비(변동)', v: variableYearly, c: '#3fb950' },
     { nm: '🟠 활동지출',         v: activityYearly, c: '#ff9e64' },
     { nm: '🟡 교육지출',         v: eduYearly,      c: '#e2b96b' },
     { nm: '🟣 비정기',           v: specialTotal,   c: '#d2a8ff' },
@@ -6214,8 +6214,8 @@ function renderTab4() {
     .reduce((s,t) => s + t.amount, 0);
 
   const progSections = [
-    { key: 'fixed',    label: '🔴 생활비(고정지출)', color: '#f85149' },
-    { key: 'variable', label: '🟢 생활비(변동지출)', color: '#3fb950' },
+    { key: 'fixed',    label: '🔴 생활비(고정)', color: '#f85149' },
+    { key: 'variable', label: '🟢 생활비(변동)', color: '#3fb950' },
     { key: 'edu',      label: '🟡 교육지출',   color: '#e2b96b' },
     { key: 'special',  label: '🟣 비정기지출', color: '#d2a8ff' },
     { key: 'activity', label: '🟠 활동지출(개인용돈)', color: '#ff9e64' },
