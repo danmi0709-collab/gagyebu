@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v63';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '모든 금액 입력칸에 천원단위 콤마 자동 적용 (수정/OCR/구독/목표)';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v64';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '흐름표 저축을 투자대상/대출상환 2갈래로 분리 (% 자동)';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
