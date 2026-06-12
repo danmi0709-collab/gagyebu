@@ -2954,7 +2954,9 @@ function renderTab2() {
   });
 
   // ── 총평 ──
-  const savingBudgetMonthly = Math.round((yr.saving||[]).reduce((s,r) => s + evalFormula(r.formula), 0) / eff);
+  // 저축 예산 = 저축 + 부채상환 (부채상환도 모으는 돈 → 실제 저축액에 이미 포함됨)
+  const savingBudgetMonthly = Math.round(((yr.saving||[]).reduce((s,r) => s + evalFormula(r.formula), 0)
+    + (yr.debtRepay||[]).reduce((s,r) => s + evalFormula(r.formula), 0)) / eff);
   const saveRate  = income > 0 ? Math.round(saving / income * 100) : null;
   const saveTargetRate = income > 0 && savingBudgetMonthly > 0 ? Math.round(savingBudgetMonthly / income * 100) : null;
   const expDiff   = expense - prevExp;
@@ -6398,7 +6400,9 @@ function renderBudgetBars() {
 
   const catMonthNum = parseInt(catMonth.split('-')[1]); // 현재 카테고리 탭 월 (1~12)
 
-  const savingMonthlyBudget = Math.round((d.saving||[]).reduce((s,r) => s + evalFormula(r.formula), 0) / getEffectiveMonths());
+  // 저축 예산 = 저축 + 부채상환 (부채상환도 모으는 돈 → 실제 저축액에 이미 포함됨)
+  const savingMonthlyBudget = Math.round(((d.saving||[]).reduce((s,r) => s + evalFormula(r.formula), 0)
+    + (d.debtRepay||[]).reduce((s,r) => s + evalFormula(r.formula), 0)) / getEffectiveMonths());
   const { saving: savingActual } = calcSummary(getMonthTx(catMonth));
 
   document.getElementById('budgetBars').innerHTML = sections.map(({ key, color, label, rows }) => {

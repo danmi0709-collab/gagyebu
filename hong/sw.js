@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-hong-v68';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '고정지출 체크박스: 금액 없으면 입력받아 내역 등록, 삭제취소 시 체크 복원';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-hong-v69';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '저축 예산에 부채상환 예산 포함 (실제 저축액과 일관성 맞춤)';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
