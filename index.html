@@ -428,6 +428,12 @@
   .branch .node.node2 { flex-direction: column; align-items: stretch; gap: 3px; }
   .branch .node.node2 .r1 { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
   .branch .node.node2 .r2 { font-size: 11px; color: var(--text2); }
+  /* 고정지출 날짜 입력칸 */
+  .fixed-date-row { font-size: 11px; color: var(--text2); margin: 3px 0 5px 22px; }
+  .fixed-date {
+    background: var(--card2); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-family: inherit; font-size: 11px; padding: 2px 6px;
+  }
   /* 저축(자산통장) → 투자 / 대출상환 */
   .flow-save-head { margin-top: 12px; margin-bottom: 6px; text-align: center; font-size: 12px; font-weight: 700; color: #4493e0; }
   .flow-invest-row { display: flex; gap: 8px; }
@@ -4797,7 +4803,7 @@ function getEffectiveMonths() {
 }
 
 // ===== 고정지출 체크박스 =====
-function toggleFixedItem(itemName, amount) {
+function toggleFixedItem(itemName, amount, dateInputId) {
   const ym = catMonth;
   const data = loadData();
   const existIdx = data.transactions.findIndex(t =>
@@ -4814,13 +4820,26 @@ function toggleFixedItem(itemName, amount) {
       amt = parseInt((input || '').replace(/[^\d]/g, '')) || 0;
       if (!amt) { renderAll(); return; }  // 취소/빈값 → 체크 해제
     }
+    // 날짜칸에 입력한 날짜 사용 (없으면 오늘/해당월 1일)
+    const di = dateInputId && document.getElementById(dateInputId);
     const now = new Date();
-    const today = now.toISOString().slice(0, 10);
-    const date = ym === now.toISOString().slice(0, 7) ? today : ym + '-01';
+    const date = (di && di.value) ? di.value
+      : (ym === now.toISOString().slice(0, 7) ? now.toISOString().slice(0, 10) : ym + '-01');
     data.transactions.push({ id: String(Date.now()), date, type: 'expense', category: itemName, amount: amt, memo: itemName });
   }
   saveData(data);
   renderAll();
+}
+
+// 이미 체크된 고정지출의 날짜칸을 바꾸면 내역 날짜도 함께 변경
+function updateFixedDate(itemName, newDate) {
+  if (!newDate) return;
+  const ym = catMonth;
+  const data = loadData();
+  const tx = data.transactions.find(t =>
+    t.category === itemName && t.date.startsWith(ym) && t.type === 'expense'
+  );
+  if (tx) { tx.date = newDate; saveData(data); renderAll(); }
 }
 
 // ===== 항목 자동 추천 =====
@@ -6434,7 +6453,7 @@ function renderBudgetBars() {
       ? `${formatKRW(totalSpent)} / ${formatKRW(totalBudget)} (${Math.round(totalSpent/totalBudget*100)}%)`
       : `${formatKRW(totalSpent)} / 연예산 미입력`;
 
-    const itemBars = namedRows.map(r => {
+    const itemBars = namedRows.map((r, idx) => {
       let iBudget;
       if (isSpecial) {
         const ms = Array.isArray(r.months) ? r.months : (r.month ? [parseInt(r.month)] : []);
@@ -6449,10 +6468,19 @@ function renderBudgetBars() {
       const iAmt     = iBudget > 0
         ? `${formatKRW(iSpent)} / ${formatKRW(iBudget)} (${iPct}%)`
         : iSpent > 0 ? formatKRW(iSpent) : '';
-      const isChecked = isFixed && txs.some(t => t.category === r.name && t.date.startsWith(catMonth));
+      const existTx   = isFixed ? txs.find(t => t.category === r.name && t.date.startsWith(catMonth)) : null;
+      const isChecked = isFixed && !!existTx;
+      const now = new Date();
+      const defDate = catMonth === now.toISOString().slice(0,7) ? now.toISOString().slice(0,10) : catMonth + '-01';
+      const dateVal = existTx ? existTx.date : defDate;
+      const dateInputId = `fxd-${key}-${idx}`;
       const checkbox  = isFixed
         ? `<input type="checkbox" class="fixed-check" ${isChecked ? 'checked' : ''}
-             onchange="toggleFixedItem('${r.name}',${iBudget})">`
+             onchange="toggleFixedItem('${r.name}',${iBudget},'${dateInputId}')">`
+        : '';
+      const dateInput = isFixed
+        ? `<input type="date" class="fixed-date" id="${dateInputId}" value="${dateVal}"
+             onchange="updateFixedDate('${r.name}',this.value)">`
         : '';
       return `
       <div class="budget-item-row">
@@ -6462,6 +6490,7 @@ function renderBudgetBars() {
           </label>
           <span class="budget-item-amt" style="${iOver?'color:#f85149':''}'">${iAmt}</span>
         </div>
+        ${isFixed ? `<div class="fixed-date-row">📅 ${dateInput}</div>` : ''}
         <div class="budget-bar-bg" style="height:4px">
           <div class="budget-bar" style="width:${iPct}%;background:${iBar}"></div>
         </div>
