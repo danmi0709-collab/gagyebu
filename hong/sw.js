@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-hong-v67';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '분석탭 그룹별 현황 2줄 표시 (이름+배지 / 금액·수입%)';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-hong-v68';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '고정지출 체크박스: 금액 없으면 입력받아 내역 등록, 삭제취소 시 체크 복원';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {

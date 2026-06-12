@@ -4802,13 +4802,20 @@ function toggleFixedItem(itemName, amount) {
     t.category === itemName && t.date.startsWith(ym) && t.type === 'expense'
   );
   if (existIdx >= 0) {
-    if (!confirm(itemName + ' 내역을 삭제할까요?')) return;
+    if (!confirm(itemName + ' 내역을 삭제할까요?')) { renderAll(); return; }  // 취소 → 체크 복원
     data.transactions.splice(existIdx, 1);
   } else {
+    let amt = amount;
+    if (!amt || amt <= 0) {
+      // 연예산에 금액이 없으면 직접 입력받기
+      const input = prompt(itemName + ' 금액을 입력하세요 (원)', '');
+      amt = parseInt((input || '').replace(/[^\d]/g, '')) || 0;
+      if (!amt) { renderAll(); return; }  // 취소/빈값 → 체크 해제
+    }
     const now = new Date();
     const today = now.toISOString().slice(0, 10);
     const date = ym === now.toISOString().slice(0, 7) ? today : ym + '-01';
-    data.transactions.push({ id: String(Date.now()), date, type: 'expense', category: itemName, amount, memo: itemName });
+    data.transactions.push({ id: String(Date.now()), date, type: 'expense', category: itemName, amount: amt, memo: itemName });
   }
   saveData(data);
   renderAll();
