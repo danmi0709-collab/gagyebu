@@ -409,6 +409,32 @@
   .tx-item.grp-비정기 { border-left-color: #d2a8ff; }
   .tx-item.grp-활동   { border-left-color: #ff9e64; }
 
+  /* 돈 흐름표 */
+  .flow-wrap { margin: 6px 0 18px; }
+  .flow-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+  .flow-head {
+    background: var(--card2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 11px 14px; text-align: center;
+  }
+  .flow-head .nm { font-weight: 700; font-size: 14px; color: var(--text); }
+  .flow-head .pc { color: var(--accent); font-weight: 800; }
+  .flow-head .am { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .flow-conn { width: 2px; height: 12px; background: var(--border); margin: 0 auto; }
+  .flow-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--border);
+    border-radius: 8px; padding: 9px 12px; margin-bottom: 6px;
+  }
+  .flow-row .nm { font-weight: 600; font-size: 13px; color: var(--text); }
+  .flow-row .right { text-align: right; }
+  .flow-row .pc { font-weight: 800; font-size: 16px; }
+  .flow-row .am { font-size: 11px; color: var(--text2); }
+  .flow-invest {
+    text-align: center; font-size: 12px; color: var(--text2);
+    margin-top: 2px; padding: 7px; background: var(--card2);
+    border: 1px dashed var(--border); border-radius: 8px;
+  }
+
   select optgroup { font-weight: 700; }
 
   /* 거래 편집 모달 */
@@ -1676,6 +1702,9 @@
   <!-- 예산 기간 피커 -->
   <div id="yr-period-picker"></div>
 
+  <!-- 돈 흐름표 (수입 → 지출/저축 비율 자동 계산) -->
+  <div id="yr-flow"></div>
+
   <!-- 요약 카드 -->
   <div id="yr-summary"></div>
 
@@ -1861,8 +1890,8 @@ let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
 const APP_TITLE = '월부앱'; // deploy.py가 변종별로 치환 (월부앱 / 홍개인용). 비어있으면 닉네임 방식
 const ENABLE_PRECISION_OCR = true; // deploy.py가 홍개인용만 true로 치환 (정밀 OCR 사용)
-const APP_VERSION = 'v59'; // deploy.py가 자동으로 올림
-const RELEASE_HISTORY_APP = ["v59: 고정/변동을 생활비(고정/변동지출)로 변경, 활동지출(개인용돈) 그룹 신설", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
+const APP_VERSION = 'v60'; // deploy.py가 자동으로 올림
+const RELEASE_HISTORY_APP = ["v60: 연예산 상단에 돈 흐름표 추가 (수입 대비 비율 자동 계산)", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
 const NICKNAME_KEY = 'my_nickname';
 const DONATE_KAKAO = ''; // 후원(카카오페이) 링크
 const FEEDBACK_KEY = 'aae52359-50b2-4f8d-a95d-c5ea62e860e7'; // web3forms 액세스 키 (개발자에게 한마디)
@@ -6069,6 +6098,36 @@ function renderTab4() {
         </div>
       </div>
     </div>`;
+
+  // ── 돈 흐름표 (수입 100% → 각 그룹 비율 자동) ──
+  const flowRows = [
+    { nm: '🔴 생활비(고정지출)', v: fixedYearly,    c: '#f85149' },
+    { nm: '🟢 생활비(변동지출)', v: variableYearly, c: '#3fb950' },
+    { nm: '🟠 활동지출',         v: activityYearly, c: '#ff9e64' },
+    { nm: '🟡 교육지출',         v: eduYearly,      c: '#e2b96b' },
+    { nm: '🟣 비정기',           v: specialTotal,   c: '#d2a8ff' },
+  ];
+  const flowHtml = `
+    <div class="flow-wrap">
+      <div class="flow-title">💸 내 돈 흐름 (수입 대비 비율)</div>
+      <div class="flow-head">
+        <div class="nm">💰 수입통장 <span class="pc">100%</span></div>
+        <div class="am">${formatKRW(incomeTotal)}</div>
+      </div>
+      <div class="flow-conn"></div>
+      ${flowRows.map(r => `
+        <div class="flow-row" style="border-left-color:${r.c}">
+          <span class="nm">${r.nm}</span>
+          <span class="right"><span class="pc" style="color:${r.c}">${pct(r.v)}%</span> <span class="am">${formatKRW(r.v)}</span></span>
+        </div>`).join('')}
+      <div class="flow-row" style="border-left-color:#79c0ff">
+        <span class="nm">💙 저축 (자산통장)</span>
+        <span class="right"><span class="pc" style="color:#79c0ff">${pct(savingYearly)}%</span> <span class="am">${formatKRW(savingYearly)}</span></span>
+      </div>
+      <div class="flow-conn"></div>
+      <div class="flow-invest">⬇️ 투자 대상</div>
+    </div>`;
+  document.getElementById('yr-flow').innerHTML = flowHtml;
 
   // 수입 목록
   document.getElementById('yr-income-list').innerHTML =

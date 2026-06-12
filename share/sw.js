@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v59';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '고정/변동을 생활비(고정/변동지출)로 변경, 활동지출(개인용돈) 그룹 신설';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v60';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '연예산 상단에 돈 흐름표 추가 (수입 대비 비율 자동 계산)';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {
