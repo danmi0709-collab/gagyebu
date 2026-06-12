@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-hong-v65';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '흐름표: 수입통장 아래 저축(자산통장)→투자대상/대출상환 가지치기 추가';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-hong-v66';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '분석탭 그룹별 현황을 흐름표(트리) 스타일로 변경, 초과/양호 배지 유지';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {

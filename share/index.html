@@ -1912,8 +1912,8 @@ let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
 const APP_TITLE = '월부앱'; // deploy.py가 변종별로 치환 (월부앱 / 홍개인용). 비어있으면 닉네임 방식
 const ENABLE_PRECISION_OCR = true; // deploy.py가 홍개인용만 true로 치환 (정밀 OCR 사용)
-const APP_VERSION = 'v65'; // deploy.py가 자동으로 올림
-const RELEASE_HISTORY_APP = ["v65: 흐름표: 수입통장 아래 저축(자산통장)→투자대상/대출상환 가지치기 추가", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
+const APP_VERSION = 'v66'; // deploy.py가 자동으로 올림
+const RELEASE_HISTORY_APP = ["v66: 분석탭 그룹별 현황을 흐름표(트리) 스타일로 변경, 초과/양호 배지 유지", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
 const NICKNAME_KEY = 'my_nickname';
 const DONATE_KAKAO = ''; // 후원(카카오페이) 링크
 const FEEDBACK_KEY = 'aae52359-50b2-4f8d-a95d-c5ea62e860e7'; // web3forms 액세스 키 (개발자에게 한마디)
@@ -3031,40 +3031,55 @@ function renderTab2() {
 
     <div class="analysis-card">
       <div class="analysis-card-title">📂 그룹별 현황</div>
-      ${groupKeys.map(g => {
-        const info   = CATEGORY_GROUPS[g];
-        const amt    = grpExp[g];
-        const budget = budgetMap[g];
-        const pct    = budget > 0 ? Math.round(amt/budget*100) : null;
-        const incPct = income > 0 ? Math.round(amt/income*100) : 0;
-        const prev   = grpPrev[g];
-        const diff   = amt - prev;
-        const diffTxt = prev > 0 ? (diff > 0 ? `↑${formatKRW(diff)}` : diff < 0 ? `↓${formatKRW(-diff)}` : '') : '';
-        let badge, cls;
-        if (pct === null)   { badge = '예산 미입력'; cls = 'badge-none'; }
-        else if (pct > 100) { badge = `초과 ${pct}%`; cls = 'badge-over'; }
-        else if (pct >= 80) { badge = `주의 ${pct}%`; cls = 'badge-warn'; }
-        else                { badge = `양호 ${pct}%`; cls = 'badge-good'; }
-        return `
-        <div class="analysis-group-row">
-          <span style="color:${info.color}">${info.label}</span>
-          <span style="color:var(--text2);font-size:12px">${amt>0?formatKRW(amt):'없음'}${income>0&&amt>0?` <span style="font-size:10px;color:var(--accent)">(수입의 ${incPct}%)</span>`:''} <span style="font-size:11px">${diffTxt}</span></span>
-          <span class="analysis-badge ${cls}">${badge}</span>
-        </div>`;
-      }).join('')}
-      <div class="analysis-group-row" style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px">
-        <span style="color:#79c0ff">💙 저축</span>
-        <span style="color:var(--text2);font-size:12px">${formatKRW(saving)}${income>0&&saving>0?` <span style="font-size:10px;color:var(--accent)">(수입의 ${Math.round(saving/income*100)}%)</span>`:''}${savingBudgetMonthly>0?` <span style="font-size:10px;color:var(--text2)">/ 목표 ${formatKRW(savingBudgetMonthly)}</span>`:''}</span>
-        ${savingBudgetMonthly > 0
-          ? (() => {
-              const pct = Math.round(saving/savingBudgetMonthly*100);
-              if (pct >= 100) return `<span class="analysis-badge badge-good">달성 ${pct}%</span>`;
-              if (pct >= 50)  return `<span class="analysis-badge badge-warn">진행 ${pct}%</span>`;
-              return `<span class="analysis-badge badge-none">미달 ${pct}%</span>`;
-            })()
-          : saving > 0
-            ? `<span class="analysis-badge badge-good">저축률 ${income>0?Math.round(saving/income*100):0}%</span>`
-            : `<span class="analysis-badge badge-none">저축 없음</span>`}
+      <div class="flow-wrap" style="margin:8px 0 0">
+        <div class="tree">
+          <div class="tree-head">
+            <div class="node">💰수입<span class="am">${income > 0 ? formatKRW(income) : '-'}</span></div>
+          </div>
+          <div class="tree-branches">
+            ${groupKeys.map(g => {
+              const info   = CATEGORY_GROUPS[g];
+              const amt    = grpExp[g];
+              const budget = budgetMap[g];
+              const pct    = budget > 0 ? Math.round(amt/budget*100) : null;
+              const incPct = income > 0 && amt > 0 ? Math.round(amt/income*100) : null;
+              let badge, cls;
+              if (pct === null)   { badge = '예산 미입력'; cls = 'badge-none'; }
+              else if (pct > 100) { badge = `초과 ${pct}%`; cls = 'badge-over'; }
+              else if (pct >= 80) { badge = `주의 ${pct}%`; cls = 'badge-warn'; }
+              else                { badge = `양호 ${pct}%`; cls = 'badge-good'; }
+              return `
+              <div class="branch"><div class="node" style="--bc:${info.color}">
+                <span class="nm">${info.label}</span>
+                <span class="rt"><span class="am">${amt>0?formatKRW(amt):'없음'}${incPct!==null?` ·수입${incPct}%`:''}</span> <span class="analysis-badge ${cls}">${badge}</span></span>
+              </div></div>`;
+            }).join('')}
+          </div>
+        </div>
+        <div class="tree-down"></div>
+        <div class="tree">
+          <div class="tree-head">
+            <div class="node" style="background:#79c0ff">💙저축<span class="am">${saving > 0 ? formatKRW(saving) : '-'}</span></div>
+          </div>
+          <div class="tree-branches">
+            ${(() => {
+              let sBadge, sCls;
+              if (savingBudgetMonthly > 0) {
+                const p = Math.round(saving/savingBudgetMonthly*100);
+                if (p >= 100)     { sBadge = `달성 ${p}%`; sCls = 'badge-good'; }
+                else if (p >= 50) { sBadge = `진행 ${p}%`; sCls = 'badge-warn'; }
+                else              { sBadge = `미달 ${p}%`; sCls = 'badge-none'; }
+              } else if (saving > 0) { sBadge = `저축률 ${income>0?Math.round(saving/income*100):0}%`; sCls = 'badge-good'; }
+              else { sBadge = '저축 없음'; sCls = 'badge-none'; }
+              const tgt = savingBudgetMonthly > 0 ? ` ·목표 ${formatKRW(savingBudgetMonthly)}` : '';
+              return `
+              <div class="branch"><div class="node" style="--bc:#79c0ff">
+                <span class="nm">저축액</span>
+                <span class="rt"><span class="am">${saving>0?formatKRW(saving):'없음'}${tgt}</span> <span class="analysis-badge ${sCls}">${sBadge}</span></span>
+              </div></div>`;
+            })()}
+          </div>
+        </div>
       </div>
     </div>
 
