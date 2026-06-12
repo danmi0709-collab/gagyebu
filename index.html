@@ -422,6 +422,8 @@
   .branch .node .rt { text-align: right; white-space: nowrap; }
   .branch .node .pc { font-size: 15px; font-weight: 800; }
   .branch .node .am { font-size: 10px; color: var(--text2); margin-left: 5px; }
+  /* 수입통장 → 저축(자산통장) 세로 연결선 */
+  .tree-down { width: 2px; height: 18px; background: var(--border); margin-left: 43px; }
   /* 저축(자산통장) → 투자 / 대출상환 */
   .flow-save-head { margin-top: 12px; margin-bottom: 6px; text-align: center; font-size: 12px; font-weight: 700; color: #4493e0; }
   .flow-invest-row { display: flex; gap: 8px; }
@@ -6123,10 +6125,25 @@ function renderTab4() {
           </div>`).join('')}
         </div>
       </div>
-      <div class="flow-save-head">💙 저축 (자산통장) ${pct(savingYearly + debtRepayYearly)}%</div>
-      <div class="flow-invest-row">
-        <div class="ibox invest">📈 투자 대상<br><span class="pc">${pct(savingYearly)}%</span></div>
-        <div class="ibox debt">💸 대출 상환<br><span class="pc">${pct(debtRepayYearly)}%</span></div>
+      <div class="tree-down"></div>
+      <div class="tree">
+        <div class="tree-head">
+          <div class="node" style="background:#79c0ff">💙저축<span class="pc">${pct(savingYearly + debtRepayYearly)}%</span><span class="am">자산통장</span></div>
+        </div>
+        <div class="tree-branches">
+          <div class="branch">
+            <div class="node" style="--bc:#2ea043">
+              <span class="nm">📈 투자 대상</span>
+              <span class="rt"><span class="pc" style="color:#2ea043">${pct(savingYearly)}%</span><span class="am">${formatKRW(savingYearly)}</span></span>
+            </div>
+          </div>
+          <div class="branch">
+            <div class="node" style="--bc:#e5484d">
+              <span class="nm">💸 대출 상환</span>
+              <span class="rt"><span class="pc" style="color:#e5484d">${pct(debtRepayYearly)}%</span><span class="am">${formatKRW(debtRepayYearly)}</span></span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>`;
   document.getElementById('yr-flow').innerHTML = flowHtml;
