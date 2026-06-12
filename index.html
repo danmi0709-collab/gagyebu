@@ -1385,7 +1385,7 @@
           </div>
           <div class="ocr-field">
             <label>금액 (원)</label>
-            <input type="number" id="ocrAmount" placeholder="0" inputmode="numeric">
+            <input type="text" id="ocrAmount" placeholder="0" inputmode="numeric" oninput="onNumInput(this)">
           </div>
           <div class="ocr-field">
             <label>가맹점 / 내용</label>
@@ -1544,7 +1544,7 @@
       </div>
       <div class="form-group">
         <label>금액 (원)</label>
-        <input type="number" id="editAmount" inputmode="numeric">
+        <input type="text" id="editAmount" inputmode="numeric" oninput="onNumInput(this)">
       </div>
     </div>
     <div class="form-row" style="margin-bottom:6px">
@@ -3527,7 +3527,7 @@ function openEditModal(id) {
   editingId = id;
 
   document.getElementById('editDate').value   = t.date;
-  document.getElementById('editAmount').value = t.amount;
+  document.getElementById('editAmount').value = fmtN(t.amount);
   document.getElementById('editMemo').value   = t.memo || '';
   const grpKey = getCategoryBudgetKey(t.category, t.type);
   setEditType(t.type, grpKey, t.category);
@@ -3565,7 +3565,7 @@ function onEditGroupChange() {
 function saveEdit() {
   if (!editingId) return;
   const date   = document.getElementById('editDate').value;
-  const amount = parseInt(document.getElementById('editAmount').value);
+  const amount = parseN(document.getElementById('editAmount').value);
   const cat    = document.getElementById('editCategory').value;
   const memo   = document.getElementById('editMemo').value.trim();
 
@@ -4363,7 +4363,7 @@ function applyOCRResult(rawText) {
 
   // 결과 폼 채우기
   document.getElementById('ocrDate').value     = parsed.date     || today;
-  document.getElementById('ocrAmount').value   = parsed.amount   || '';
+  document.getElementById('ocrAmount').value   = fmtN(parsed.amount || 0);
   document.getElementById('ocrMerchant').value = parsed.merchant || '';
 
   setOCRType(parsed.type || 'expense');
@@ -4479,7 +4479,7 @@ function toggleOCRRaw() {
 
 function confirmOCRImport() {
   const date     = document.getElementById('ocrDate').value;
-  const amount   = parseInt(document.getElementById('ocrAmount').value);
+  const amount   = parseN(document.getElementById('ocrAmount').value);
   const merchant = document.getElementById('ocrMerchant').value.trim();
   const category = document.getElementById('ocrCategory').value;
 
@@ -5104,7 +5104,7 @@ function renderTab6() {
     <div style="display:flex;flex-direction:column;gap:8px">
       <input type="text" id="subName" class="form-input" placeholder="서비스명 (예: 넷플릭스)" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:14px">
       <div style="display:flex;gap:8px">
-        <input type="number" id="subAmount" class="form-input" placeholder="금액 (원)" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:14px">
+        <input type="text" id="subAmount" inputmode="numeric" oninput="onNumInput(this)" class="form-input" placeholder="금액 (원)" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:14px">
         <select id="subCycle" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:14px">
           <option value="monthly">월간</option>
           <option value="quarterly">3개월</option>
@@ -5207,7 +5207,7 @@ function renderSubRow(s, idx, today, addedThisMonth) {
       <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px">✏️ 수정 중: ${s.name}</div>
       <div style="display:flex;flex-direction:column;gap:8px">
         <input id="editSubName" value="${s.name}" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px;color:var(--text);font-family:inherit;font-size:14px" placeholder="서비스명">
-        <input id="editSubAmount" type="number" value="${s.amount}" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px;color:var(--text);font-family:inherit;font-size:14px" placeholder="금액">
+        <input id="editSubAmount" type="text" inputmode="numeric" oninput="onNumInput(this)" value="${fmtN(s.amount)}" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px;color:var(--text);font-family:inherit;font-size:14px" placeholder="금액">
         <div style="display:flex;gap:8px">
           <select id="editSubCycle" onchange="updateEditCycleUI()" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px;color:var(--text);font-family:inherit;font-size:14px">${cycleOpts}</select>
           <select id="editSubPayDay" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px;color:var(--text);font-family:inherit;font-size:14px">${dayOpts}</select>
@@ -5256,7 +5256,7 @@ function resubscribe(idx) {
   const nameEl = document.getElementById('subName');
   const amtEl  = document.getElementById('subAmount');
   if (nameEl) nameEl.value = s.name;
-  if (amtEl)  amtEl.value  = s.amount;
+  if (amtEl)  amtEl.value  = fmtN(s.amount);
   // 종료달·주기는 초기화 (새 구독이므로)
   const endEl = document.getElementById('subEndDate');
   if (endEl) endEl.value = '';
@@ -5273,7 +5273,7 @@ function updateEditCycleUI() {
 
 function saveSubEdit(idx) {
   const name   = (document.getElementById('editSubName').value || '').trim();
-  const amount = parseInt(document.getElementById('editSubAmount').value || '0');
+  const amount = parseN(document.getElementById('editSubAmount').value || '0');
   const cycle  = document.getElementById('editSubCycle').value;
   const payDay = parseInt(document.getElementById('editSubPayDay').value || '1');
   const payMonth = cycle !== 'monthly' ? parseInt(document.getElementById('editSubPayMonth').value || '1') : null;
@@ -5293,7 +5293,7 @@ function saveSubEdit(idx) {
 
 function addSub() {
   const name = (document.getElementById('subName').value || '').trim();
-  const amount = parseInt(document.getElementById('subAmount').value || '0');
+  const amount = parseN(document.getElementById('subAmount').value || '0');
   const cycle = document.getElementById('subCycle').value;
   const payDay = parseInt(document.getElementById('subPayDay').value || '1');
   const needsMonth = cycle !== 'monthly';
@@ -5749,7 +5749,7 @@ function renderTab5() {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${goal > 0 ? '14px' : '0'}">
         <span style="font-size:13px;font-weight:700;color:var(--text)">🎯 순자산 목표</span>
         <div style="display:flex;align-items:center;gap:6px">
-          <input type="number" id="goalInput" value="${goal || ''}" placeholder="목표 금액 (원)"
+          <input type="text" inputmode="numeric" oninput="onNumInput(this)" id="goalInput" value="${fmtN(goal || 0)}" placeholder="목표 금액 (원)"
             style="width:130px;background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:5px 8px;text-align:right"
             onkeydown="if(event.key==='Enter')saveGoal()">
           <button onclick="saveGoal()" style="background:var(--border);border:none;border-radius:6px;color:var(--text);font-size:11px;font-weight:600;padding:5px 10px;cursor:pointer">저장</button>
