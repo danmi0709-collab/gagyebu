@@ -1922,8 +1922,8 @@ let currentType = 'income';
 const IS_SHARED = true; // 공유용에서는 true로 변환됨
 const APP_TITLE = '월부앱'; // deploy.py가 변종별로 치환 (월부앱 / 홍개인용). 비어있으면 닉네임 방식
 const ENABLE_PRECISION_OCR = true; // deploy.py가 홍개인용만 true로 치환 (정밀 OCR 사용)
-const APP_VERSION = 'v70'; // deploy.py가 자동으로 올림
-const RELEASE_HISTORY_APP = ["v70: 생활비(고정) 항목에 날짜칸 추가 - 체크 시 그 날짜로 내역 등록, 날짜 변경 시 내역도 갱신", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
+const APP_VERSION = 'v71'; // deploy.py가 자동으로 올림
+const RELEASE_HISTORY_APP = ["v71: fix: 날짜 저장시 새벽시간대 하루 전으로 저장되는 버그 수정", "v32: 연예산 기간 설정 추가", "v31: 연예산 전용 백업/복원 버튼"]; // deploy.py가 최근 3개 관리
 const NICKNAME_KEY = 'my_nickname';
 const DONATE_KAKAO = ''; // 후원(카카오페이) 링크
 const FEEDBACK_KEY = 'aae52359-50b2-4f8d-a95d-c5ea62e860e7'; // web3forms 액세스 키 (개발자에게 한마디)
@@ -2265,6 +2265,14 @@ function toYM(date) {
   return `${y}-${m}`;
 }
 
+// toISOString()은 UTC 기준이라 한국시간 자정~오전9시엔 날짜가 하루 전으로 나오는 버그가 있어 로컬 기준으로 변환
+function toLocalYMD(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 function getMonthLabel(ym) {
   const [y, m] = ym.split('-');
   return y + '년 ' + parseInt(m) + '월';
@@ -2362,7 +2370,7 @@ function parseNL() {
     .trim();
 
   const res = {
-    date: new Date().toISOString().slice(0,10),
+    date: toLocalYMD(new Date()),
     type: 'expense',
     groupKey: '',
     category: '',
@@ -2374,11 +2382,11 @@ function parseNL() {
   text = text.replace(/오늘/, '');
   if (/어제/.test(text)) {
     const d = new Date(); d.setDate(d.getDate()-1);
-    res.date = d.toISOString().slice(0,10);
+    res.date = toLocalYMD(d);
     text = text.replace(/어제/, '');
   } else if (/그제|그저께/.test(text)) {
     const d = new Date(); d.setDate(d.getDate()-2);
-    res.date = d.toISOString().slice(0,10);
+    res.date = toLocalYMD(d);
     text = text.replace(/그제|그저께/, '');
   }
   const mdm = text.match(/(\d{1,2})월\s*(\d{1,2})일/);
@@ -2517,7 +2525,7 @@ function init() {
   currentMonth = toYM(now);
   catMonth = toYM(now);
   analysisMonth = toYM(now);
-  document.getElementById('inputDate').value = now.toISOString().slice(0, 10);
+  document.getElementById('inputDate').value = toLocalYMD(now);
   setType('expense');
   setSyncBtnLabels();
   autoAddSubscriptions(); // 매달 첫 실행 시 구독 자동 등록
@@ -3213,7 +3221,7 @@ function exportExcel(mode) {
     const day   = now.getDay(); // 0=일, 1=월
     const mon   = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
     const sun   = new Date(mon); sun.setDate(mon.getDate() + 6);
-    const toStr = d => d.toISOString().slice(0, 10);
+    const toStr = d => toLocalYMD(d);
     const monStr = toStr(mon), sunStr = toStr(sun);
     txs = loadData().transactions.filter(t => t.date >= monStr && t.date <= sunStr);
     fileName    = `가계부_${monStr}_${sunStr}.xlsx`;
@@ -3330,7 +3338,7 @@ function exportJSON() {
     budgetLearn:  loadBudgetLearn(),
   };
   const json = JSON.stringify(backup, null, 2);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalYMD(new Date());
   const txCount = (backup.transactions || []).length;
   const fileName = `가계부_백업_${today}_${txCount}건.json`;
 
@@ -3467,7 +3475,7 @@ function copyFromPrevYear() {
 function exportAnnual() {
   const annual = loadAnnual();
   if (Object.keys(annual).length === 0) { showToast('저장된 연예산 데이터가 없어요', '#888'); return; }
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalYMD(new Date());
   const data = { type: 'annual_only', exportedAt: new Date().toISOString(), annual };
   const json = JSON.stringify(data, null, 2);
   const fileName = `연예산_백업_${today}.json`;
@@ -3898,7 +3906,7 @@ function parseKakaoText() {
 
       const mm = line.match(merchantPattern);
       const merchant = mm ? mm[1].replace(/\[카카오페이\]/g, '').trim() : '';
-      const date = curDate || new Date().toISOString().slice(0, 10);
+      const date = curDate || toLocalYMD(new Date());
 
       if (!txs.find(t => t.amount === amount && t.memo === merchant))
         txs.push({ id: String(Date.now() + txs.length), date, type: 'expense', category: guessCategory(merchant), amount, memo: merchant });
@@ -4172,7 +4180,7 @@ async function runOCR() {
 function parseMultipleTransactions(rawText) {
   const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   const year = new Date().getFullYear();
-  let currentDate = new Date().toISOString().slice(0, 10);
+  let currentDate = toLocalYMD(new Date());
   const results = [];
 
   // 풀날짜 추출 헬퍼: "2026.6.11", "2026. 6. 11", "26.6.11", "2026-06-11" 모두 인식
@@ -4409,7 +4417,7 @@ function applyOCRResult(rawText) {
   document.getElementById('ocrSingleForm').style.display = 'block';
   document.getElementById('ocrChecklistForm').style.display = 'none';
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalYMD(new Date());
   const parsed = parsePaymentText(rawText);
 
   // 결과 폼 채우기
@@ -4845,7 +4853,7 @@ function toggleFixedItem(itemName, amount, dateInputId) {
     const di = dateInputId && document.getElementById(dateInputId);
     const now = new Date();
     const date = (di && di.value) ? di.value
-      : (ym === now.toISOString().slice(0, 7) ? now.toISOString().slice(0, 10) : ym + '-01');
+      : (ym === toYM(now) ? toLocalYMD(now) : ym + '-01');
     data.transactions.push({ id: String(Date.now()), date, type: 'expense', category: itemName, amount: amt, memo: itemName });
   }
   saveData(data);
@@ -6492,7 +6500,7 @@ function renderBudgetBars() {
       const existTx   = isFixed ? txs.find(t => t.category === r.name && t.date.startsWith(catMonth)) : null;
       const isChecked = isFixed && !!existTx;
       const now = new Date();
-      const defDate = catMonth === now.toISOString().slice(0,7) ? now.toISOString().slice(0,10) : catMonth + '-01';
+      const defDate = catMonth === toYM(now) ? toLocalYMD(now) : catMonth + '-01';
       const dateVal = existTx ? existTx.date : defDate;
       const dateInputId = `fxd-${key}-${idx}`;
       const checkbox  = isFixed
