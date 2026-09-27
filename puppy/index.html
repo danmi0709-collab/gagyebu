@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>퍼피 구조대 수학 출동</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1f5fbf">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="퍼피 수학">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
 <style>
@@ -145,6 +153,7 @@ h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shad
     <button class="btn" onclick="showBank()">🐷 저금통 · 가게</button>
     <button class="btn" onclick="show('s-guide')">📖 어른용 안내</button>
   </div>
+  <div class="row" style="margin-top:12px"><button class="btn blue" id="installBtn" style="display:none" onclick="installApp()">📲 홈 화면에 설치</button></div>
   <div class="row" style="margin-top:12px">
     <label class="pill toggle"><input type="checkbox" id="autoRead" checked> 문제 읽어주기</label>
     <label class="pill toggle"><input type="checkbox" id="fartOn" checked> 정답 방귀 축하</label>
@@ -234,6 +243,13 @@ h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shad
       <li>도전: 한 번에 500원, 두 번째 100원, 해설 보면 10원</li>
       <li>틀리면 자동으로 힌트, 두 번 틀리면 풀이를 보여줘요(좌절 방지).</li>
       <li>모은 돈은 이 기기(브라우저)에만 저장돼요.</li>
+    </ul>
+    <h3>📲 홈 화면에 앱으로 설치</h3>
+    주소: <b>danmi0709-collab.github.io/gagyebu/puppy/</b>
+    <ul>
+      <li><b>안드로이드(크롬)</b>: 시작 화면의 '📲 홈 화면에 설치' 버튼, 또는 오른쪽 위 ⋮ → '홈 화면에 추가'</li>
+      <li><b>아이폰·아이패드(사파리)</b>: 아래쪽 공유 버튼(□↑) → '홈 화면에 추가'</li>
+      <li>한 번 열어 두면 인터넷이 없어도 실행돼요. 기록과 저금통은 설치한 앱 안에 따로 저장돼요.</li>
     </ul>
     <h3>🔊 소리</h3>
     방귀·동전 소리는 녹음 파일이 아니라 브라우저가 직접 합성해요. 휴대폰 무음 모드를 끄고 볼륨을 올려 주세요. '문제 읽어주기'는 기기의 한국어 음성을 씁니다.
@@ -761,6 +777,13 @@ function buy(id){
   speak(`${it.name}을 샀어요! ${before}원에서 ${it.price}원을 빼면 ${S.money}원이 남아요.`);
   showBank();
 }
+
+/* ================== 앱 설치 (홈 화면) ================== */
+let installEvt=null;
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEvt=e; $('installBtn').style.display=''; });
+window.addEventListener('appinstalled',()=>{ $('installBtn').style.display='none'; });
+function installApp(){ if(!installEvt) return; installEvt.prompt(); installEvt.userChoice.finally(()=>{ installEvt=null; $('installBtn').style.display='none'; }); }
+if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 
 /* 시작 화면 그리기 */
 $('startPups').innerHTML=Object.keys(PUPS).map(k=>pupSVG(k,72)).join('');
