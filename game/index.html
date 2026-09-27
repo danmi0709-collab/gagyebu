@@ -1,0 +1,1293 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FF5FA2">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="캐릭터 배틀">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); } body { margin: 0; }</style>
+<title>티니핑 vs 피카츄</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --ink: #2B2240;
+    --paper: #FFF9FD;
+    --pink: #FF5FA2;
+    --pink-soft: #FFD6E8;
+    --yellow: #FFD23F;
+    --yellow-soft: #FFF1B8;
+    --sky: #BFE4FF;
+    --grass: #8FD978;
+    --grass-dark: #5FB14A;
+    --good: #3CC46B;
+    --warn: #FFB020;
+    --bad: #F0454B;
+    --muted: #6D6385;
+    --display: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    --body: "Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    background: linear-gradient(180deg, #FFE3F1 0%, var(--sky) 55%, #D8F3C9 100%);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 18px;
+  }
+  .wrap {
+    max-width: 560px;
+    margin: 0 auto;
+    padding-inline: 16px;
+    padding-block: 14px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  h1, h2, .btn, .move, .hp-name, .msg, .turn { font-family: var(--display); font-weight: 400; }
+  h1 { font-size: clamp(32px, 9vw, 46px); line-height: 1.05; margin: 6px 0 0; text-align: center; text-wrap: balance; }
+  h1 .vs { color: var(--bad); display: inline-block; transform: rotate(-8deg); margin-inline: 4px; }
+  h1 .ping { color: var(--pink); }
+  h1 .pika { color: #E0A800; -webkit-text-stroke: 0; }
+  .sub { text-align: center; margin: 0; color: var(--muted); }
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .icon-btn {
+    font-family: var(--display); font-size: 16px;
+    background: var(--paper); color: var(--ink);
+    border: 2px solid var(--ink); border-radius: 999px;
+    padding: 6px 14px; cursor: pointer;
+  }
+  .icon-btn:focus-visible, .btn:focus-visible, .move:focus-visible, .pick:focus-visible, .seg button:focus-visible {
+    outline: 4px solid var(--pink); outline-offset: 3px;
+  }
+
+  /* ---------- 고르기 화면 ---------- */
+  .panel {
+    background: var(--paper);
+    border: 3px solid var(--ink);
+    border-radius: 22px;
+    padding: 16px;
+    box-shadow: 0 6px 0 var(--ink);
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .panel h2 { margin: 0; font-size: 24px; }
+  .picks { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pick {
+    border: 3px solid var(--ink); border-radius: 18px;
+    padding: 10px 8px 12px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-family: var(--display); font-size: 22px; color: var(--ink);
+    transition: transform .15s;
+  }
+  .pick { background: var(--c, #fff); }
+  .pick:disabled { opacity: .35; cursor: not-allowed; }
+  .picks.small { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .picks.small .pick { font-size: 15px; padding: 6px 4px 8px; border-radius: 14px; line-height: 1.15; text-align: center; }
+  .picks.small .pick small { display: none; }
+  .picks.small .pick[aria-pressed="true"]::after { content: none; }
+  .pick svg { width: 100%; max-width: 150px; height: auto; }
+  .pick small { font-family: var(--body); font-size: 14px; color: var(--muted); }
+  .pick[aria-pressed="true"] { transform: translateY(-4px); box-shadow: 0 0 0 5px var(--good); }
+  .pick[aria-pressed="true"]::after { content: "선택!"; font-size: 16px; color: #1E8C47; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .seg button {
+    font-family: var(--display); font-size: 19px; color: var(--ink);
+    padding: 12px 6px; border-radius: 14px; cursor: pointer;
+    border: 3px solid var(--ink); background: #fff;
+  }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+  .hint { margin: 0; font-size: 15px; color: var(--muted); }
+  .btn {
+    font-size: 26px; color: #fff; background: var(--bad);
+    border: 3px solid var(--ink); border-radius: 18px;
+    padding: 14px; cursor: pointer; box-shadow: 0 6px 0 var(--ink);
+    transition: transform .08s, box-shadow .08s;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--ink); }
+
+  /* ---------- 배틀 화면 ---------- */
+  .turn {
+    text-align: center; font-size: 22px; margin: 0;
+    padding: 6px 12px; border-radius: 999px; align-self: center;
+    border: 3px solid var(--ink); background: #fff;
+  }
+  .turn { background: var(--c, #fff); }
+  .arena {
+    position: relative; width: 100%; max-width: 100%;
+    aspect-ratio: 1 / 1;
+    border: 3px solid var(--ink); border-radius: 22px; overflow: hidden;
+    background:
+      radial-gradient(ellipse 34% 7% at 72% 42%, var(--grass-dark) 0 98%, transparent 100%),
+      radial-gradient(ellipse 38% 8% at 28% 88%, var(--grass-dark) 0 98%, transparent 100%),
+      linear-gradient(180deg, #D6EEFF 0%, #EAF7FF 45%, var(--grass) 45.2%, #A8E490 100%);
+  }
+  .cloud { position: absolute; background: #fff; border-radius: 999px; opacity: .9; }
+  .fighter { position: absolute; width: 42%; }
+  .fighter svg { width: 100%; height: auto; display: block; }
+  .fighter.far  { right: 6%; top: 8%; }
+  .fighter.near { left: 5%; bottom: 3%; width: 46%; }
+  .fighter .face { transform-origin: 50% 90%; }
+  .fighter.far .flip { transform: scaleX(-1); }
+  .hpcard {
+    position: absolute; width: 46%;
+    background: var(--paper); border: 3px solid var(--ink); border-radius: 14px;
+    padding: 6px 10px 8px; display: flex; flex-direction: column; gap: 4px;
+  }
+  .hpcard.far  { left: 4%; top: 6%; }
+  .hpcard.near { right: 4%; bottom: 20%; }
+  .hp-name { font-size: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; column-gap: 6px; white-space: nowrap; }
+  .hp-name span { font-family: var(--body); font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .hpbar { height: 14px; border-radius: 999px; background: #E9E2F0; border: 2px solid var(--ink); overflow: hidden; }
+  .hpfill { height: 100%; width: 100%; background: var(--good); transition: width .6s ease, background-color .3s; }
+  .hpfill.mid { background: var(--warn); }
+  .hpfill.low { background: var(--bad); }
+  .tag { position: absolute; font-family: var(--display); font-size: 14px; padding: 2px 8px; border-radius: 999px; background: var(--ink); color: #fff; }
+  .fx { position: absolute; font-size: clamp(34px, 11vw, 60px); pointer-events: none; z-index: 5; line-height: 1; }
+  .dmg {
+    position: absolute; z-index: 6; pointer-events: none;
+    font-family: var(--display); font-size: clamp(28px, 9vw, 44px);
+    color: #fff; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill;
+  }
+  .dmg.heal { color: var(--good); }
+  .dmg.miss { color: #fff; font-size: clamp(22px, 7vw, 32px); }
+  .msg {
+    min-height: 3.2em; font-size: 22px; line-height: 1.35;
+    background: #fff; border: 3px solid var(--ink); border-radius: 16px;
+    padding: 10px 14px; margin: 0; display: flex; align-items: center;
+  }
+  .moves { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .move {
+    font-size: 20px; color: var(--ink); text-align: left;
+    border: 3px solid var(--ink); border-radius: 16px;
+    padding: 10px 12px; cursor: pointer; box-shadow: 0 5px 0 var(--ink);
+    display: flex; flex-direction: column; gap: 2px; min-height: 76px;
+    transition: transform .08s, box-shadow .08s;
+  }
+  .move small { font-family: var(--body); font-size: 14px; color: var(--muted); }
+  .move:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+  .move:disabled { opacity: .45; cursor: not-allowed; }
+  .moves .move { background: var(--c, #fff); }
+  .moves.wait .move { background: #eee; }
+  .move.special { grid-column: 1 / -1; min-height: 64px; }
+  .moves .move.special { background: var(--c2, #fff); }
+  .moves.wait .move.special { background: #eee; }
+  .sounds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .sounds button {
+    font-family: var(--display); font-size: 16px; color: var(--ink); cursor: pointer;
+    border: 3px solid var(--ink); border-radius: 12px; padding: 8px 4px; line-height: 1.2;
+  }
+  #soundsFart button { background: #DDF3C8; }
+  #soundsPoop button { background: #F3DCC2; }
+  .sounds button:focus-visible { outline: 4px solid var(--pink); outline-offset: 2px; }
+  /* 방귀 안개, 머리 위 똥 */
+  .stink {
+    position: fixed; inset: 0; z-index: 40; pointer-events: none; opacity: 0;
+    background:
+      radial-gradient(circle at 25% 65%, rgba(120, 190, 50, .55), transparent 45%),
+      radial-gradient(circle at 75% 35%, rgba(160, 210, 60, .5), transparent 50%),
+      radial-gradient(circle at 50% 50%, rgba(100, 170, 40, .35), transparent 70%),
+      rgba(150, 200, 90, .3);
+    -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+  }
+  .head-poop {
+    position: absolute; top: 0; z-index: 4; pointer-events: none; line-height: 1;
+    font-size: clamp(26px, 8.5vw, 44px); transform: translateX(-50%);
+  }
+  .fly { position: absolute; z-index: 5; pointer-events: none; font-size: clamp(16px, 5vw, 24px); line-height: 1; }
+  .wash { position: absolute; z-index: 6; pointer-events: none; font-size: clamp(18px, 6vw, 30px); line-height: 1; }
+  .seg.three { grid-template-columns: 1fr 1fr 1fr; }
+
+  /* 수학 파워 문제 */
+  .quiz {
+    background: var(--paper); border: 3px solid var(--ink); border-radius: 18px;
+    padding: 12px; display: flex; flex-direction: column; gap: 10px;
+    box-shadow: 0 5px 0 var(--ink);
+  }
+  .quiz-head { font-family: var(--display); font-size: 18px; margin: 0; color: var(--muted); text-align: center; }
+  .quiz-q {
+    font-family: var(--display); font-size: clamp(28px, 9vw, 44px); text-align: center;
+    display: flex; justify-content: center; align-items: center; gap: 8px; white-space: nowrap;
+    font-variant-numeric: tabular-nums; line-height: 1.1;
+  }
+  .quiz-ans {
+    min-width: 2.2em; padding: 2px 8px; border-radius: 12px;
+    border: 3px dashed var(--ink); background: #fff; color: var(--ink);
+  }
+  .quiz-ans.empty { color: #C9C0D6; }
+  .quiz-ans { font: inherit; cursor: pointer; line-height: 1.1; }
+  .quiz-ans.active { border-color: var(--pink); border-style: solid; box-shadow: 0 0 0 3px var(--pink-soft); }
+  .slots { display: inline-flex; align-items: center; gap: 6px; }
+  .unit { font-size: .62em; }
+  .quiz.clock .quiz-q { font-size: clamp(26px, 8vw, 38px); }
+  .quiz-clock { display: flex; justify-content: center; }
+  .quiz-clock svg { width: 52%; max-width: 190px; height: auto; }
+  .quiz-text { white-space: pre-line; margin: 0; font-size: 20px; line-height: 1.45; text-align: center; text-wrap: balance; }
+  .quiz.ok .quiz-ans { border-style: solid; background: #D4F7DF; border-color: var(--good); }
+  .quiz.no .quiz-ans { border-style: solid; background: #FFE0E1; border-color: var(--bad); }
+  .quiz-say { margin: 0; text-align: center; font-family: var(--display); font-size: 20px; min-height: 1.3em; }
+  .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .pad button {
+    font-family: var(--display); font-size: 26px; color: var(--ink);
+    background: #fff; border: 3px solid var(--ink); border-radius: 14px;
+    padding: 8px 0; cursor: pointer; box-shadow: 0 4px 0 var(--ink);
+  }
+  .pad button:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+  .pad button.ok-key { background: var(--good); color: #fff; }
+  .pad button.del-key { font-size: 18px; }
+  .pad button:focus-visible { outline: 4px solid var(--pink); outline-offset: 2px; }
+  .power { color: #E07B00; }
+
+  /* 흔들림, 번쩍임 */
+  @keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-9%); } 40% { transform: translateX(8%); } 60% { transform: translateX(-6%); } 80% { transform: translateX(4%); } }
+  @keyframes blink { 0%,100% { opacity: 1; } 25%,75% { opacity: .2; } 50% { opacity: 1; } }
+  .hit { animation: shake .45s ease, blink .45s steps(2); }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4%); } }
+  .fighter .face { animation: bob 1.6s ease-in-out infinite; }
+  .fighter.far .face { animation-delay: .8s; }
+  .fighter.down .face { animation: none; transform: rotate(80deg) translateY(10%); opacity: .6; transition: transform .6s, opacity .6s; }
+
+  /* 끝 화면 */
+  .result { text-align: center; align-items: center; }
+  .result h2 { font-size: clamp(30px, 9vw, 42px); }
+  .result svg { width: 60%; max-width: 220px; height: auto; }
+  .result p { margin: 0; font-size: 18px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+  .btn.sub-btn { background: #fff; color: var(--ink); font-size: 20px; }
+  .confetti { position: fixed; top: -20px; width: 12px; height: 16px; z-index: 50; pointer-events: none; border-radius: 3px; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+  @media (max-width: 400px) {
+    .move { font-size: 18px; min-height: 70px; }
+    .hp-name { font-size: 17px; }
+    .msg { font-size: 19px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fighter .face { animation: none; }
+    .hit { animation: blink .45s steps(2); }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="top">
+    <button class="icon-btn" id="homeBtn" type="button" hidden>처음으로</button>
+    <span></span>
+    <button class="icon-btn" id="soundBtn" type="button" aria-pressed="true">소리 켜짐</button>
+  </div>
+
+  <!-- 1. 캐릭터 고르기 -->
+  <section id="setup" class="wrap" style="padding:0">
+    <h1><span class="ping">티니핑</span><span class="vs">VS</span><span class="pika">피카츄</span></h1>
+    <p class="sub">하츄핑, 피카츄, 엉덩이 탐정, 추피! 누가 이길까?</p>
+
+    <div class="panel">
+      <h2>1. 몇 명이 할까?</h2>
+      <div class="seg" id="modeSeg" role="group" aria-label="게임 인원">
+        <button type="button" id="mode1" data-mode="1p" aria-pressed="true">혼자 하기<br><small>컴퓨터랑</small></button>
+        <button type="button" id="mode2" data-mode="2p" aria-pressed="false">둘이 하기<br><small>엄마·아빠랑</small></button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 id="pickTitle">2. 내 캐릭터 고르기</h2>
+      <div class="picks" id="picksMine"></div>
+      <p class="hint" id="pickHint">고른 캐릭터는 아래쪽, 상대는 위쪽에 서요.</p>
+    </div>
+
+    <div class="panel">
+      <h2 id="oppTitle">3. 상대 캐릭터 고르기</h2>
+      <div class="picks small" id="picksOpp"></div>
+    </div>
+
+    <div class="panel">
+      <h2>4. 수학 파워</h2>
+      <div class="seg three" id="mathSeg" role="group" aria-label="수학 문제 난이도">
+        <button type="button" id="mathOff" data-math="off" aria-pressed="false">끄기</button>
+        <button type="button" id="mathEasy" data-math="easy" aria-pressed="true">쉬움<br><small>받아올림 없음</small></button>
+        <button type="button" id="mathHard" data-math="hard" aria-pressed="false">도전<br><small>받아올림 있음</small></button>
+      </div>
+      <p class="hint" id="mathHint"></p>
+    </div>
+
+    <div class="panel">
+      <h2>방귀·똥 소리 들어보기</h2>
+      <p class="hint">특별 공격을 쓰면 이 중 하나가 랜덤으로 나와요.</p>
+      <div class="sounds" id="soundsFart"></div>
+      <div class="sounds" id="soundsPoop"></div>
+    </div>
+
+    <button class="btn" id="startBtn" type="button">배틀 시작!</button>
+  </section>
+
+  <!-- 2. 배틀 -->
+  <section id="battle" class="wrap" style="padding:0" hidden>
+    <p class="turn" id="turn">하츄핑 차례!</p>
+    <div class="arena" id="arena">
+      <div class="cloud" style="left:8%;top:28%;width:18%;height:6%"></div>
+      <div class="cloud" style="left:60%;top:3%;width:14%;height:5%"></div>
+      <div class="hpcard far" id="hpFar"></div>
+      <div class="hpcard near" id="hpNear"></div>
+      <div class="fighter far" id="fFar"></div>
+      <div class="fighter near" id="fNear"></div>
+    </div>
+    <p class="msg" id="msg" aria-live="polite">배틀 시작!</p>
+    <div class="moves" id="moves"></div>
+    <div class="quiz" id="quiz" hidden>
+      <p class="quiz-head" id="quizHead">문제를 맞히면 기술이 1.5배!</p>
+      <div class="quiz-clock" id="quizClock" hidden></div>
+      <p class="quiz-text" id="quizText" hidden></p>
+      <div class="quiz-q" aria-live="polite"><span id="quizQ"></span><span class="slots" id="quizSlots"></span></div>
+      <p class="quiz-say" id="quizSay"></p>
+      <div class="pad" id="pad">
+        <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+        <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+        <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+        <button type="button" class="del-key" data-k="del">지우기</button><button type="button" data-k="0">0</button><button type="button" class="ok-key" data-k="ok">확인</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 결과 -->
+  <section id="result" class="panel result" hidden></section>
+</div>
+
+<script>
+/* ---------- 캐릭터 그림 (직접 그린 단순한 그림) ---------- */
+const ART = {
+  pika: `
+<svg viewBox="0 0 200 200" aria-hidden="true"><g class="face"><g class="flip" style="transform-origin:100px 100px">
+  <path d="M150 150 L175 118 L160 112 L188 70 L170 64 L192 22 L150 70 L166 76 L140 108 L154 114 L135 140 Z" fill="#FFD23F" stroke="#2B2240" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M135 140 L150 150 L146 128 Z" fill="#9A6A2E"/>
+  <path d="M62 62 L34 8 L82 48 Z" fill="#FFD23F" stroke="#2B2240" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M34 8 L46 30 L54 24 Z" fill="#2B2240"/>
+  <path d="M130 50 L168 14 L142 66 Z" fill="#FFD23F" stroke="#2B2240" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M168 14 L152 32 L160 38 Z" fill="#2B2240"/>
+  <ellipse cx="100" cy="140" rx="52" ry="48" fill="#FFD23F" stroke="#2B2240" stroke-width="4"/>
+  <ellipse cx="100" cy="92" rx="54" ry="46" fill="#FFD23F" stroke="#2B2240" stroke-width="4"/>
+  <path d="M60 150 q8 -10 18 0" fill="none" stroke="#2B2240" stroke-width="4" stroke-linecap="round"/>
+  <path d="M122 150 q8 -10 18 0" fill="none" stroke="#2B2240" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="78" cy="86" r="9" fill="#2B2240"/><circle cx="81" cy="83" r="3.5" fill="#fff"/>
+  <circle cx="124" cy="86" r="9" fill="#2B2240"/><circle cx="127" cy="83" r="3.5" fill="#fff"/>
+  <circle cx="62" cy="106" r="11" fill="#F0454B"/><circle cx="140" cy="106" r="11" fill="#F0454B"/>
+  <path d="M98 96 l4 0" stroke="#2B2240" stroke-width="3" stroke-linecap="round"/>
+  <path d="M90 106 q5 7 11 0 q6 7 11 0" fill="none" stroke="#2B2240" stroke-width="3" stroke-linecap="round"/>
+  <path d="M88 170 q12 8 24 0" fill="none" stroke="#9A6A2E" stroke-width="5" stroke-linecap="round"/>
+</g></g></svg>`,
+  ping: `
+<svg viewBox="0 0 200 200" aria-hidden="true"><g class="face"><g class="flip" style="transform-origin:100px 100px">
+  <path d="M46 130 C 6 110, 10 80, 36 96 C 20 70, 50 70, 58 110 Z" fill="#fff" stroke="#2B2240" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M154 130 C 194 110, 190 80, 164 96 C 180 70, 150 70, 142 110 Z" fill="#fff" stroke="#2B2240" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M100 10 C 92 -2, 76 10, 100 28 C 124 10, 108 -2, 100 10 Z" fill="#FF3D8B" stroke="#2B2240" stroke-width="3.5"/>
+  <path d="M100 28 L100 44" stroke="#2B2240" stroke-width="4"/>
+  <ellipse cx="100" cy="150" rx="40" ry="38" fill="#FF9CC6" stroke="#2B2240" stroke-width="4"/>
+  <path d="M90 142 C 86 134, 78 140, 90 152 C 102 140, 94 134, 90 142 Z" fill="#FF3D8B" transform="translate(10 0)"/>
+  <circle cx="100" cy="92" r="52" fill="#FFB8D6" stroke="#2B2240" stroke-width="4"/>
+  <path d="M48 88 C 50 50, 80 36, 100 40 C 124 36, 152 52, 152 88 C 140 70, 124 62, 112 72 C 100 58, 80 60, 70 74 C 62 70, 54 76, 48 88 Z" fill="#FF6FAE" stroke="#2B2240" stroke-width="4" stroke-linejoin="round"/>
+  <circle cx="46" cy="96" r="12" fill="#FF6FAE" stroke="#2B2240" stroke-width="4"/>
+  <circle cx="154" cy="96" r="12" fill="#FF6FAE" stroke="#2B2240" stroke-width="4"/>
+  <ellipse cx="80" cy="100" rx="11" ry="14" fill="#7A2FA0"/><circle cx="84" cy="95" r="4.5" fill="#fff"/><circle cx="77" cy="105" r="2" fill="#fff"/>
+  <ellipse cx="120" cy="100" rx="11" ry="14" fill="#7A2FA0"/><circle cx="124" cy="95" r="4.5" fill="#fff"/><circle cx="117" cy="105" r="2" fill="#fff"/>
+  <path d="M62 118 C 60 113, 55 116, 62 122 C 69 116, 64 113, 62 118 Z" fill="#FF3D8B"/>
+  <path d="M138 118 C 136 113, 131 116, 138 122 C 145 116, 140 113, 138 118 Z" fill="#FF3D8B"/>
+  <path d="M92 122 q8 8 16 0" fill="#F0454B" stroke="#2B2240" stroke-width="3" stroke-linecap="round"/>
+</g></g></svg>`,
+  det: `
+<svg viewBox="0 0 200 200" aria-hidden="true"><g class="face"><g class="flip" style="transform-origin:100px 100px">
+  <path d="M52 196 C 50 150, 70 128, 100 128 C 130 128, 150 150, 148 196 Z" fill="#8A5A3B" stroke="#2B2240" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M84 130 L100 168 L116 130 Z" fill="#fff" stroke="#2B2240" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M84 130 L100 168 L92 190 L72 140 Z" fill="#A87450" stroke="#2B2240" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M116 130 L100 168 L108 190 L128 140 Z" fill="#A87450" stroke="#2B2240" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M88 136 L100 142 L112 136 L112 148 L100 142 L88 148 Z" fill="#E23B3B" stroke="#2B2240" stroke-width="2.5" stroke-linejoin="round"/>
+  <circle cx="74" cy="84" r="44" fill="#F7C8A6" stroke="#2B2240" stroke-width="4"/>
+  <circle cx="126" cy="84" r="44" fill="#F7C8A6" stroke="#2B2240" stroke-width="4"/>
+  <ellipse cx="100" cy="104" rx="58" ry="32" fill="#F7C8A6" stroke="#2B2240" stroke-width="4"/>
+  <circle cx="74" cy="86" r="41" fill="#F7C8A6"/><circle cx="126" cy="86" r="41" fill="#F7C8A6"/>
+  <ellipse cx="100" cy="104" rx="55" ry="29" fill="#F7C8A6"/>
+  <path d="M100 42 Q 96 56 100 70" fill="none" stroke="#2B2240" stroke-width="4" stroke-linecap="round"/>
+  <path d="M70 92 q8 -7 16 0" fill="none" stroke="#2B2240" stroke-width="4" stroke-linecap="round"/>
+  <path d="M114 92 q8 -7 16 0" fill="none" stroke="#2B2240" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="78" cy="96" r="4" fill="#2B2240"/><circle cx="122" cy="96" r="4" fill="#2B2240"/>
+  <ellipse cx="60" cy="108" rx="9" ry="6" fill="#F59A9A"/><ellipse cx="140" cy="108" rx="9" ry="6" fill="#F59A9A"/>
+  <path d="M94 114 q6 5 12 0" fill="none" stroke="#2B2240" stroke-width="3" stroke-linecap="round"/>
+  <line x1="150" y1="178" x2="168" y2="152" stroke="#2B2240" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="176" cy="140" r="16" fill="#CDEBFF" stroke="#2B2240" stroke-width="5"/>
+  <path d="M170 134 q4 -4 9 -3" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+</g></g></svg>`,
+  chupi: `
+<svg viewBox="0 0 200 200" aria-hidden="true"><g class="face"><g class="flip" style="transform-origin:100px 100px">
+  <ellipse cx="78" cy="192" rx="18" ry="7" fill="#FF9F1C" stroke="#2B2240" stroke-width="3"/>
+  <ellipse cx="122" cy="192" rx="18" ry="7" fill="#FF9F1C" stroke="#2B2240" stroke-width="3"/>
+  <path d="M52 150 C 30 150, 28 175, 44 178 C 52 170, 56 162, 60 156 Z" fill="#26386B" stroke="#2B2240" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M148 150 C 170 150, 172 175, 156 178 C 148 170, 144 162, 140 156 Z" fill="#26386B" stroke="#2B2240" stroke-width="3.5" stroke-linejoin="round"/>
+  <ellipse cx="100" cy="160" rx="46" ry="32" fill="#E84A4A" stroke="#2B2240" stroke-width="4"/>
+  <path d="M86 132 q14 10 28 0" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+  <path d="M100 18 C 90 6, 110 2, 104 16 C 116 8, 118 24, 106 28" fill="none" stroke="#26386B" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="100" cy="84" r="56" fill="#26386B" stroke="#2B2240" stroke-width="4"/>
+  <path d="M56 98 C 54 62, 80 56, 100 70 C 120 56, 146 62, 144 98 C 142 128, 58 128, 56 98 Z" fill="#FFFFFF" stroke="#2B2240" stroke-width="3"/>
+  <ellipse cx="82" cy="90" rx="8" ry="10" fill="#2B2240"/><circle cx="85" cy="86" r="3" fill="#fff"/>
+  <ellipse cx="118" cy="90" rx="8" ry="10" fill="#2B2240"/><circle cx="121" cy="86" r="3" fill="#fff"/>
+  <path d="M90 104 L110 104 L100 116 Z" fill="#FFB020" stroke="#2B2240" stroke-width="3" stroke-linejoin="round"/>
+  <ellipse cx="68" cy="108" rx="8" ry="5" fill="#FF9CC6"/><ellipse cx="132" cy="108" rx="8" ry="5" fill="#FF9CC6"/>
+</g></g></svg>`
+};
+
+/* ---------- 캐릭터 정보 ---------- */
+const FIGHTERS = {
+  ping: {
+    id: "ping", name: "하츄핑", cry: "하츄~ 사랑의 힘!", tag: "사랑의 하트 요정",
+    soft: "#FFD6E8", soft2: "#F3DCC2", sfx: "love",
+    moves: [
+      { name: "하트 빔",        kind: "atk",  min: 17, max: 23, acc: 0.95, fx: "💖", note: "잘 맞아요" },
+      { name: "반짝 날개",      kind: "atk",  min: 10, max: 14, acc: 1.00, fx: "✨", note: "꼭 맞아요" },
+      { name: "러브 대폭발",    kind: "atk",  min: 26, max: 34, acc: 0.65, fx: "🌟", note: "세지만 빗나가기도" },
+      { name: "하츄 응원",      kind: "heal", amt: 25, fx: "💗", note: "체력 회복" },
+      { name: "똥 폭탄",        kind: "atk",  min: 24, max: 30, acc: 1.00, fx: "💩", note: "시계 문제를 맞히면 발사", special: true,
+        sfx: "poop", shout: "뿌직!", hitMsg: "똥 폭탄 명중! 으악, 냄새!" }
+    ]
+  },
+  pika: {
+    id: "pika", name: "피카츄", cry: "피카피카~ 츄!", tag: "번개 쥐",
+    soft: "#FFF1B8", soft2: "#DDF3C8", sfx: "zap",
+    moves: [
+      { name: "백만볼트",       kind: "atk",  min: 17, max: 23, acc: 0.95, fx: "⚡", note: "잘 맞아요" },
+      { name: "전광석화",       kind: "atk",  min: 10, max: 14, acc: 1.00, fx: "💫", note: "꼭 맞아요" },
+      { name: "아이언테일",     kind: "atk",  min: 26, max: 34, acc: 0.65, fx: "💥", note: "세지만 빗나가기도" },
+      { name: "쿨쿨 휴식",      kind: "heal", amt: 25, fx: "💤", note: "체력 회복" },
+      { name: "뿡뿡 방귀",      kind: "atk",  min: 24, max: 30, acc: 1.00, fx: "💨", note: "시계 문제를 맞히면 발사", special: true,
+        sfx: "fart", shout: "뿡!", hitMsg: "뿌웅~ 방귀 명중! 코를 막아요!" }
+    ]
+  },
+  det: {
+    id: "det", name: "엉덩이 탐정", cry: "흠흠, 사건 해결!", tag: "수수께끼를 푸는 탐정",
+    soft: "#F3E0CF", soft2: "#E6F0C8", sfx: "zap",
+    moves: [
+      { name: "돋보기 빔",      kind: "atk",  min: 17, max: 23, acc: 0.95, fx: "🔍", note: "잘 맞아요" },
+      { name: "번뜩 추리",      kind: "atk",  min: 10, max: 14, acc: 1.00, fx: "💡", note: "꼭 맞아요" },
+      { name: "엉덩이 박치기",  kind: "atk",  min: 26, max: 34, acc: 0.65, fx: "🍑", note: "세지만 빗나가기도" },
+      { name: "고구마 간식",    kind: "heal", amt: 25, fx: "🍠", note: "체력 회복" },
+      { name: "실례 뿌웅~",     kind: "atk",  min: 24, max: 30, acc: 1.00, fx: "🌪️", note: "시계 문제를 맞히면 발사", special: true,
+        sfx: "fart", shout: "실례!", hitMsg: "실례 좀 하겠습니다~ 뿌웅! 방귀 태풍 명중!" }
+    ]
+  },
+  chupi: {
+    id: "chupi", name: "추피", cry: "야호! 추피가 해냈어!", tag: "씩씩한 꼬마 펭귄",
+    soft: "#D9E6FF", soft2: "#F3DCC2", sfx: "love",
+    moves: [
+      { name: "눈덩이 던지기",  kind: "atk",  min: 17, max: 23, acc: 0.95, fx: "❄️", note: "잘 맞아요" },
+      { name: "뒤뚱 박치기",    kind: "atk",  min: 10, max: 14, acc: 1.00, fx: "🐾", note: "꼭 맞아요" },
+      { name: "뻥 슛",          kind: "atk",  min: 26, max: 34, acc: 0.65, fx: "⚽", note: "세지만 빗나가기도" },
+      { name: "엄마 안아줘",    kind: "heal", amt: 25, fx: "🤗", note: "체력 회복" },
+      { name: "응가 발사",      kind: "atk",  min: 24, max: 30, acc: 1.00, fx: "💩", note: "시계 문제를 맞히면 발사", special: true,
+        sfx: "poop", shout: "끙차!", hitMsg: "응가 발사 명중! 아이고 냄새야!" }
+    ]
+  }
+};
+const ORDER = ["ping", "pika", "det", "chupi"];
+const MAX_HP = 100, HEALS = 2, SPECIALS = 3;
+const fighterEl = i => i === 0 ? document.getElementById("fNear") : document.getElementById("fFar");
+const needsHeal = i => players[i].hp < MAX_HP || fighterEl(i).querySelector(".head-poop") !== null;
+
+/* ---------- 상태 ---------- */
+const $ = id => document.getElementById(id);
+let mode = "1p";
+let myPick = "ping";
+let oppPick = "pika";
+let players = [];   // [0] = 아래쪽(내 캐릭터), [1] = 위쪽(상대)
+let turn = 0;
+let busy = false;
+let soundOn = true;
+let mathLevel = "easy";            // "off" | "easy" | "hard"
+let stats = [];                    // 사람별 { math: [맞힌 수, 푼 수], clock: [...] }
+const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const sleep = ms => new Promise(r => setTimeout(r, reduce ? Math.min(ms, 250) : ms));
+const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+
+/* ---------- 소리 (따로 파일 없이 브라우저가 직접 만드는 효과음) ---------- */
+let ac = null;
+function audio() {
+  if (!soundOn) return null;
+  try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+  if (ac.state === "suspended") ac.resume();
+  return ac;
+}
+function tone(freq, dur, type = "square", when = 0, vol = 0.08, slideTo = null) {
+  const a = audio(); if (!a) return;
+  const t = a.currentTime + when;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+const SFX = {
+  tap:  () => tone(660, 0.07, "triangle"),
+  zap:  () => { tone(900, 0.25, "sawtooth", 0, 0.06, 200); tone(1200, 0.2, "square", 0.05, 0.04, 300); },
+  love: () => { [523, 659, 784].forEach((f, i) => tone(f, 0.15, "triangle", i * 0.07, 0.08)); },
+  hit:  () => { tone(160, 0.18, "square", 0, 0.1, 60); },
+  miss: () => { tone(400, 0.25, "sine", 0, 0.08, 150); },
+  heal: () => { [440, 554, 659, 880].forEach((f, i) => tone(f, 0.14, "sine", i * 0.08, 0.08)); },
+  fart: () => grossSound("fart"),
+  poop: () => grossSound("poop"),
+  win:  () => { [523, 523, 523, 659, 784, 659, 784, 1047].forEach((f, i) => tone(f, 0.18, "square", i * 0.14, 0.06)); }
+};
+
+/* ---------- 방귀·똥 소리 (소리 파일 없이 직접 만드는 소리) ---------- */
+// 방귀: 공기가 빠르게 끊겼다 나갔다 하는 "부르르" 떨림 + 바람 새는 소리
+function fartBuf(a, o) {
+  const sr = a.sampleRate, n = Math.floor(o.dur * sr);
+  const buf = a.createBuffer(1, n, sr), d = buf.getChannelData(0);
+  let ph = 0, fm = 1, am = 1, tf = 1, ta = 1, next = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / sr, u = t / o.dur;
+    if (i >= next) {                           // 20~50ms마다 떨림 방향이 바뀜
+      tf = 1 + (Math.random() * 2 - 1) * o.jit;
+      ta = 1 - Math.random() * o.flutter;
+      next = i + sr * (0.02 + Math.random() * 0.03);
+    }
+    fm += (tf - fm) * 0.004; am += (ta - am) * 0.006;
+    ph += (o.f0 + (o.f1 - o.f0) * u) * fm / sr;
+    if (ph >= 1) ph -= 1;
+    const pulse = Math.exp(-ph * o.sharp);
+    const s = o.buzz * (pulse - 1 / o.sharp) + o.noise * (Math.random() * 2 - 1) * (o.buzz ? pulse : 1);
+    const env = Math.min(1, t / (o.att || 0.015)) * Math.min(1, (o.dur - t) / (o.rel || 0.08));
+    d[i] = s * env * am;
+  }
+  return buf;
+}
+// 똥: 자글자글 터지는 "뿌지지직" (짧은 소리 조각을 불규칙하게 이어 붙임)
+function crackleBuf(a, o) {
+  const sr = a.sampleRate, n = Math.floor(o.dur * sr);
+  const buf = a.createBuffer(1, n, sr), d = buf.getChannelData(0);
+  let i = 0;
+  while (i < n) {
+    const len = Math.floor(sr * (0.004 + Math.random() * 0.016));
+    const amp = 0.3 + Math.random() * 0.7, f = 60 + Math.random() * 70;
+    for (let k = 0; k < len && i + k < n; k++) {
+      const dec = Math.exp(-k / (len * 0.35));
+      d[i + k] += amp * dec * ((Math.random() * 2 - 1) * 0.8 + Math.sin(2 * Math.PI * f * k / sr) * o.wet);
+    }
+    i += len + Math.floor(sr * Math.random() * (2 / o.density));
+  }
+  for (let k = 0; k < n; k++) d[k] *= Math.min(1, k / (sr * 0.01)) * Math.min(1, (n - k) / (sr * 0.05));
+  return buf;
+}
+const GROSS_VOL = 0.6;   // 방귀·똥 소리 전체 크기
+function playBuf(buf, when, { lp = 1500, hp = 40, vol = 0.8 } = {}) {
+  const a = audio(); if (!a) return;
+  const src = a.createBufferSource(), h = a.createBiquadFilter(), l = a.createBiquadFilter(), g = a.createGain();
+  src.buffer = buf; h.type = "highpass"; h.frequency.value = hp; l.type = "lowpass"; l.frequency.value = lp; g.gain.value = vol * GROSS_VOL;
+  src.connect(h).connect(l).connect(g).connect(a.destination);
+  src.start(a.currentTime + when);
+}
+function fart(when, o, f) { const a = audio(); if (a) playBuf(fartBuf(a, { buzz: 1, noise: 0.35, sharp: 8, jit: 0.1, flutter: 0.3, ...o }), when, f); }
+function crackle(when, o, f) { const a = audio(); if (a) playBuf(crackleBuf(a, { wet: 0.4, density: 40, ...o }), when, { lp: 1800, hp: 120, vol: 1.8, ...f }); }
+function plop(when, big) {
+  const a = audio(); if (!a) return;
+  const t = a.currentTime + when, o = a.createOscillator(), g = a.createGain();
+  o.type = "sine"; o.frequency.setValueAtTime(big ? 520 : 750, t); o.frequency.exponentialRampToValueAtTime(big ? 110 : 180, t + 0.1);
+  g.gain.setValueAtTime((big ? 0.5 : 0.35) * GROSS_VOL * 1.3, t); g.gain.exponentialRampToValueAtTime(0.0001, t + (big ? 0.25 : 0.16));
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.3);
+  for (let k = 0; k < (big ? 4 : 2); k++) {                 // 튀는 물방울
+    const w = t + 0.08 + Math.random() * 0.25, s = a.createOscillator(), sg = a.createGain();
+    s.type = "sine"; const f = 1100 + Math.random() * 1200;
+    s.frequency.setValueAtTime(f, w); s.frequency.exponentialRampToValueAtTime(f * 1.6, w + 0.03);
+    sg.gain.setValueAtTime(0.08, w); sg.gain.exponentialRampToValueAtTime(0.0001, w + 0.05);
+    s.connect(sg).connect(a.destination); s.start(w); s.stop(w + 0.06);
+  }
+}
+const FARTS = [
+  { label: "뿌우웅~",   play: () => fart(0, { dur: 0.9, f0: 95, f1: 68, jit: 0.12, flutter: 0.35 }, { lp: 900 }) },
+  { label: "뽀옹!",     play: () => fart(0, { dur: 0.3, f0: 170, f1: 260, jit: 0.05, flutter: 0.1, sharp: 10, noise: 0.2 }, { lp: 2200 }) },
+  { label: "뿡뿡뿡!",   play: () => { fart(0, { dur: 0.16, f0: 125, f1: 110 }, { lp: 1200 }); fart(0.22, { dur: 0.16, f0: 115, f1: 100 }, { lp: 1200 }); fart(0.44, { dur: 0.4, f0: 105, f1: 80 }, { lp: 1100 }); } },
+  { label: "피쉬시~",   play: () => fart(0, { dur: 1.3, f0: 1, f1: 1, buzz: 0, noise: 0.6, flutter: 0.4, att: 0.25, rel: 0.4 }, { lp: 3200, hp: 500, vol: 0.9 }) },
+  { label: "부르르릉!", play: () => fart(0, { dur: 1.1, f0: 55, f1: 88, jit: 0.25, flutter: 0.85, sharp: 6, noise: 0.5 }, { lp: 750, vol: 0.65 }) },
+  { label: "삐이익!",   play: () => fart(0, { dur: 0.55, f0: 320, f1: 230, jit: 0.07, flutter: 0.2, sharp: 14, noise: 0.25 }, { lp: 3200, vol: 0.6 }) }
+];
+const POOPS = [
+  { label: "뿌지직!",       play: () => { crackle(0, { dur: 0.55 }); plop(0.7); } },
+  { label: "뿌지지지지직!", play: () => { crackle(0, { dur: 1.3, density: 50 }); plop(1.45); } },
+  { label: "뿌직 뿌직!",    play: () => { crackle(0, { dur: 0.25 }); crackle(0.4, { dur: 0.25 }); plop(0.8); } },
+  { label: "뿌르르륵!",     play: () => { fart(0, { dur: 0.9, f0: 50, f1: 70, flutter: 0.9, noise: 0.8, sharp: 5 }, { lp: 700, vol: 0.55 }); crackle(0.1, { dur: 0.7, wet: 0.9, density: 30 }, { lp: 1000, vol: 1.2 }); plop(1.05); } },
+  { label: "퐁당!",         play: () => { crackle(0, { dur: 0.18 }); plop(0.3, true); } },
+  { label: "뿌지직… 퐁! 퐁!", play: () => { crackle(0, { dur: 0.7, density: 45 }); plop(0.85); plop(1.15); } }
+];
+const GROSS = { fart: FARTS, poop: POOPS };
+// 소리를 내고, 화면에 띄울 글자를 돌려줌
+function grossSound(kind) {
+  const v = pick(GROSS[kind]);
+  v.play();
+  return v.label;
+}
+
+/* ---------- 고르기 화면 ---------- */
+function renderPicks() {
+  if (oppPick === myPick) oppPick = ORDER.find(id => id !== myPick);
+  const fill = (boxId, sel, isOpp) => {
+    const box = $(boxId);
+    box.innerHTML = "";
+    ORDER.forEach(id => {
+      const f = FIGHTERS[id], b = document.createElement("button");
+      b.type = "button"; b.className = "pick"; b.id = (isOpp ? "opp-" : "mine-") + id; b.dataset.id = id;
+      b.style.setProperty("--c", f.soft);
+      b.innerHTML = ART[id] + f.name + "<small>" + f.tag + "</small>";
+      b.setAttribute("aria-pressed", String(sel === id));
+      if (isOpp && id === myPick) b.disabled = true;
+      b.addEventListener("click", () => { if (isOpp) oppPick = id; else myPick = id; SFX.tap(); renderPicks(); });
+      box.appendChild(b);
+    });
+  };
+  fill("picksMine", myPick, false);
+  fill("picksOpp", oppPick, true);
+  const two = mode === "2p";
+  $("pickTitle").textContent = two ? "2. 1번 사람 캐릭터 고르기" : "2. 내 캐릭터 고르기";
+  $("oppTitle").textContent = two ? "3. 2번 사람 캐릭터 고르기" : "3. 상대(컴퓨터) 캐릭터 고르기";
+  $("pickHint").textContent = two
+    ? "1번 사람은 아래쪽, 2번 사람은 위쪽 캐릭터예요. 폰을 번갈아 눌러요."
+    : "고른 캐릭터는 아래쪽, 컴퓨터는 위쪽에 서요.";
+}
+document.querySelectorAll("#modeSeg button").forEach(b => b.addEventListener("click", () => {
+  mode = b.dataset.mode; SFX.tap();
+  document.querySelectorAll("#modeSeg button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  renderPicks();
+}));
+const MATH_HINT = {
+  off:  "수학 문제 없이 바로 싸워요.",
+  easy: "기술을 쓰기 전에 이야기 문제, 빈칸 문제가 나와요. 받아올림·받아내림이 없는 두 자리 수 덧셈·뺄셈이에요.",
+  hard: "기술을 쓰기 전에 이야기 문제, 빈칸 문제가 나와요. 받아올림·받아내림이 있는 두 자리 수 덧셈·뺄셈이에요."
+};
+function renderMath() {
+  document.querySelectorAll("#mathSeg button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.math === mathLevel)));
+  $("mathHint").textContent = MATH_HINT[mathLevel] + (mathLevel === "off" ? "" : " 맞히면 기술이 1.5배로 세져요!")
+    + ` 방귀·똥 특별 공격은 ${mathLevel === "hard" ? "몇 시 몇 분, 몇 분 전 같은" : "몇 시, 몇 시 30분 같은"} 시계 문제를 맞혀야 나가요.`;
+}
+document.querySelectorAll("#mathSeg button").forEach(b => b.addEventListener("click", () => {
+  mathLevel = b.dataset.math; SFX.tap(); renderMath();
+}));
+$("soundBtn").addEventListener("click", () => {
+  soundOn = !soundOn;
+  $("soundBtn").textContent = soundOn ? "소리 켜짐" : "소리 꺼짐";
+  $("soundBtn").setAttribute("aria-pressed", String(soundOn));
+  if (soundOn) SFX.tap();
+});
+$("homeBtn").addEventListener("click", goHome);
+$("startBtn").addEventListener("click", startBattle);
+
+function show(which) {
+  $("setup").hidden = which !== "setup";
+  $("battle").hidden = which !== "battle";
+  $("result").hidden = which !== "result";
+  $("homeBtn").hidden = which === "setup";
+  window.scrollTo(0, 0);
+}
+function goHome() { busy = false; closeQuiz(); show("setup"); renderPicks(); }
+
+/* ---------- 배틀 ---------- */
+function startBattle() {
+  SFX.tap();
+  players = [myPick, oppPick].map((id, i) => ({
+    ...FIGHTERS[id], hp: MAX_HP, heals: HEALS, specials: SPECIALS,
+    who: mode === "1p" ? (i === 0 ? "나" : "컴퓨터") : (i === 0 ? "1번" : "2번"),
+    cpu: mode === "1p" && i === 1
+  }));
+  $("fNear").innerHTML = ART[players[0].id];
+  $("fFar").innerHTML = ART[players[1].id];
+  $("fNear").className = "fighter near";
+  $("fFar").className = "fighter far";
+  turn = Math.random() < 0.5 ? 0 : 1;
+  stats = [0, 1].map(() => ({ math: [0, 0], clock: [0, 0] }));
+  closeQuiz();
+  busy = false;
+  show("battle");
+  drawHP();
+  say(`${players[0].name} vs ${players[1].name}! ${players[turn].name}부터 시작해요!`);
+  nextTurn();
+}
+
+function drawHP() {
+  [["hpNear", 0], ["hpFar", 1]].forEach(([el, i]) => {
+    const p = players[i];
+    const pct = Math.max(0, p.hp) / MAX_HP * 100;
+    const cls = pct <= 25 ? "low" : pct <= 50 ? "mid" : "";
+    const box = $(el);
+    if (!box.firstChild) {
+      box.innerHTML = `<div class="hp-name"></div><div class="hpbar"><div class="hpfill"></div></div>`;
+    }
+    box.querySelector(".hp-name").innerHTML = `${p.name} <span>${p.who} · ${Math.max(0, p.hp)}/${MAX_HP}</span>`;
+    const fill = box.querySelector(".hpfill");
+    fill.style.width = pct + "%";
+    fill.className = "hpfill " + cls;
+  });
+}
+
+function say(text) { $("msg").textContent = text; }
+
+function drawMoves() {
+  const p = players[turn];
+  const box = $("moves");
+  const waiting = p.cpu;
+  box.className = "moves" + (waiting ? " wait" : "");
+  box.style.setProperty("--c", p.soft); box.style.setProperty("--c2", p.soft2);
+  box.innerHTML = "";
+  p.moves.forEach((m, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "move" + (m.special ? " special" : ""); b.id = "move" + i;
+    const left = m.kind === "heal" ? ` (${p.heals}번 남음)` : m.special ? ` (${p.specials}번 남음)` : "";
+    b.innerHTML = `${m.fx} ${m.name}<small>${m.note}${left}</small>`;
+    b.disabled = waiting || busy || (m.kind === "heal" && (p.heals <= 0 || !needsHeal(turn))) || (m.special && p.specials <= 0);
+    b.addEventListener("click", () => act(i));
+    box.appendChild(b);
+  });
+}
+
+function nextTurn() {
+  const p = players[turn];
+  const t = $("turn");
+  t.className = "turn";
+  t.style.setProperty("--c", p.soft);
+  t.textContent = p.cpu ? `컴퓨터(${p.name})가 생각 중...` : `${p.who === "나" ? "" : p.who + " 사람, "}${p.name} 차례! 기술을 골라요`;
+  drawMoves();
+  if (p.cpu) setTimeout(() => act(cpuChoice()), reduce ? 400 : 1100);
+}
+
+function cpuChoice() {
+  const me = players[turn], foe = players[1 - turn];
+  if (me.hp <= 35 && me.heals > 0 && Math.random() < 0.7) return 3;
+  if (me.heals > 0 && fighterEl(turn).querySelectorAll(".head-poop").length >= 2 && Math.random() < 0.5) return 3;  // 똥 씻기
+  if (foe.hp <= 14) return 1;          // 꼭 맞는 기술로 마무리
+  if (me.specials > 0 && Math.random() < 0.2) return 4;
+  const r = Math.random();
+  return r < 0.45 ? 0 : r < 0.75 ? 2 : 1;
+}
+
+function center(el, arena) {
+  const a = arena.getBoundingClientRect(), r = el.getBoundingClientRect();
+  return { x: r.left - a.left + r.width / 2, y: r.top - a.top + r.height / 2 };
+}
+
+function popText(text, target, cls) {
+  const arena = $("arena");
+  const c = center(target, arena);
+  const d = document.createElement("div");
+  d.className = "dmg " + (cls || "");
+  d.textContent = text;
+  d.style.left = c.x + "px"; d.style.top = c.y + "px";
+  arena.appendChild(d);
+  d.animate([
+    { transform: "translate(-50%,-50%) scale(.6)", opacity: 0 },
+    { transform: "translate(-50%,-110%) scale(1.15)", opacity: 1, offset: .3 },
+    { transform: "translate(-50%,-190%) scale(1)", opacity: 0 }
+  ], { duration: reduce ? 600 : 1100, easing: "ease-out" }).onfinish = () => d.remove();
+}
+
+async function fly(fx, fromEl, toEl) {
+  const arena = $("arena");
+  const a = center(fromEl, arena), b = center(toEl, arena);
+  const count = 3;
+  const jobs = [];
+  for (let k = 0; k < count; k++) {
+    const s = document.createElement("div");
+    s.className = "fx"; s.textContent = fx;
+    s.style.left = "0px"; s.style.top = "0px";
+    arena.appendChild(s);
+    const wob = (k - 1) * 18;
+    const anim = s.animate([
+      { transform: `translate(${a.x}px, ${a.y}px) translate(-50%,-50%) scale(.5)`, opacity: 0 },
+      { transform: `translate(${(a.x + b.x) / 2 + wob}px, ${(a.y + b.y) / 2 - 30 - wob}px) translate(-50%,-50%) scale(1.1) rotate(20deg)`, opacity: 1, offset: .5 },
+      { transform: `translate(${b.x}px, ${b.y}px) translate(-50%,-50%) scale(1.3)`, opacity: 1 }
+    ], { duration: reduce ? 200 : 520, delay: k * 110, easing: "ease-in", fill: "forwards" });
+    jobs.push(anim.finished.then(() => s.remove()));
+  }
+  await Promise.all(jobs);
+}
+
+// 방귀: 화면 전체가 초록색으로 뿌옇게 됐다가 사라짐
+function stinkFog(foeEl) {
+  const f = document.createElement("div");
+  f.className = "stink";
+  document.body.appendChild(f);
+  f.animate([
+    { opacity: 0, transform: "scale(1.05)" },
+    { opacity: 1, transform: "scale(1)", offset: 0.15 },
+    { opacity: 0.9, transform: "scale(1.02) translateX(-1%)", offset: 0.6 },
+    { opacity: 0, transform: "scale(1.06) translateX(1%)" }
+  ], { duration: reduce ? 1200 : 2600, easing: "ease-in-out" }).onfinish = () => f.remove();
+  setTimeout(() => popText("으엑!", foeEl, "miss"), 350);
+}
+// 냄새 표정: 캐릭터마다 눈 위치에 X자 눈 + 초록 볼 + 냄새 줄기 (다음 기술을 쓸 때까지)
+const EYES = {
+  pika:  { skin: "#FFD23F", eyes: [[78, 86], [124, 86]], r: 12, cheeks: [[62, 106], [140, 106]] },
+  ping:  { skin: "#FFB8D6", eyes: [[80, 100], [120, 100]], r: 15, cheeks: [[62, 118], [138, 118]] },
+  det:   { skin: "#F7C8A6", eyes: [[78, 93], [122, 93]], r: 11, cheeks: [[60, 108], [140, 108]] },
+  chupi: { skin: "#FFFFFF", eyes: [[82, 90], [118, 90]], r: 11, cheeks: [[68, 108], [132, 108]] }
+};
+function stinkFace(el, id) {
+  const g = el.querySelector(".flip"); const e = EYES[id];
+  if (!g || !e || g.querySelector(".stinkface")) return;
+  let s = `<g class="stinkface">`;
+  for (const [x, y] of e.eyes) {
+    s += `<circle cx="${x}" cy="${y}" r="${e.r}" fill="${e.skin}"/>`;
+    const k = e.r * 0.6;
+    s += `<path d="M${x - k} ${y - k} L${x + k} ${y + k} M${x + k} ${y - k} L${x - k} ${y + k}" stroke="#2B2240" stroke-width="4.5" stroke-linecap="round"/>`;
+  }
+  for (const [x, y] of e.cheeks) s += `<ellipse cx="${x}" cy="${y}" rx="11" ry="7" fill="#7BC043" opacity=".85"/>`;
+  s += `<g fill="none" stroke="#5FA83A" stroke-width="4" stroke-linecap="round" opacity=".9">
+    <path d="M70 40 q-8 -8 0 -16 q8 -8 0 -16"/><path d="M100 30 q-8 -8 0 -16 q8 -8 0 -16"/><path d="M130 40 q-8 -8 0 -16 q8 -8 0 -16"/></g>`;
+  g.insertAdjacentHTML("beforeend", s + `</g>`);
+}
+function clearStinkFace(el) { el.querySelectorAll(".stinkface").forEach(n => n.remove()); }
+
+// 파리: 머리 위 💩 개수만큼 윙윙 날아다님
+function updateFlies(el) {
+  const want = el.querySelectorAll(".head-poop").length;
+  const flies = el.querySelectorAll(".fly");
+  for (let k = want; k < flies.length; k++) {
+    const f = flies[k];
+    f.getAnimations().forEach(a => a.cancel());
+    f.animate([{ opacity: 1, transform: "translate(0,0)" }, { opacity: 0, transform: "translate(120%, -200%)" }], { duration: 500 }).onfinish = () => f.remove();
+  }
+  for (let k = flies.length; k < want; k++) {
+    const f = document.createElement("div");
+    f.className = "fly"; f.textContent = "🪰";
+    el.appendChild(f);
+    const pts = [];
+    for (let j = 0; j < 7; j++) pts.push({ left: rand(-8, 92) + "%", top: rand(-12, 55) + "%", transform: `rotate(${rand(-40, 40)}deg)` });
+    pts.push(pts[0]);
+    f.animate(pts, { duration: reduce ? 6000 : rand(1600, 2400), iterations: Infinity, easing: "ease-in-out" });
+  }
+  if (want > flies.length) { buzz(); setTimeout(() => popText("윙윙~", el, "miss"), 700); }
+}
+function buzz() {
+  const a = audio(); if (!a) return;
+  const t = a.currentTime + 0.6, o = a.createOscillator(), g = a.createGain(), l = a.createOscillator(), lg = a.createGain();
+  o.type = "sawtooth"; o.frequency.value = 230; l.frequency.value = 9; lg.gain.value = 25;
+  l.connect(lg).connect(o.frequency);
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.035, t + 0.1); g.gain.setValueAtTime(0.035, t + 0.6); g.gain.linearRampToValueAtTime(0.0001, t + 0.8);
+  o.connect(g).connect(a.destination); o.start(t); l.start(t); o.stop(t + 0.85); l.stop(t + 0.85);
+}
+
+// 씻기: 회복 기술을 쓰면 물방울이 쏟아지고 머리 위 💩와 파리가 사라짐
+async function washPoop(el) {
+  const poops = [...el.querySelectorAll(".head-poop")];
+  if (!poops.length) return false;
+  for (let k = 0; k < 8; k++) {
+    const w = document.createElement("div");
+    w.className = "wash"; w.textContent = k % 2 ? "🫧" : "💧";
+    w.style.left = rand(5, 85) + "%"; w.style.top = "-20%";
+    el.appendChild(w);
+    w.animate([{ transform: "translateY(0)", opacity: 0 }, { opacity: 1, offset: 0.2 }, { transform: "translateY(260%)", opacity: 0 }],
+      { duration: 900, delay: k * 90, easing: "ease-in", fill: "backwards" }).onfinish = () => w.remove();
+  }
+  plop(0.2); plop(0.45);
+  await sleep(500);
+  poops.forEach(p => p.animate([{ transform: "translate(-50%, 0) rotate(0)", opacity: 1 }, { transform: "translate(-50%, 220%) rotate(40deg)", opacity: 0 }],
+    { duration: 700, easing: "ease-in", fill: "forwards" }).onfinish = () => { p.remove(); updateFlies(el); });
+  return true;
+}
+
+// 똥: 상대 머리 위에 철퍼덕 붙어서 그 판 끝까지 남음 (최대 3개)
+function stickPoop(foeEl) {
+  const have = foeEl.querySelectorAll(".head-poop").length;
+  if (have >= 3) return;
+  const p = document.createElement("div");
+  p.className = "head-poop";
+  p.textContent = "💩";
+  p.style.left = ["50%", "28%", "72%"][have];
+  foeEl.appendChild(p);
+  updateFlies(foeEl);
+  if (reduce) return;
+  p.animate([
+    { transform: "translate(-50%, -160%) scale(.8)", opacity: 0 },
+    { transform: "translate(-50%, 8%) scale(1.25, .7)", opacity: 1, offset: 0.55 },
+    { transform: "translate(-50%, -12%) scale(.9, 1.1)", offset: 0.75 },
+    { transform: "translate(-50%, 0) scale(1)" }
+  ], { duration: 650, easing: "ease-out" });
+}
+
+function lunge(el, dir) {
+  if (reduce) return;
+  el.animate([
+    { transform: "translate(0,0)" },
+    { transform: `translate(${dir * 10}%, ${-dir * 6}%)` },
+    { transform: "translate(0,0)" }
+  ], { duration: 320, easing: "ease-out" });
+}
+
+async function act(i) {
+  if (busy) return;
+  const me = players[turn], foe = players[1 - turn];
+  const m = me.moves[i];
+  if (!m) return;
+  if (m.kind === "heal" && (me.heals <= 0 || !needsHeal(turn))) return;
+  if (m.special && me.specials <= 0) return;
+  busy = true; drawMoves();
+  let power = false;
+  const who = mode === "2p" ? `${me.who} 사람, ` : "";
+  if (m.special && !me.cpu) {
+    // 방귀·똥 공격은 시계 문제를 맞혀야 나감
+    const res = await askQuiz(makeClockProblem(mathLevel === "hard" ? "hard" : "easy"),
+      `${who}시계 문제를 맞혀야 ${eulreul(m.name)} 쓸 수 있어요!`);
+    if (res === null) return;          // 처음으로 돌아가서 문제가 닫힘
+    if (!res) {
+      say(`앗! ${iga(m.name)} 쏙 들어갔어요. 다음엔 꼭 맞혀요! (남은 횟수는 그대로)`);
+      await sleep(1600);
+      turn = 1 - turn; busy = false; nextTurn();
+      return;
+    }
+  } else if (mathLevel !== "off" && !me.cpu) {
+    const res = await askQuiz(makeProblem(mathLevel), `${who}문제를 맞히면 기술이 1.5배!`);
+    if (res === null) return;
+    power = res;
+  }
+  const meEl = turn === 0 ? $("fNear") : $("fFar");
+  clearStinkFace(meEl);
+  const foeEl = turn === 0 ? $("fFar") : $("fNear");
+
+  if (m.kind === "heal") {
+    me.heals--;
+    const before = me.hp;
+    me.hp = Math.min(MAX_HP, me.hp + Math.round(m.amt * (power ? 1.5 : 1)));
+    say(`${power ? "수학 파워! " : ""}${me.name}의 ${m.name}! ${m.fx}`);
+    SFX.heal();
+    if (me.hp > before) popText("+" + (me.hp - before), meEl, "heal");
+    drawHP();
+    const washed = await washPoop(meEl);
+    await sleep(washed ? 900 : 1100);
+    say(((me.hp > before ? `${me.name}의 체력이 ${me.hp - before}만큼 올랐어요!` : "")
+      + (washed ? ` 머리 위 💩도 깨끗이 씻겨 내려갔어요!` : "")).trim());
+    await sleep(washed ? 1400 : 900);
+  } else {
+    if (m.special) me.specials--;
+    say(`${power ? "수학 파워! " : ""}${me.name}의 ${m.name}!`);
+    lunge(meEl, turn === 0 ? 1 : -1);
+    const sound = SFX[m.sfx || me.sfx]();
+    if (m.shout) popText(typeof sound === "string" ? sound : m.shout, meEl, "miss");
+    await sleep(250);
+    await fly(power ? m.fx + m.fx : m.fx, meEl, foeEl);
+    if (Math.random() > m.acc) {
+      SFX.miss();
+      popText("빗나감!", foeEl, "miss");
+      say(`앗! ${foe.name}이(가) 쏙 피했어요!`);
+      await sleep(1300);
+    } else {
+      let dmg = rand(m.min, m.max);
+      const crit = Math.random() < 0.1;
+      if (power) dmg = Math.round(dmg * 1.5);
+      if (crit) dmg = Math.round(dmg * 1.5);
+      foe.hp = Math.max(0, foe.hp - dmg);
+      SFX.hit();
+      foeEl.classList.remove("hit"); void foeEl.offsetWidth; foeEl.classList.add("hit");
+      popText("-" + dmg, foeEl);
+      if (m.sfx === "fart") { stinkFog(foeEl); stinkFace(foeEl, foe.id); }
+      if (m.sfx === "poop") stickPoop(foeEl);
+      drawHP();
+      say(crit ? `크리티컬! 아주 세게 맞았어요! (${dmg})`
+        : m.hitMsg ? `${m.hitMsg} (${dmg})`
+        : power ? `수학 파워로 ${foe.name}에게 ${dmg}만큼 맞았어요!`
+        : `${foe.name}에게 ${dmg}만큼 맞았어요!`);
+      await sleep(1300);
+    }
+  }
+
+  if (foe.hp <= 0) {
+    foeEl.classList.add("down");
+    say(`${foe.name}이(가) 쓰러졌어요! ${me.name} 승리!`);
+    await sleep(1400);
+    return finish(turn);
+  }
+  turn = 1 - turn;
+  busy = false;
+  nextTurn();
+}
+
+/* ---------- 문제 공통 ---------- */
+// 문제 모양: { kind: "math"|"clock", clock: {h,m}|null, text, inline, slots: [{unit, ans, max}], answerText }
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+// 받침 있는 말 뒤에는 "이/을", 없으면 "가/를"
+function hasBatchim(word) {
+  const c = String(word).trim().slice(-1);
+  const NUM = { "0": true, "1": true, "2": false, "3": true, "4": false, "5": false, "6": true, "7": true, "8": true, "9": false };
+  if (c in NUM) return NUM[c];
+  const code = c.charCodeAt(0);
+  return code >= 0xAC00 && code <= 0xD7A3 && (code - 0xAC00) % 28 !== 0;
+}
+const iga = w => w + (hasBatchim(w) ? "이" : "가");
+const eulreul = w => w + (hasBatchim(w) ? "을" : "를");
+
+/* ---------- 수학 파워 문제 ---------- */
+// 두 자리 수 두 개 고르기. carry=true면 받아올림(덧셈)/받아내림(뺄셈)이 꼭 있고, false면 없음. 답은 항상 99 이하.
+function pairAdd(carry) {
+  for (;;) {
+    const a = rand(10, 99), b = rand(10, 99);
+    if (a + b > 99) continue;
+    if (((a % 10) + (b % 10) >= 10) === carry) return [a, b];
+  }
+}
+function pairSub(borrow) {
+  for (;;) {
+    let a = rand(10, 99), b = rand(10, 99);
+    if (a < b) [a, b] = [b, a];
+    if (a === b) continue;
+    if (((a % 10) < (b % 10)) === borrow) return [a, b];
+  }
+}
+const THINGS = [["사탕", "개"], ["구슬", "개"], ["젤리", "개"], ["스티커", "장"], ["딱지", "장"], ["색종이", "장"]];
+const mathQ = (text, inline, ans, unit) => ({ kind: "math", clock: null, text, inline,
+  slots: [{ unit, ans, max: 3 }], answerText: ans + unit });
+
+// 모든 문제는 주관식(이야기·빈칸). 난이도는 숫자만 다름:
+// 쉬움 = 받아올림·받아내림 없음, 도전 = 받아올림·받아내림 있음
+const eunneun = w => w + (hasBatchim(w) ? "은" : "는");
+const two = () => { const x = pick(NAMES); return [x, pick(NAMES.filter(n => n !== x))]; };
+const MATH_FORMS = [
+  c => { const [a, b] = pairAdd(c), [t, u] = pick(THINGS), who = pick(NAMES);
+    return mathQ(`${iga(who)} ${t} ${eulreul(a + u)} 갖고 있는데 엄마가 ${eulreul(b + u)} 더 주셨어요. ${eunneun(t)} 모두 몇 ${u}일까요?`, "", a + b, u); },
+  c => { const [a, b] = pairAdd(c), [t, u] = pick(THINGS), [x, y] = two();
+    return mathQ(`${eunneun(x)} ${t} ${a}${u}, ${eunneun(y)} ${eulreul(b + u)} 모았어요. 둘이 모은 ${eunneun(t)} 모두 몇 ${u}일까요?`, "", a + b, u); },
+  c => { const [a, b] = pairSub(c), [t, u] = pick(THINGS), who = pick(NAMES);
+    return mathQ(`${iga(who)} ${t} ${a}${u} 중에서 ${eulreul(b + u)} 친구에게 주었어요. 남은 ${eunneun(t)} 몇 ${u}일까요?`, "", a - b, u); },
+  c => { const [a, b] = pairSub(c), [t, u] = pick(THINGS), [x, y] = two();
+    return mathQ(`${eunneun(x)} ${t} ${a}${u}, ${eunneun(y)} ${eulreul(b + u)} 갖고 있어요. ${iga(x)} 몇 ${u} 더 많을까요?`, "", a - b, u); },
+  c => { const [a, b] = pairAdd(c);
+    return mathQ(`□에 알맞은 수를 구해요.\n□ + ${b} = ${a + b}`, "□ =", a, ""); },
+  c => { const [a, b] = pairSub(c);
+    return mathQ(`□에 알맞은 수를 구해요.\n${a} − □ = ${a - b}`, "□ =", b, ""); },
+  c => { const [a, b] = pairAdd(c);
+    return mathQ(`어떤 수에 ${eulreul(b)} 더했더니 ${iga(a + b)} 되었어요. 어떤 수는 얼마일까요?`, "", a, ""); },
+  c => { const [a, b] = pairSub(c);
+    return mathQ(`어떤 수에서 ${eulreul(b)} 뺐더니 ${iga(a - b)} 되었어요. 어떤 수는 얼마일까요?`, "", a, ""); }
+];
+function makeProblem(level) {
+  return pick(MATH_FORMS)(level === "hard");
+}
+
+/* ---------- 시계 문제 (방귀·똥 공격용) ---------- */
+// 쉬움: 몇 시, 몇 시 30분 (1학년 2학기 시계 보기)
+// 도전: 5분 단위, 몇 분 전, 1시간 = 60분 (2학년 2학기 시각과 시간)
+const H = () => rand(1, 12);
+function addMin(h, m, d) {
+  let t = ((h % 12) * 60 + m + d) % 720; if (t < 0) t += 720;
+  const hh = Math.floor(t / 60);
+  return { h: hh === 0 ? 12 : hh, m: t % 60 };
+}
+const fmt = (h, m) => m === 0 ? `${h}시` : `${h}시 ${m}분`;
+const timeSlots = t => t.m === 0
+  ? [{ unit: "시", ans: t.h, max: 2 }]
+  : [{ unit: "시", ans: t.h, max: 2 }, { unit: "분", ans: t.m, max: 2 }];
+const askTime = t => `몇 시${t.m === 0 ? "" : " 몇 분"}일까요?`;
+const NAMES = ["하리", "하츄핑", "피카츄", "추피", "엉덩이 탐정"];
+
+const CLOCK_EASY = [
+  () => { const t = { h: H(), m: 0 };
+    return { clock: t, text: "시계가 가리키는 시각은 몇 시일까요?", slots: timeSlots(t), answerText: fmt(t.h, 0) }; },
+  () => { const t = { h: H(), m: 30 };
+    return { clock: t, text: "시계가 가리키는 시각은 몇 시 몇 분일까요?", slots: timeSlots(t), answerText: fmt(t.h, 30) }; },
+  () => { const h = H();
+    return { clock: { h, m: 0 }, text: "짧은바늘(분홍)이 가리키는 숫자는 무엇일까요?", slots: [{ unit: "", ans: h, max: 2 }], answerText: String(h) }; },
+  () => { const h = H();
+    return { clock: null, text: `긴바늘이 12, 짧은바늘이 ${eulreul(h)} 가리켜요. 몇 시일까요?`, slots: [{ unit: "시", ans: h, max: 2 }], answerText: `${h}시` }; },
+  () => { const h = H();
+    return { clock: null, text: `${h}시 30분에는 긴바늘이 어떤 숫자를 가리킬까요?`, slots: [{ unit: "", ans: 6, max: 2 }], answerText: "6" }; },
+  () => { const s = { h: H(), m: pick([0, 30]) }, t = addMin(s.h, s.m, 60);
+    return { clock: s, text: `이 시각에서 1시간이 지나면 ${askTime(t)}`, slots: timeSlots(t), answerText: fmt(t.h, t.m) }; },
+  () => { const s = { h: H(), m: 0 }, t = addMin(s.h, 0, 30);
+    return { clock: s, text: `이 시각에서 30분이 지나면 ${askTime(t)}`, slots: timeSlots(t), answerText: fmt(t.h, t.m) }; },
+  () => { const s = H(), d = rand(1, 3), e = addMin(s, 0, d * 60).h, who = pick(NAMES);
+    return { clock: null, text: `${iga(who)} ${s}시에 놀기 시작해서 ${e}시에 끝냈어요. 몇 시간 놀았을까요?`,
+             slots: [{ unit: "시간", ans: d, max: 1 }], answerText: `${d}시간` }; }
+];
+const CLOCK_HARD = [
+  () => { const t = { h: H(), m: rand(1, 11) * 5 };
+    return { clock: t, text: "시계가 가리키는 시각은 몇 시 몇 분일까요?", slots: timeSlots(t), answerText: fmt(t.h, t.m) }; },
+  () => { const t = { h: H(), m: rand(1, 11) * 5 };
+    return { clock: t, text: "긴바늘(파랑)이 가리키는 숫자는 무엇일까요?", slots: [{ unit: "", ans: t.m / 5, max: 2 }], answerText: String(t.m / 5) }; },
+  () => { const s = { h: H(), m: rand(0, 9) * 5 }, d = pick([10, 15, 20, 25, 40]), t = addMin(s.h, s.m, d);
+    return { clock: s, text: `이 시각에서 ${d}분이 지나면 ${askTime(t)}`, slots: timeSlots(t), answerText: fmt(t.h, t.m) }; },
+  () => { const h = H(), k = pick([5, 10, 15]), t = addMin(h, 0, -k);
+    return { clock: t, text: "시계를 보고 빈칸에 알맞은 수를 써요.", inline: `${h}시`,
+             slots: [{ unit: "분 전", ans: k, max: 2 }], answerText: `${h}시 ${k}분 전` }; },
+  () => { const n = rand(1, 3);
+    return { clock: null, text: "빈칸에 알맞은 수를 써요.", inline: `${n}시간 =`, slots: [{ unit: "분", ans: n * 60, max: 3 }], answerText: `${n * 60}분` }; },
+  () => { const k = pick([10, 20, 30, 40, 50]);
+    return { clock: null, text: "빈칸에 알맞은 수를 써요.", inline: `1시간 ${k}분 =`, slots: [{ unit: "분", ans: 60 + k, max: 3 }], answerText: `${60 + k}분` }; },
+  () => { const k = pick([5, 10, 15, 20, 30, 40]);
+    return { clock: null, text: "빈칸에 알맞은 수를 써요.", inline: `${60 + k}분 = 1시간`, slots: [{ unit: "분", ans: k, max: 2 }], answerText: `1시간 ${k}분` }; },
+  () => { const s = { h: H(), m: rand(0, 6) * 5 }, d = pick([15, 20, 25, 30, 35, 40, 45]), e = addMin(s.h, s.m, d), who = pick(NAMES);
+    return { clock: null, text: `${iga(who)} ${fmt(s.h, s.m)}에 숙제를 시작해서 ${fmt(e.h, e.m)}에 끝냈어요. 숙제를 몇 분 동안 했을까요?`,
+             slots: [{ unit: "분", ans: d, max: 2 }], answerText: `${d}분` }; }
+];
+function makeClockProblem(level) {
+  const p = pick(level === "hard" ? CLOCK_HARD : CLOCK_EASY)();
+  return { kind: "clock", inline: "", ...p };
+}
+
+function clockSVG(h, m) {
+  const cx = 100, cy = 100;
+  const at = (deg, r) => { const a = (deg - 90) * Math.PI / 180; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; };
+  let s = `<svg viewBox="0 0 200 200" role="img" aria-label="시계"><circle cx="100" cy="100" r="92" fill="#fff" stroke="#2B2240" stroke-width="6"/>`;
+  for (let i = 0; i < 60; i++) {
+    const big = i % 5 === 0, [x1, y1] = at(i * 6, big ? 76 : 80), [x2, y2] = at(i * 6, 86);
+    s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#2B2240" stroke-width="${big ? 3 : 1.2}"/>`;
+  }
+  for (let n = 1; n <= 12; n++) {
+    const [x, y] = at(n * 30, 62);
+    s += `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Jua, sans-serif" font-size="20" fill="#2B2240">${n}</text>`;
+  }
+  const [hx, hy] = at(((h % 12) + m / 60) * 30, 42), [mx, my] = at(m * 6, 70);
+  s += `<line x1="100" y1="100" x2="${hx}" y2="${hy}" stroke="#FF3D8B" stroke-width="9" stroke-linecap="round"/>`;
+  s += `<line x1="100" y1="100" x2="${mx}" y2="${my}" stroke="#2F6FD6" stroke-width="5" stroke-linecap="round"/>`;
+  s += `<circle cx="100" cy="100" r="6" fill="#2B2240"/></svg>`;
+  return s;
+}
+
+/* ---------- 문제 풀기 화면 ---------- */
+let quizDone = null, quizProb = null, quizLocked = false, quizVals = [], quizActive = 0;
+function quizRender() {
+  const box = $("quizSlots");
+  box.innerHTML = "";
+  quizProb.slots.forEach((sl, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "quiz-ans" + (quizVals[i] ? "" : " empty") + (i === quizActive && quizProb.slots.length > 1 ? " active" : "");
+    b.textContent = quizVals[i] || "?";
+    b.setAttribute("aria-label", (sl.unit || "답") + " 칸");
+    b.addEventListener("click", () => { if (!quizLocked) { quizActive = i; quizRender(); } });
+    box.appendChild(b);
+    if (sl.unit) { const u = document.createElement("span"); u.className = "unit"; u.textContent = sl.unit; box.appendChild(u); }
+  });
+}
+function askQuiz(prob, head) {
+  quizProb = prob;
+  quizVals = prob.slots.map(() => ""); quizActive = 0; quizLocked = false;
+  $("quiz").className = "quiz " + prob.kind;
+  $("quizHead").textContent = head;
+  $("quizClock").innerHTML = prob.clock ? clockSVG(prob.clock.h, prob.clock.m) : "";
+  $("quizClock").hidden = !prob.clock;
+  $("quizText").textContent = prob.text || "";
+  $("quizText").hidden = !prob.text;
+  $("quizQ").textContent = prob.inline || "";
+  $("quizQ").hidden = !prob.inline;
+  $("quizSay").textContent = "";
+  quizRender();
+  $("moves").hidden = true;
+  $("quiz").hidden = false;
+  $("quiz").scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+  return new Promise(res => { quizDone = res; });
+}
+function closeQuiz() {
+  $("quiz").hidden = true; $("moves").hidden = false;
+  if (quizDone) { const d = quizDone; quizDone = null; d(null); }
+}
+async function quizKey(k) {
+  if (!quizDone || quizLocked) return;
+  const slots = quizProb.slots;
+  if (k === "del") {
+    if (!quizVals[quizActive] && quizActive > 0) quizActive--;
+    quizVals[quizActive] = quizVals[quizActive].slice(0, -1);
+    SFX.tap(); return quizRender();
+  }
+  if (k === "ok") {
+    const empty = quizVals.findIndex(v => !v);
+    if (empty >= 0) { quizActive = empty; quizRender(); $("quizSay").textContent = "빈칸에 숫자를 넣어요!"; return; }
+    quizLocked = true;
+    const ok = slots.every((sl, i) => Number(quizVals[i]) === sl.ans);
+    const st = stats[turn][quizProb.kind]; st[1]++; if (ok) st[0]++;
+    $("quiz").classList.add(ok ? "ok" : "no");
+    if (ok) {
+      SFX.heal();
+      $("quizSay").innerHTML = `<span class="power">${quizProb.kind === "clock" ? "딩동댕! 특별 기술 발사!" : "딩동댕! 수학 파워 1.5배!"}</span>`;
+    } else { SFX.miss(); $("quizSay").textContent = `아쉬워! 정답은 ${quizProb.answerText}이에요.`; }
+    await sleep(ok ? 1100 : 2600);
+    const d = quizDone; quizDone = null;
+    $("quiz").hidden = true; $("moves").hidden = false;
+    if (d) d(ok);
+    return;
+  }
+  const sl = slots[quizActive];
+  let v = quizVals[quizActive];
+  if (v.length >= sl.max) return;
+  v = (v === "0" ? "" : v) + k;
+  quizVals[quizActive] = v;
+  // "시" 칸은 숫자를 다 넣으면 다음 칸으로 넘어감 (1은 10·11·12일 수 있어서 기다림)
+  if (sl.unit === "시" && quizActive < slots.length - 1 && (v.length >= 2 || v !== "1")) quizActive++;
+  SFX.tap(); quizRender();
+}
+document.querySelectorAll("#pad button").forEach(b => b.addEventListener("click", () => quizKey(b.dataset.k)));
+document.addEventListener("keydown", e => {
+  if ($("quiz").hidden) return;
+  if (/^[0-9]$/.test(e.key)) quizKey(e.key);
+  else if (e.key === "Backspace") quizKey("del");
+  else if (e.key === "Enter") { e.preventDefault(); quizKey("ok"); }
+});
+
+/* ---------- 결과 ---------- */
+function mathLine() {
+  const out = [];
+  players.forEach((p, i) => {
+    if (p.cpu) return;
+    const parts = [["수학", stats[i].math], ["시계", stats[i].clock]]
+      .filter(([, st]) => st[1] > 0).map(([n, [ok, all]]) => `${n} ${all}개 중 ${ok}개`);
+    if (parts.length) out.push(`<p><b>${mode === "2p" ? p.who + " 사람" : "맞힌 문제"}</b>: ${parts.join(", ")}</p>`);
+  });
+  return out.join("");
+}
+function finish(winnerIdx) {
+  const w = players[winnerIdx], l = players[1 - winnerIdx];
+  let head;
+  if (mode === "1p") head = winnerIdx === 0 ? "이겼다! 최고야!" : "아쉬워! 다시 해볼까?";
+  else head = `${w.who} 사람 승리!`;
+  const box = $("result");
+  box.innerHTML = `
+    <h2>${head}</h2>
+    ${ART[w.id]}
+    <p><b>${w.name}</b>: “${w.cry}”</p>
+    <p>남은 체력 ${w.hp} · 상대는 ${l.name}</p>
+    ${mathLine()}
+    <div class="row">
+      <button class="btn" id="againBtn" type="button">한 번 더!</button>
+      <button class="btn sub-btn" id="backBtn" type="button">캐릭터 바꾸기</button>
+    </div>`;
+  show("result");
+  $("againBtn").addEventListener("click", startBattle);
+  $("backBtn").addEventListener("click", goHome);
+  if (mode === "2p" || winnerIdx === 0) { SFX.win(); confetti(); } else { SFX.miss(); }
+}
+
+function confetti() {
+  if (reduce) return;
+  const colors = ["#FF5FA2", "#FFD23F", "#3CC46B", "#6FB8FF", "#B57BFF"];
+  for (let i = 0; i < 70; i++) {
+    const c = document.createElement("div");
+    c.className = "confetti";
+    c.style.left = Math.random() * 100 + "vw";
+    c.style.background = colors[i % colors.length];
+    c.style.animation = `fall ${2 + Math.random() * 2}s linear ${Math.random() * 0.8}s forwards`;
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 5000);
+  }
+}
+
+renderPicks();
+renderMath();
+[["soundsFart", FARTS, "💨"], ["soundsPoop", POOPS, "💩"]].forEach(([id, list, icon]) => {
+  list.forEach((v, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.id = id + i; b.textContent = icon + " " + v.label;
+    b.addEventListener("click", () => { if (!soundOn) $("soundBtn").click(); v.play(); });
+    $(id).appendChild(b);
+  });
+});
+</script>
+<script>
+if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
+</body>
+</html>
