@@ -78,12 +78,16 @@
     font-family: var(--display); font-size: 22px; color: var(--ink);
     transition: transform .15s;
   }
-  .pick[data-id="ping"] { background: var(--pink-soft); }
-  .pick[data-id="pika"] { background: var(--yellow-soft); }
+  .pick { background: var(--c, #fff); }
+  .pick:disabled { opacity: .35; cursor: not-allowed; }
+  .picks.small { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .picks.small .pick { font-size: 15px; padding: 6px 4px 8px; border-radius: 14px; line-height: 1.15; text-align: center; }
+  .picks.small .pick small { display: none; }
+  .picks.small .pick[aria-pressed="true"]::after { content: none; }
   .pick svg { width: 100%; max-width: 150px; height: auto; }
   .pick small { font-family: var(--body); font-size: 14px; color: var(--muted); }
   .pick[aria-pressed="true"] { transform: translateY(-4px); box-shadow: 0 0 0 5px var(--good); }
-  .pick[aria-pressed="true"]::after { content: "내 캐릭터!"; font-size: 16px; color: #1E8C47; }
+  .pick[aria-pressed="true"]::after { content: "선택!"; font-size: 16px; color: #1E8C47; }
   .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .seg button {
     font-family: var(--display); font-size: 19px; color: var(--ink);
@@ -106,8 +110,7 @@
     padding: 6px 12px; border-radius: 999px; align-self: center;
     border: 3px solid var(--ink); background: #fff;
   }
-  .turn.ping { background: var(--pink-soft); }
-  .turn.pika { background: var(--yellow-soft); }
+  .turn { background: var(--c, #fff); }
   .arena {
     position: relative; width: 100%; max-width: 100%;
     aspect-ratio: 1 / 1;
@@ -162,12 +165,10 @@
   .move small { font-family: var(--body); font-size: 14px; color: var(--muted); }
   .move:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
   .move:disabled { opacity: .45; cursor: not-allowed; }
-  .moves.ping .move { background: var(--pink-soft); }
-  .moves.pika .move { background: var(--yellow-soft); }
+  .moves .move { background: var(--c, #fff); }
   .moves.wait .move { background: #eee; }
   .move.special { grid-column: 1 / -1; min-height: 64px; }
-  .moves.ping .move.special { background: #F3DCC2; }
-  .moves.pika .move.special { background: #DDF3C8; }
+  .moves .move.special { background: var(--c2, #fff); }
   .moves.wait .move.special { background: #eee; }
   .seg.three { grid-template-columns: 1fr 1fr 1fr; }
 
@@ -195,7 +196,7 @@
   .quiz.clock .quiz-q { font-size: clamp(26px, 8vw, 38px); }
   .quiz-clock { display: flex; justify-content: center; }
   .quiz-clock svg { width: 52%; max-width: 190px; height: auto; }
-  .quiz-text { margin: 0; font-size: 20px; line-height: 1.45; text-align: center; text-wrap: balance; }
+  .quiz-text { white-space: pre-line; margin: 0; font-size: 20px; line-height: 1.45; text-align: center; text-wrap: balance; }
   .quiz.ok .quiz-ans { border-style: solid; background: #D4F7DF; border-color: var(--good); }
   .quiz.no .quiz-ans { border-style: solid; background: #FFE0E1; border-color: var(--bad); }
   .quiz-say { margin: 0; text-align: center; font-family: var(--display); font-size: 20px; min-height: 1.3em; }
@@ -253,7 +254,7 @@
   <!-- 1. 캐릭터 고르기 -->
   <section id="setup" class="wrap" style="padding:0">
     <h1><span class="ping">티니핑</span><span class="vs">VS</span><span class="pika">피카츄</span></h1>
-    <p class="sub">누가 이길까? 기술을 골라서 번갈아 싸워요!</p>
+    <p class="sub">하츄핑, 피카츄, 엉덩이 탐정, 추피! 누가 이길까?</p>
 
     <div class="panel">
       <h2>1. 몇 명이 할까?</h2>
@@ -265,19 +266,21 @@
 
     <div class="panel">
       <h2 id="pickTitle">2. 내 캐릭터 고르기</h2>
-      <div class="picks">
-        <button type="button" class="pick" id="pickPing" data-id="ping" aria-pressed="true"></button>
-        <button type="button" class="pick" id="pickPika" data-id="pika" aria-pressed="false"></button>
-      </div>
+      <div class="picks" id="picksMine"></div>
       <p class="hint" id="pickHint">고른 캐릭터는 아래쪽, 상대는 위쪽에 서요.</p>
     </div>
 
     <div class="panel">
-      <h2>3. 수학 파워</h2>
+      <h2 id="oppTitle">3. 상대 캐릭터 고르기</h2>
+      <div class="picks small" id="picksOpp"></div>
+    </div>
+
+    <div class="panel">
+      <h2>4. 수학 파워</h2>
       <div class="seg three" id="mathSeg" role="group" aria-label="수학 문제 난이도">
         <button type="button" id="mathOff" data-math="off" aria-pressed="false">끄기</button>
-        <button type="button" id="mathEasy" data-math="easy" aria-pressed="true">쉬움<br><small>34+25</small></button>
-        <button type="button" id="mathHard" data-math="hard" aria-pressed="false">도전<br><small>38+47</small></button>
+        <button type="button" id="mathEasy" data-math="easy" aria-pressed="true">쉬움<br><small>받아올림 없음</small></button>
+        <button type="button" id="mathHard" data-math="hard" aria-pressed="false">도전<br><small>받아올림 있음</small></button>
       </div>
       <p class="hint" id="mathHint"></p>
     </div>
@@ -356,13 +359,52 @@ const ART = {
   <path d="M62 118 C 60 113, 55 116, 62 122 C 69 116, 64 113, 62 118 Z" fill="#FF3D8B"/>
   <path d="M138 118 C 136 113, 131 116, 138 122 C 145 116, 140 113, 138 118 Z" fill="#FF3D8B"/>
   <path d="M92 122 q8 8 16 0" fill="#F0454B" stroke="#2B2240" stroke-width="3" stroke-linecap="round"/>
+</g></g></svg>`,
+  det: `
+<svg viewBox="0 0 200 200" aria-hidden="true"><g class="face"><g class="flip" style="transform-origin:100px 100px">
+  <path d="M52 196 C 50 150, 70 128, 100 128 C 130 128, 150 150, 148 196 Z" fill="#8A5A3B" stroke="#2B2240" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M84 130 L100 168 L116 130 Z" fill="#fff" stroke="#2B2240" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M84 130 L100 168 L92 190 L72 140 Z" fill="#A87450" stroke="#2B2240" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M116 130 L100 168 L108 190 L128 140 Z" fill="#A87450" stroke="#2B2240" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M88 136 L100 142 L112 136 L112 148 L100 142 L88 148 Z" fill="#E23B3B" stroke="#2B2240" stroke-width="2.5" stroke-linejoin="round"/>
+  <circle cx="74" cy="84" r="44" fill="#F7C8A6" stroke="#2B2240" stroke-width="4"/>
+  <circle cx="126" cy="84" r="44" fill="#F7C8A6" stroke="#2B2240" stroke-width="4"/>
+  <ellipse cx="100" cy="104" rx="58" ry="32" fill="#F7C8A6" stroke="#2B2240" stroke-width="4"/>
+  <circle cx="74" cy="86" r="41" fill="#F7C8A6"/><circle cx="126" cy="86" r="41" fill="#F7C8A6"/>
+  <ellipse cx="100" cy="104" rx="55" ry="29" fill="#F7C8A6"/>
+  <path d="M100 42 Q 96 56 100 70" fill="none" stroke="#2B2240" stroke-width="4" stroke-linecap="round"/>
+  <path d="M70 92 q8 -7 16 0" fill="none" stroke="#2B2240" stroke-width="4" stroke-linecap="round"/>
+  <path d="M114 92 q8 -7 16 0" fill="none" stroke="#2B2240" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="78" cy="96" r="4" fill="#2B2240"/><circle cx="122" cy="96" r="4" fill="#2B2240"/>
+  <ellipse cx="60" cy="108" rx="9" ry="6" fill="#F59A9A"/><ellipse cx="140" cy="108" rx="9" ry="6" fill="#F59A9A"/>
+  <path d="M94 114 q6 5 12 0" fill="none" stroke="#2B2240" stroke-width="3" stroke-linecap="round"/>
+  <line x1="150" y1="178" x2="168" y2="152" stroke="#2B2240" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="176" cy="140" r="16" fill="#CDEBFF" stroke="#2B2240" stroke-width="5"/>
+  <path d="M170 134 q4 -4 9 -3" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+</g></g></svg>`,
+  chupi: `
+<svg viewBox="0 0 200 200" aria-hidden="true"><g class="face"><g class="flip" style="transform-origin:100px 100px">
+  <ellipse cx="78" cy="192" rx="18" ry="7" fill="#FF9F1C" stroke="#2B2240" stroke-width="3"/>
+  <ellipse cx="122" cy="192" rx="18" ry="7" fill="#FF9F1C" stroke="#2B2240" stroke-width="3"/>
+  <path d="M52 150 C 30 150, 28 175, 44 178 C 52 170, 56 162, 60 156 Z" fill="#26386B" stroke="#2B2240" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M148 150 C 170 150, 172 175, 156 178 C 148 170, 144 162, 140 156 Z" fill="#26386B" stroke="#2B2240" stroke-width="3.5" stroke-linejoin="round"/>
+  <ellipse cx="100" cy="160" rx="46" ry="32" fill="#E84A4A" stroke="#2B2240" stroke-width="4"/>
+  <path d="M86 132 q14 10 28 0" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+  <path d="M100 18 C 90 6, 110 2, 104 16 C 116 8, 118 24, 106 28" fill="none" stroke="#26386B" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="100" cy="84" r="56" fill="#26386B" stroke="#2B2240" stroke-width="4"/>
+  <path d="M56 98 C 54 62, 80 56, 100 70 C 120 56, 146 62, 144 98 C 142 128, 58 128, 56 98 Z" fill="#FFFFFF" stroke="#2B2240" stroke-width="3"/>
+  <ellipse cx="82" cy="90" rx="8" ry="10" fill="#2B2240"/><circle cx="85" cy="86" r="3" fill="#fff"/>
+  <ellipse cx="118" cy="90" rx="8" ry="10" fill="#2B2240"/><circle cx="121" cy="86" r="3" fill="#fff"/>
+  <path d="M90 104 L110 104 L100 116 Z" fill="#FFB020" stroke="#2B2240" stroke-width="3" stroke-linejoin="round"/>
+  <ellipse cx="68" cy="108" rx="8" ry="5" fill="#FF9CC6"/><ellipse cx="132" cy="108" rx="8" ry="5" fill="#FF9CC6"/>
 </g></g></svg>`
 };
 
 /* ---------- 캐릭터 정보 ---------- */
 const FIGHTERS = {
   ping: {
-    id: "ping", name: "하츄핑", cry: "하츄~ 사랑의 힘!",
+    id: "ping", name: "하츄핑", cry: "하츄~ 사랑의 힘!", tag: "사랑의 하트 요정",
+    soft: "#FFD6E8", soft2: "#F3DCC2", sfx: "love",
     moves: [
       { name: "하트 빔",        kind: "atk",  min: 17, max: 23, acc: 0.95, fx: "💖", note: "잘 맞아요" },
       { name: "반짝 날개",      kind: "atk",  min: 10, max: 14, acc: 1.00, fx: "✨", note: "꼭 맞아요" },
@@ -373,7 +415,8 @@ const FIGHTERS = {
     ]
   },
   pika: {
-    id: "pika", name: "피카츄", cry: "피카피카~ 츄!",
+    id: "pika", name: "피카츄", cry: "피카피카~ 츄!", tag: "번개 쥐",
+    soft: "#FFF1B8", soft2: "#DDF3C8", sfx: "zap",
     moves: [
       { name: "백만볼트",       kind: "atk",  min: 17, max: 23, acc: 0.95, fx: "⚡", note: "잘 맞아요" },
       { name: "전광석화",       kind: "atk",  min: 10, max: 14, acc: 1.00, fx: "💫", note: "꼭 맞아요" },
@@ -382,14 +425,40 @@ const FIGHTERS = {
       { name: "뿡뿡 방귀",      kind: "atk",  min: 24, max: 30, acc: 1.00, fx: "💨", note: "시계 문제를 맞히면 발사", special: true,
         sfx: "fart", shout: "뿡!", hitMsg: "뿌웅~ 방귀 명중! 코를 막아요!" }
     ]
+  },
+  det: {
+    id: "det", name: "엉덩이 탐정", cry: "흠흠, 사건 해결!", tag: "수수께끼를 푸는 탐정",
+    soft: "#F3E0CF", soft2: "#E6F0C8", sfx: "zap",
+    moves: [
+      { name: "돋보기 빔",      kind: "atk",  min: 17, max: 23, acc: 0.95, fx: "🔍", note: "잘 맞아요" },
+      { name: "번뜩 추리",      kind: "atk",  min: 10, max: 14, acc: 1.00, fx: "💡", note: "꼭 맞아요" },
+      { name: "엉덩이 박치기",  kind: "atk",  min: 26, max: 34, acc: 0.65, fx: "🍑", note: "세지만 빗나가기도" },
+      { name: "고구마 간식",    kind: "heal", amt: 25, fx: "🍠", note: "체력 회복" },
+      { name: "실례 뿌웅~",     kind: "atk",  min: 24, max: 30, acc: 1.00, fx: "🌪️", note: "시계 문제를 맞히면 발사", special: true,
+        sfx: "fart", shout: "실례!", hitMsg: "실례 좀 하겠습니다~ 뿌웅! 방귀 태풍 명중!" }
+    ]
+  },
+  chupi: {
+    id: "chupi", name: "추피", cry: "야호! 추피가 해냈어!", tag: "씩씩한 꼬마 펭귄",
+    soft: "#D9E6FF", soft2: "#F3DCC2", sfx: "love",
+    moves: [
+      { name: "눈덩이 던지기",  kind: "atk",  min: 17, max: 23, acc: 0.95, fx: "❄️", note: "잘 맞아요" },
+      { name: "뒤뚱 박치기",    kind: "atk",  min: 10, max: 14, acc: 1.00, fx: "🐾", note: "꼭 맞아요" },
+      { name: "뻥 슛",          kind: "atk",  min: 26, max: 34, acc: 0.65, fx: "⚽", note: "세지만 빗나가기도" },
+      { name: "엄마 안아줘",    kind: "heal", amt: 25, fx: "🤗", note: "체력 회복" },
+      { name: "응가 발사",      kind: "atk",  min: 24, max: 30, acc: 1.00, fx: "💩", note: "시계 문제를 맞히면 발사", special: true,
+        sfx: "poop", shout: "끙차!", hitMsg: "응가 발사 명중! 아이고 냄새야!" }
+    ]
   }
 };
+const ORDER = ["ping", "pika", "det", "chupi"];
 const MAX_HP = 100, HEALS = 2, SPECIALS = 3;
 
 /* ---------- 상태 ---------- */
 const $ = id => document.getElementById(id);
 let mode = "1p";
 let myPick = "ping";
+let oppPick = "pika";
 let players = [];   // [0] = 아래쪽(내 캐릭터), [1] = 위쪽(상대)
 let turn = 0;
 let busy = false;
@@ -439,18 +508,30 @@ const SFX = {
 
 /* ---------- 고르기 화면 ---------- */
 function renderPicks() {
-  for (const id of ["ping", "pika"]) {
-    const el = id === "ping" ? $("pickPing") : $("pickPika");
-    el.innerHTML = ART[id] + FIGHTERS[id].name + "<small>" + (id === "ping" ? "사랑의 하트 요정" : "번개 쥐") + "</small>";
-    el.setAttribute("aria-pressed", String(myPick === id));
-  }
+  if (oppPick === myPick) oppPick = ORDER.find(id => id !== myPick);
+  const fill = (boxId, sel, isOpp) => {
+    const box = $(boxId);
+    box.innerHTML = "";
+    ORDER.forEach(id => {
+      const f = FIGHTERS[id], b = document.createElement("button");
+      b.type = "button"; b.className = "pick"; b.id = (isOpp ? "opp-" : "mine-") + id; b.dataset.id = id;
+      b.style.setProperty("--c", f.soft);
+      b.innerHTML = ART[id] + f.name + "<small>" + f.tag + "</small>";
+      b.setAttribute("aria-pressed", String(sel === id));
+      if (isOpp && id === myPick) b.disabled = true;
+      b.addEventListener("click", () => { if (isOpp) oppPick = id; else myPick = id; SFX.tap(); renderPicks(); });
+      box.appendChild(b);
+    });
+  };
+  fill("picksMine", myPick, false);
+  fill("picksOpp", oppPick, true);
   const two = mode === "2p";
-  $("pickTitle").textContent = two ? "2. 첫 번째 사람 캐릭터 고르기" : "2. 내 캐릭터 고르기";
+  $("pickTitle").textContent = two ? "2. 1번 사람 캐릭터 고르기" : "2. 내 캐릭터 고르기";
+  $("oppTitle").textContent = two ? "3. 2번 사람 캐릭터 고르기" : "3. 상대(컴퓨터) 캐릭터 고르기";
   $("pickHint").textContent = two
-    ? "첫 번째 사람은 아래쪽, 두 번째 사람은 위쪽 캐릭터예요. 폰을 번갈아 눌러요."
+    ? "1번 사람은 아래쪽, 2번 사람은 위쪽 캐릭터예요. 폰을 번갈아 눌러요."
     : "고른 캐릭터는 아래쪽, 컴퓨터는 위쪽에 서요.";
 }
-document.querySelectorAll(".pick").forEach(b => b.addEventListener("click", () => { myPick = b.dataset.id; SFX.tap(); renderPicks(); }));
 document.querySelectorAll("#modeSeg button").forEach(b => b.addEventListener("click", () => {
   mode = b.dataset.mode; SFX.tap();
   document.querySelectorAll("#modeSeg button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
@@ -458,13 +539,13 @@ document.querySelectorAll("#modeSeg button").forEach(b => b.addEventListener("cl
 }));
 const MATH_HINT = {
   off:  "수학 문제 없이 바로 싸워요.",
-  easy: "기술을 쓰기 전에 문제가 나와요. 받아올림·받아내림 없는 두 자리 수 덧셈·뺄셈이에요.",
-  hard: "기술을 쓰기 전에 문제가 나와요. 받아올림·받아내림이 있는 두 자리 수 덧셈·뺄셈이에요."
+  easy: "기술을 쓰기 전에 이야기 문제, 빈칸 문제가 나와요. 받아올림·받아내림이 없는 두 자리 수 덧셈·뺄셈이에요.",
+  hard: "기술을 쓰기 전에 이야기 문제, 빈칸 문제가 나와요. 받아올림·받아내림이 있는 두 자리 수 덧셈·뺄셈이에요."
 };
 function renderMath() {
   document.querySelectorAll("#mathSeg button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.math === mathLevel)));
   $("mathHint").textContent = MATH_HINT[mathLevel] + (mathLevel === "off" ? "" : " 맞히면 기술이 1.5배로 세져요!")
-    + ` 방귀·똥 공격은 ${mathLevel === "hard" ? "몇 시 몇 분, 몇 분 전 같은" : "몇 시, 몇 시 30분 같은"} 시계 문제를 맞혀야 나가요.`;
+    + ` 방귀·똥 특별 공격은 ${mathLevel === "hard" ? "몇 시 몇 분, 몇 분 전 같은" : "몇 시, 몇 시 30분 같은"} 시계 문제를 맞혀야 나가요.`;
 }
 document.querySelectorAll("#mathSeg button").forEach(b => b.addEventListener("click", () => {
   mathLevel = b.dataset.math; SFX.tap(); renderMath();
@@ -490,8 +571,7 @@ function goHome() { busy = false; closeQuiz(); show("setup"); renderPicks(); }
 /* ---------- 배틀 ---------- */
 function startBattle() {
   SFX.tap();
-  const other = myPick === "ping" ? "pika" : "ping";
-  players = [myPick, other].map((id, i) => ({
+  players = [myPick, oppPick].map((id, i) => ({
     ...FIGHTERS[id], hp: MAX_HP, heals: HEALS, specials: SPECIALS,
     who: mode === "1p" ? (i === 0 ? "나" : "컴퓨터") : (i === 0 ? "1번" : "2번"),
     cpu: mode === "1p" && i === 1
@@ -532,7 +612,8 @@ function drawMoves() {
   const p = players[turn];
   const box = $("moves");
   const waiting = p.cpu;
-  box.className = "moves " + (waiting ? "wait" : p.id);
+  box.className = "moves" + (waiting ? " wait" : "");
+  box.style.setProperty("--c", p.soft); box.style.setProperty("--c2", p.soft2);
   box.innerHTML = "";
   p.moves.forEach((m, i) => {
     const b = document.createElement("button");
@@ -548,7 +629,8 @@ function drawMoves() {
 function nextTurn() {
   const p = players[turn];
   const t = $("turn");
-  t.className = "turn " + p.id;
+  t.className = "turn";
+  t.style.setProperty("--c", p.soft);
   t.textContent = p.cpu ? `컴퓨터(${p.name})가 생각 중...` : `${p.who === "나" ? "" : p.who + " 사람, "}${p.name} 차례! 기술을 골라요`;
   drawMoves();
   if (p.cpu) setTimeout(() => act(cpuChoice()), reduce ? 400 : 1100);
@@ -657,7 +739,7 @@ async function act(i) {
     if (m.special) me.specials--;
     say(`${power ? "수학 파워! " : ""}${me.name}의 ${m.name}!`);
     lunge(meEl, turn === 0 ? 1 : -1);
-    (m.sfx ? SFX[m.sfx] : me.id === "pika" ? SFX.zap : SFX.love)();
+    SFX[m.sfx || me.sfx]();
     if (m.shout) popText(m.shout, meEl, "miss");
     await sleep(250);
     await fly(power ? m.fx + m.fx : m.fx, meEl, foeEl);
@@ -710,26 +792,50 @@ const iga = w => w + (hasBatchim(w) ? "이" : "가");
 const eulreul = w => w + (hasBatchim(w) ? "을" : "를");
 
 /* ---------- 수학 파워 문제 ---------- */
-// 쉬움: 받아올림·받아내림 없음 / 도전: 받아올림·받아내림 있음. 답은 항상 99 이하.
-function makeProblem(level) {
-  const plus = Math.random() < 0.5;
-  let a, b;
+// 두 자리 수 두 개 고르기. carry=true면 받아올림(덧셈)/받아내림(뺄셈)이 꼭 있고, false면 없음. 답은 항상 99 이하.
+function pairAdd(carry) {
   for (;;) {
-    a = rand(10, 99); b = rand(10, 99);
-    if (plus) {
-      if (a + b > 99) continue;
-      const carry = (a % 10) + (b % 10) >= 10;
-      if (level === "easy" ? !carry : carry) break;
-    } else {
-      if (a < b) [a, b] = [b, a];
-      if (a === b) continue;
-      const borrow = (a % 10) < (b % 10);
-      if (level === "easy" ? !borrow : borrow) break;
-    }
+    const a = rand(10, 99), b = rand(10, 99);
+    if (a + b > 99) continue;
+    if (((a % 10) + (b % 10) >= 10) === carry) return [a, b];
   }
-  const ans = plus ? a + b : a - b;
-  return { kind: "math", clock: null, text: "", inline: `${a} ${plus ? "+" : "−"} ${b} =`,
-           slots: [{ unit: "", ans, max: 3 }], answerText: String(ans) };
+}
+function pairSub(borrow) {
+  for (;;) {
+    let a = rand(10, 99), b = rand(10, 99);
+    if (a < b) [a, b] = [b, a];
+    if (a === b) continue;
+    if (((a % 10) < (b % 10)) === borrow) return [a, b];
+  }
+}
+const THINGS = [["사탕", "개"], ["구슬", "개"], ["젤리", "개"], ["스티커", "장"], ["딱지", "장"], ["색종이", "장"]];
+const mathQ = (text, inline, ans, unit) => ({ kind: "math", clock: null, text, inline,
+  slots: [{ unit, ans, max: 3 }], answerText: ans + unit });
+
+// 모든 문제는 주관식(이야기·빈칸). 난이도는 숫자만 다름:
+// 쉬움 = 받아올림·받아내림 없음, 도전 = 받아올림·받아내림 있음
+const eunneun = w => w + (hasBatchim(w) ? "은" : "는");
+const two = () => { const x = pick(NAMES); return [x, pick(NAMES.filter(n => n !== x))]; };
+const MATH_FORMS = [
+  c => { const [a, b] = pairAdd(c), [t, u] = pick(THINGS), who = pick(NAMES);
+    return mathQ(`${iga(who)} ${t} ${eulreul(a + u)} 갖고 있는데 엄마가 ${eulreul(b + u)} 더 주셨어요. ${eunneun(t)} 모두 몇 ${u}일까요?`, "", a + b, u); },
+  c => { const [a, b] = pairAdd(c), [t, u] = pick(THINGS), [x, y] = two();
+    return mathQ(`${eunneun(x)} ${t} ${a}${u}, ${eunneun(y)} ${eulreul(b + u)} 모았어요. 둘이 모은 ${eunneun(t)} 모두 몇 ${u}일까요?`, "", a + b, u); },
+  c => { const [a, b] = pairSub(c), [t, u] = pick(THINGS), who = pick(NAMES);
+    return mathQ(`${iga(who)} ${t} ${a}${u} 중에서 ${eulreul(b + u)} 친구에게 주었어요. 남은 ${eunneun(t)} 몇 ${u}일까요?`, "", a - b, u); },
+  c => { const [a, b] = pairSub(c), [t, u] = pick(THINGS), [x, y] = two();
+    return mathQ(`${eunneun(x)} ${t} ${a}${u}, ${eunneun(y)} ${eulreul(b + u)} 갖고 있어요. ${iga(x)} 몇 ${u} 더 많을까요?`, "", a - b, u); },
+  c => { const [a, b] = pairAdd(c);
+    return mathQ(`□에 알맞은 수를 구해요.\n□ + ${b} = ${a + b}`, "□ =", a, ""); },
+  c => { const [a, b] = pairSub(c);
+    return mathQ(`□에 알맞은 수를 구해요.\n${a} − □ = ${a - b}`, "□ =", b, ""); },
+  c => { const [a, b] = pairAdd(c);
+    return mathQ(`어떤 수에 ${eulreul(b)} 더했더니 ${iga(a + b)} 되었어요. 어떤 수는 얼마일까요?`, "", a, ""); },
+  c => { const [a, b] = pairSub(c);
+    return mathQ(`어떤 수에서 ${eulreul(b)} 뺐더니 ${iga(a - b)} 되었어요. 어떤 수는 얼마일까요?`, "", a, ""); }
+];
+function makeProblem(level) {
+  return pick(MATH_FORMS)(level === "hard");
 }
 
 /* ---------- 시계 문제 (방귀·똥 공격용) ---------- */
@@ -746,7 +852,7 @@ const timeSlots = t => t.m === 0
   ? [{ unit: "시", ans: t.h, max: 2 }]
   : [{ unit: "시", ans: t.h, max: 2 }, { unit: "분", ans: t.m, max: 2 }];
 const askTime = t => `몇 시${t.m === 0 ? "" : " 몇 분"}일까요?`;
-const NAMES = ["하리", "하츄핑", "피카츄"];
+const NAMES = ["하리", "하츄핑", "피카츄", "추피", "엉덩이 탐정"];
 
 const CLOCK_EASY = [
   () => { const t = { h: H(), m: 0 };
