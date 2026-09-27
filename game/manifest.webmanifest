@@ -1,0 +1,17 @@
+{
+  "name": "하리의 캐릭터 배틀",
+  "short_name": "캐릭터 배틀",
+  "description": "하츄핑·피카츄·엉덩이 탐정·추피 턴제 배틀. 수학·시계 문제를 맞히면 기술이 세져요.",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFE3F1",
+  "theme_color": "#FF5FA2",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
