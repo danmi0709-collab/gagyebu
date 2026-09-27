@@ -192,6 +192,8 @@
     position: absolute; top: 0; z-index: 4; pointer-events: none; line-height: 1;
     font-size: clamp(26px, 8.5vw, 44px); transform: translateX(-50%);
   }
+  .fly { position: absolute; z-index: 5; pointer-events: none; font-size: clamp(16px, 5vw, 24px); line-height: 1; }
+  .wash { position: absolute; z-index: 6; pointer-events: none; font-size: clamp(18px, 6vw, 30px); line-height: 1; }
   .seg.three { grid-template-columns: 1fr 1fr 1fr; }
 
   /* 수학 파워 문제 */
@@ -482,6 +484,8 @@ const FIGHTERS = {
 };
 const ORDER = ["ping", "pika", "det", "chupi"];
 const MAX_HP = 100, HEALS = 2, SPECIALS = 3;
+const fighterEl = i => i === 0 ? document.getElementById("fNear") : document.getElementById("fFar");
+const needsHeal = i => players[i].hp < MAX_HP || fighterEl(i).querySelector(".head-poop") !== null;
 
 /* ---------- 상태 ---------- */
 const $ = id => document.getElementById(id);
@@ -729,7 +733,7 @@ function drawMoves() {
     b.type = "button"; b.className = "move" + (m.special ? " special" : ""); b.id = "move" + i;
     const left = m.kind === "heal" ? ` (${p.heals}번 남음)` : m.special ? ` (${p.specials}번 남음)` : "";
     b.innerHTML = `${m.fx} ${m.name}<small>${m.note}${left}</small>`;
-    b.disabled = waiting || busy || (m.kind === "heal" && (p.heals <= 0 || p.hp >= MAX_HP)) || (m.special && p.specials <= 0);
+    b.disabled = waiting || busy || (m.kind === "heal" && (p.heals <= 0 || !needsHeal(turn))) || (m.special && p.specials <= 0);
     b.addEventListener("click", () => act(i));
     box.appendChild(b);
   });
@@ -748,6 +752,7 @@ function nextTurn() {
 function cpuChoice() {
   const me = players[turn], foe = players[1 - turn];
   if (me.hp <= 35 && me.heals > 0 && Math.random() < 0.7) return 3;
+  if (me.heals > 0 && fighterEl(turn).querySelectorAll(".head-poop").length >= 2 && Math.random() < 0.5) return 3;  // 똥 씻기
   if (foe.hp <= 14) return 1;          // 꼭 맞는 기술로 마무리
   if (me.specials > 0 && Math.random() < 0.2) return 4;
   const r = Math.random();
@@ -808,6 +813,77 @@ function stinkFog(foeEl) {
   ], { duration: reduce ? 1200 : 2600, easing: "ease-in-out" }).onfinish = () => f.remove();
   setTimeout(() => popText("으엑!", foeEl, "miss"), 350);
 }
+// 냄새 표정: 캐릭터마다 눈 위치에 X자 눈 + 초록 볼 + 냄새 줄기 (다음 기술을 쓸 때까지)
+const EYES = {
+  pika:  { skin: "#FFD23F", eyes: [[78, 86], [124, 86]], r: 12, cheeks: [[62, 106], [140, 106]] },
+  ping:  { skin: "#FFB8D6", eyes: [[80, 100], [120, 100]], r: 15, cheeks: [[62, 118], [138, 118]] },
+  det:   { skin: "#F7C8A6", eyes: [[78, 93], [122, 93]], r: 11, cheeks: [[60, 108], [140, 108]] },
+  chupi: { skin: "#FFFFFF", eyes: [[82, 90], [118, 90]], r: 11, cheeks: [[68, 108], [132, 108]] }
+};
+function stinkFace(el, id) {
+  const g = el.querySelector(".flip"); const e = EYES[id];
+  if (!g || !e || g.querySelector(".stinkface")) return;
+  let s = `<g class="stinkface">`;
+  for (const [x, y] of e.eyes) {
+    s += `<circle cx="${x}" cy="${y}" r="${e.r}" fill="${e.skin}"/>`;
+    const k = e.r * 0.6;
+    s += `<path d="M${x - k} ${y - k} L${x + k} ${y + k} M${x + k} ${y - k} L${x - k} ${y + k}" stroke="#2B2240" stroke-width="4.5" stroke-linecap="round"/>`;
+  }
+  for (const [x, y] of e.cheeks) s += `<ellipse cx="${x}" cy="${y}" rx="11" ry="7" fill="#7BC043" opacity=".85"/>`;
+  s += `<g fill="none" stroke="#5FA83A" stroke-width="4" stroke-linecap="round" opacity=".9">
+    <path d="M70 40 q-8 -8 0 -16 q8 -8 0 -16"/><path d="M100 30 q-8 -8 0 -16 q8 -8 0 -16"/><path d="M130 40 q-8 -8 0 -16 q8 -8 0 -16"/></g>`;
+  g.insertAdjacentHTML("beforeend", s + `</g>`);
+}
+function clearStinkFace(el) { el.querySelectorAll(".stinkface").forEach(n => n.remove()); }
+
+// 파리: 머리 위 💩 개수만큼 윙윙 날아다님
+function updateFlies(el) {
+  const want = el.querySelectorAll(".head-poop").length;
+  const flies = el.querySelectorAll(".fly");
+  for (let k = want; k < flies.length; k++) {
+    const f = flies[k];
+    f.getAnimations().forEach(a => a.cancel());
+    f.animate([{ opacity: 1, transform: "translate(0,0)" }, { opacity: 0, transform: "translate(120%, -200%)" }], { duration: 500 }).onfinish = () => f.remove();
+  }
+  for (let k = flies.length; k < want; k++) {
+    const f = document.createElement("div");
+    f.className = "fly"; f.textContent = "🪰";
+    el.appendChild(f);
+    const pts = [];
+    for (let j = 0; j < 7; j++) pts.push({ left: rand(-8, 92) + "%", top: rand(-12, 55) + "%", transform: `rotate(${rand(-40, 40)}deg)` });
+    pts.push(pts[0]);
+    f.animate(pts, { duration: reduce ? 6000 : rand(1600, 2400), iterations: Infinity, easing: "ease-in-out" });
+  }
+  if (want > flies.length) { buzz(); setTimeout(() => popText("윙윙~", el, "miss"), 700); }
+}
+function buzz() {
+  const a = audio(); if (!a) return;
+  const t = a.currentTime + 0.6, o = a.createOscillator(), g = a.createGain(), l = a.createOscillator(), lg = a.createGain();
+  o.type = "sawtooth"; o.frequency.value = 230; l.frequency.value = 9; lg.gain.value = 25;
+  l.connect(lg).connect(o.frequency);
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.035, t + 0.1); g.gain.setValueAtTime(0.035, t + 0.6); g.gain.linearRampToValueAtTime(0.0001, t + 0.8);
+  o.connect(g).connect(a.destination); o.start(t); l.start(t); o.stop(t + 0.85); l.stop(t + 0.85);
+}
+
+// 씻기: 회복 기술을 쓰면 물방울이 쏟아지고 머리 위 💩와 파리가 사라짐
+async function washPoop(el) {
+  const poops = [...el.querySelectorAll(".head-poop")];
+  if (!poops.length) return false;
+  for (let k = 0; k < 8; k++) {
+    const w = document.createElement("div");
+    w.className = "wash"; w.textContent = k % 2 ? "🫧" : "💧";
+    w.style.left = rand(5, 85) + "%"; w.style.top = "-20%";
+    el.appendChild(w);
+    w.animate([{ transform: "translateY(0)", opacity: 0 }, { opacity: 1, offset: 0.2 }, { transform: "translateY(260%)", opacity: 0 }],
+      { duration: 900, delay: k * 90, easing: "ease-in", fill: "backwards" }).onfinish = () => w.remove();
+  }
+  plop(0.2); plop(0.45);
+  await sleep(500);
+  poops.forEach(p => p.animate([{ transform: "translate(-50%, 0) rotate(0)", opacity: 1 }, { transform: "translate(-50%, 220%) rotate(40deg)", opacity: 0 }],
+    { duration: 700, easing: "ease-in", fill: "forwards" }).onfinish = () => { p.remove(); updateFlies(el); });
+  return true;
+}
+
 // 똥: 상대 머리 위에 철퍼덕 붙어서 그 판 끝까지 남음 (최대 3개)
 function stickPoop(foeEl) {
   const have = foeEl.querySelectorAll(".head-poop").length;
@@ -817,6 +893,7 @@ function stickPoop(foeEl) {
   p.textContent = "💩";
   p.style.left = ["50%", "28%", "72%"][have];
   foeEl.appendChild(p);
+  updateFlies(foeEl);
   if (reduce) return;
   p.animate([
     { transform: "translate(-50%, -160%) scale(.8)", opacity: 0 },
@@ -840,7 +917,7 @@ async function act(i) {
   const me = players[turn], foe = players[1 - turn];
   const m = me.moves[i];
   if (!m) return;
-  if (m.kind === "heal" && (me.heals <= 0 || me.hp >= MAX_HP)) return;
+  if (m.kind === "heal" && (me.heals <= 0 || !needsHeal(turn))) return;
   if (m.special && me.specials <= 0) return;
   busy = true; drawMoves();
   let power = false;
@@ -862,6 +939,7 @@ async function act(i) {
     power = res;
   }
   const meEl = turn === 0 ? $("fNear") : $("fFar");
+  clearStinkFace(meEl);
   const foeEl = turn === 0 ? $("fFar") : $("fNear");
 
   if (m.kind === "heal") {
@@ -870,11 +948,13 @@ async function act(i) {
     me.hp = Math.min(MAX_HP, me.hp + Math.round(m.amt * (power ? 1.5 : 1)));
     say(`${power ? "수학 파워! " : ""}${me.name}의 ${m.name}! ${m.fx}`);
     SFX.heal();
-    popText("+" + (me.hp - before), meEl, "heal");
+    if (me.hp > before) popText("+" + (me.hp - before), meEl, "heal");
     drawHP();
-    await sleep(1100);
-    say(`${me.name}의 체력이 ${me.hp - before}만큼 올랐어요!`);
-    await sleep(900);
+    const washed = await washPoop(meEl);
+    await sleep(washed ? 900 : 1100);
+    say(((me.hp > before ? `${me.name}의 체력이 ${me.hp - before}만큼 올랐어요!` : "")
+      + (washed ? ` 머리 위 💩도 깨끗이 씻겨 내려갔어요!` : "")).trim());
+    await sleep(washed ? 1400 : 900);
   } else {
     if (m.special) me.specials--;
     say(`${power ? "수학 파워! " : ""}${me.name}의 ${m.name}!`);
@@ -897,7 +977,7 @@ async function act(i) {
       SFX.hit();
       foeEl.classList.remove("hit"); void foeEl.offsetWidth; foeEl.classList.add("hit");
       popText("-" + dmg, foeEl);
-      if (m.sfx === "fart") stinkFog(foeEl);
+      if (m.sfx === "fart") { stinkFog(foeEl); stinkFace(foeEl, foe.id); }
       if (m.sfx === "poop") stickPoop(foeEl);
       drawHP();
       say(crit ? `크리티컬! 아주 세게 맞았어요! (${dmg})`
