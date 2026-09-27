@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>티니핑 vs 피카츄</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --ink: #2B2240;
+    --paper: #FFF9FD;
+    --pink: #FF5FA2;
+    --pink-soft: #FFD6E8;
+    --yellow: #FFD23F;
+    --yellow-soft: #FFF1B8;
+    --sky: #BFE4FF;
+    --grass: #8FD978;
+    --grass-dark: #5FB14A;
+    --good: #3CC46B;
+    --warn: #FFB020;
+    --bad: #F0454B;
+    --muted: #6D6385;
+    --display: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    --body: "Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    background: linear-gradient(180deg, #FFE3F1 0%, var(--sky) 55%, #D8F3C9 100%);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 18px;
+  }
+  .wrap {
+    max-width: 560px;
+    margin: 0 auto;
+    padding-inline: 16px;
+    padding-block: 14px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  h1, h2, .btn, .move, .hp-name, .msg, .turn { font-family: var(--display); font-weight: 400; }
+  h1 { font-size: clamp(32px, 9vw, 46px); line-height: 1.05; margin: 6px 0 0; text-align: center; text-wrap: balance; }
+  h1 .vs { color: var(--bad); display: inline-block; transform: rotate(-8deg); margin-inline: 4px; }
+  h1 .ping { color: var(--pink); }
+  h1 .pika { color: #E0A800; -webkit-text-stroke: 0; }
+  .sub { text-align: center; margin: 0; color: var(--muted); }
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .icon-btn {
+    font-family: var(--display); font-size: 16px;
+    background: var(--paper); color: var(--ink);
+    border: 2px solid var(--ink); border-radius: 999px;
+    padding: 6px 14px; cursor: pointer;
+  }
+  .icon-btn:focus-visible, .btn:focus-visible, .move:focus-visible, .pick:focus-visible, .seg button:focus-visible {
+    outline: 4px solid var(--pink); outline-offset: 3px;
+  }
+
+  /* ---------- 고르기 화면 ---------- */
+  .panel {
+    background: var(--paper);
+    border: 3px solid var(--ink);
+    border-radius: 22px;
+    padding: 16px;
+    box-shadow: 0 6px 0 var(--ink);
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .panel h2 { margin: 0; font-size: 24px; }
+  .picks { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pick {
+    border: 3px solid var(--ink); border-radius: 18px;
+    padding: 10px 8px 12px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-family: var(--display); font-size: 22px; color: var(--ink);
+    transition: transform .15s;
+  }
+  .pick[data-id="ping"] { background: var(--pink-soft); }
+  .pick[data-id="pika"] { background: var(--yellow-soft); }
+  .pick svg { width: 100%; max-width: 150px; height: auto; }
+  .pick small { font-family: var(--body); font-size: 14px; color: var(--muted); }
+  .pick[aria-pressed="true"] { transform: translateY(-4px); box-shadow: 0 0 0 5px var(--good); }
+  .pick[aria-pressed="true"]::after { content: "내 캐릭터!"; font-size: 16px; color: #1E8C47; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .seg button {
+    font-family: var(--display); font-size: 19px; color: var(--ink);
+    padding: 12px 6px; border-radius: 14px; cursor: pointer;
+    border: 3px solid var(--ink); background: #fff;
+  }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+  .hint { margin: 0; font-size: 15px; color: var(--muted); }
+  .btn {
+    font-size: 26px; color: #fff; background: var(--bad);
+    border: 3px solid var(--ink); border-radius: 18px;
+    padding: 14px; cursor: pointer; box-shadow: 0 6px 0 var(--ink);
+    transition: transform .08s, box-shadow .08s;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--ink); }
+
+  /* ---------- 배틀 화면 ---------- */
+  .turn {
+    text-align: center; font-size: 22px; margin: 0;
+    padding: 6px 12px; border-radius: 999px; align-self: center;
+    border: 3px solid var(--ink); background: #fff;
+  }
+  .turn.ping { background: var(--pink-soft); }
+  .turn.pika { background: var(--yellow-soft); }
+  .arena {
+    position: relative; width: 100%; max-width: 100%;
+    aspect-ratio: 1 / 1;
+    border: 3px solid var(--ink); border-radius: 22px; overflow: hidden;
+    background:
+      radial-gradient(ellipse 34% 7% at 72% 42%, var(--grass-dark) 0 98%, transparent 100%),
+      radial-gradient(ellipse 38% 8% at 28% 88%, var(--grass-dark) 0 98%, transparent 100%),
+      linear-gradient(180deg, #D6EEFF 0%, #EAF7FF 45%, var(--grass) 45.2%, #A8E490 100%);
+  }
+  .cloud { position: absolute; background: #fff; border-radius: 999px; opacity: .9; }
+  .fighter { position: absolute; width: 42%; }
+  .fighter svg { width: 100%; height: auto; display: block; }
+  .fighter.far  { right: 6%; top: 8%; }
+  .fighter.near { left: 5%; bottom: 3%; width: 46%; }
+  .fighter .face { transform-origin: 50% 90%; }
+  .fighter.far .flip { transform: scaleX(-1); }
+  .hpcard {
+    position: absolute; width: 46%;
+    background: var(--paper); border: 3px solid var(--ink); border-radius: 14px;
+    padding: 6px 10px 8px; display: flex; flex-direction: column; gap: 4px;
+  }
+  .hpcard.far  { left: 4%; top: 6%; }
+  .hpcard.near { right: 4%; bottom: 20%; }
+  .hp-name { font-size: 20px; display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+  .hp-name span { font-family: var(--body); font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .hpbar { height: 14px; border-radius: 999px; background: #E9E2F0; border: 2px solid var(--ink); overflow: hidden; }
+  .hpfill { height: 100%; width: 100%; background: var(--good); transition: width .6s ease, background-color .3s; }
+  .hpfill.mid { background: var(--warn); }
+  .hpfill.low { background: var(--bad); }
+  .tag { position: absolute; font-family: var(--display); font-size: 14px; padding: 2px 8px; border-radius: 999px; background: var(--ink); color: #fff; }
+  .fx { position: absolute; font-size: clamp(34px, 11vw, 60px); pointer-events: none; z-index: 5; line-height: 1; }
+  .dmg {
+    position: absolute; z-index: 6; pointer-events: none;
+    font-family: var(--display); font-size: clamp(28px, 9vw, 44px);
+    color: #fff; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill;
+  }
+  .dmg.heal { color: var(--good); }
+  .dmg.miss { color: #fff; font-size: clamp(22px, 7vw, 32px); }
+  .msg {
+    min-height: 3.2em; font-size: 22px; line-height: 1.35;
+    background: #fff; border: 3px solid var(--ink); border-radius: 16px;
+    padding: 10px 14px; margin: 0; display: flex; align-items: center;
+  }
+  .moves { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .move {
+    font-size: 20px; color: var(--ink); text-align: left;
+    border: 3px solid var(--ink); border-radius: 16px;
+    padding: 10px 12px; cursor: pointer; box-shadow: 0 5px 0 var(--ink);
+    display: flex; flex-direction: column; gap: 2px; min-height: 76px;
+    transition: transform .08s, box-shadow .08s;
+  }
+  .move small { font-family: var(--body); font-size: 14px; color: var(--muted); }
+  .move:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+  .move:disabled { opacity: .45; cursor: not-allowed; }
+  .moves.ping .move { background: var(--pink-soft); }
+  .moves.pika .move { background: var(--yellow-soft); }
+  .moves.wait .move { background: #eee; }
+
+  /* 흔들림, 번쩍임 */
+  @keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-9%); } 40% { transform: translateX(8%); } 60% { transform: translateX(-6%); } 80% { transform: translateX(4%); } }
+  @keyframes blink { 0%,100% { opacity: 1; } 25%,75% { opacity: .2; } 50% { opacity: 1; } }
+  .hit { animation: shake .45s ease, blink .45s steps(2); }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4%); } }
+  .fighter .face { animation: bob 1.6s ease-in-out infinite; }
+  .fighter.far .face { animation-delay: .8s; }
+  .fighter.down .face { animation: none; transform: rotate(80deg) translateY(10%); opacity: .6; transition: transform .6s, opacity .6s; }
+
+  /* 끝 화면 */
+  .result { text-align: center; align-items: center; }
+  .result h2 { font-size: clamp(30px, 9vw, 42px); }
+  .result svg { width: 60%; max-width: 220px; height: auto; }
+  .result p { margin: 0; font-size: 18px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+  .btn.sub-btn { background: #fff; color: var(--ink); font-size: 20px; }
+  .confetti { position: fixed; top: -20px; width: 12px; height: 16px; z-index: 50; pointer-events: none; border-radius: 3px; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+  @media (max-width: 400px) {
+    .move { font-size: 18px; min-height: 70px; }
+    .hp-name { font-size: 17px; }
+    .msg { font-size: 19px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fighter .face { animation: none; }
+    .hit { animation: blink .45s steps(2); }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="top">
+    <button class="icon-btn" id="homeBtn" type="button" hidden>처음으로</button>
+    <span></span>
+    <button class="icon-btn" id="soundBtn" type="button" aria-pressed="true">소리 켜짐</button>
+  </div>
+
+  <!-- 1. 캐릭터 고르기 -->
+  <section id="setup" class="wrap" style="padding:0">
+    <h1><span class="ping">티니핑</span><span class="vs">VS</span><span class="pika">피카츄</span></h1>
+    <p class="sub">누가 이길까? 기술을 골라서 번갈아 싸워요!</p>
+
+    <div class="panel">
+      <h2>1. 몇 명이 할까?</h2>
+      <div class="seg" role="group" aria-label="게임 인원">
+        <button type="button" id="mode1" data-mode="1p" aria-pressed="true">혼자 하기<br><small>컴퓨터랑</small></button>
+        <button type="button" id="mode2" data-mode="2p" aria-pressed="false">둘이 하기<br><small>엄마·아빠랑</small></button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 id="pickTitle">2. 내 캐릭터 고르기</h2>
+      <div class="picks">
+        <button type="button" class="pick" id="pickPing" data-id="ping" aria-pressed="true"></button>
+        <button type="button" class="pick" id="pickPika" data-id="pika" aria-pressed="false"></button>
+      </div>
+      <p class="hint" id="pickHint">고른 캐릭터는 아래쪽, 상대는 위쪽에 서요.</p>
+    </div>
+
+    <button class="btn" id="startBtn" type="button">배틀 시작!</button>
+  </section>
+
+  <!-- 2. 배틀 -->
+  <section id="battle" class="wrap" style="padding:0" hidden>
+    <p class="turn" id="turn">하츄핑 차례!</p>
+    <div class="arena" id="arena">
+      <div class="cloud" style="left:8%;top:28%;width:18%;height:6%"></div>
+      <div class="cloud" style="left:60%;top:3%;width:14%;height:5%"></div>
+      <div class="hpcard far" id="hpFar"></div>
+      <div class="hpcard near" id="hpNear"></div>
+      <div class="fighter far" id="fFar"></div>
+      <div class="fighter near" id="fNear"></div>
+    </div>
+    <p class="msg" id="msg" aria-live="polite">배틀 시작!</p>
+    <div class="moves" id="moves"></div>
+  </section>
+
+  <!-- 3. 결과 -->
+  <section id="result" class="panel result" hidden></section>
+</div>
+
+<script>
+/* ---------- 캐릭터 그림 (직접 그린 단순한 그림) ---------- */
+const ART = {
+  pika: `
+<svg viewBox="0 0 200 200" aria-hidden="true"><g class="face"><g class="flip" style="transform-origin:100px 100px">
+  <path d="M150 150 L175 118 L160 112 L188 70 L170 64 L192 22 L150 70 L166 76 L140 108 L154 114 L135 140 Z" fill="#FFD23F" stroke="#2B2240" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M135 140 L150 150 L146 128 Z" fill="#9A6A2E"/>
+  <path d="M62 62 L34 8 L82 48 Z" fill="#FFD23F" stroke="#2B2240" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M34 8 L46 30 L54 24 Z" fill="#2B2240"/>
+  <path d="M130 50 L168 14 L142 66 Z" fill="#FFD23F" stroke="#2B2240" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M168 14 L152 32 L160 38 Z" fill="#2B2240"/>
+  <ellipse cx="100" cy="140" rx="52" ry="48" fill="#FFD23F" stroke="#2B2240" stroke-width="4"/>
+  <ellipse cx="100" cy="92" rx="54" ry="46" fill="#FFD23F" stroke="#2B2240" stroke-width="4"/>
+  <path d="M60 150 q8 -10 18 0" fill="none" stroke="#2B2240" stroke-width="4" stroke-linecap="round"/>
+  <path d="M122 150 q8 -10 18 0" fill="none" stroke="#2B2240" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="78" cy="86" r="9" fill="#2B2240"/><circle cx="81" cy="83" r="3.5" fill="#fff"/>
+  <circle cx="124" cy="86" r="9" fill="#2B2240"/><circle cx="127" cy="83" r="3.5" fill="#fff"/>
+  <circle cx="62" cy="106" r="11" fill="#F0454B"/><circle cx="140" cy="106" r="11" fill="#F0454B"/>
+  <path d="M98 96 l4 0" stroke="#2B2240" stroke-width="3" stroke-linecap="round"/>
+  <path d="M90 106 q5 7 11 0 q6 7 11 0" fill="none" stroke="#2B2240" stroke-width="3" stroke-linecap="round"/>
+  <path d="M88 170 q12 8 24 0" fill="none" stroke="#9A6A2E" stroke-width="5" stroke-linecap="round"/>
+</g></g></svg>`,
+  ping: `
+<svg viewBox="0 0 200 200" aria-hidden="true"><g class="face"><g class="flip" style="transform-origin:100px 100px">
+  <path d="M46 130 C 6 110, 10 80, 36 96 C 20 70, 50 70, 58 110 Z" fill="#fff" stroke="#2B2240" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M154 130 C 194 110, 190 80, 164 96 C 180 70, 150 70, 142 110 Z" fill="#fff" stroke="#2B2240" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M100 10 C 92 -2, 76 10, 100 28 C 124 10, 108 -2, 100 10 Z" fill="#FF3D8B" stroke="#2B2240" stroke-width="3.5"/>
+  <path d="M100 28 L100 44" stroke="#2B2240" stroke-width="4"/>
+  <ellipse cx="100" cy="150" rx="40" ry="38" fill="#FF9CC6" stroke="#2B2240" stroke-width="4"/>
+  <path d="M90 142 C 86 134, 78 140, 90 152 C 102 140, 94 134, 90 142 Z" fill="#FF3D8B" transform="translate(10 0)"/>
+  <circle cx="100" cy="92" r="52" fill="#FFB8D6" stroke="#2B2240" stroke-width="4"/>
+  <path d="M48 88 C 50 50, 80 36, 100 40 C 124 36, 152 52, 152 88 C 140 70, 124 62, 112 72 C 100 58, 80 60, 70 74 C 62 70, 54 76, 48 88 Z" fill="#FF6FAE" stroke="#2B2240" stroke-width="4" stroke-linejoin="round"/>
+  <circle cx="46" cy="96" r="12" fill="#FF6FAE" stroke="#2B2240" stroke-width="4"/>
+  <circle cx="154" cy="96" r="12" fill="#FF6FAE" stroke="#2B2240" stroke-width="4"/>
+  <ellipse cx="80" cy="100" rx="11" ry="14" fill="#7A2FA0"/><circle cx="84" cy="95" r="4.5" fill="#fff"/><circle cx="77" cy="105" r="2" fill="#fff"/>
+  <ellipse cx="120" cy="100" rx="11" ry="14" fill="#7A2FA0"/><circle cx="124" cy="95" r="4.5" fill="#fff"/><circle cx="117" cy="105" r="2" fill="#fff"/>
+  <path d="M62 118 C 60 113, 55 116, 62 122 C 69 116, 64 113, 62 118 Z" fill="#FF3D8B"/>
+  <path d="M138 118 C 136 113, 131 116, 138 122 C 145 116, 140 113, 138 118 Z" fill="#FF3D8B"/>
+  <path d="M92 122 q8 8 16 0" fill="#F0454B" stroke="#2B2240" stroke-width="3" stroke-linecap="round"/>
+</g></g></svg>`
+};
+
+/* ---------- 캐릭터 정보 ---------- */
+const FIGHTERS = {
+  ping: {
+    id: "ping", name: "하츄핑", cry: "하츄~ 사랑의 힘!",
+    moves: [
+      { name: "하트 빔",        kind: "atk",  min: 17, max: 23, acc: 0.95, fx: "💖", note: "잘 맞아요" },
+      { name: "반짝 날개",      kind: "atk",  min: 10, max: 14, acc: 1.00, fx: "✨", note: "꼭 맞아요" },
+      { name: "러브 대폭발",    kind: "atk",  min: 26, max: 34, acc: 0.65, fx: "🌟", note: "세지만 빗나가기도" },
+      { name: "하츄 응원",      kind: "heal", amt: 25, fx: "💗", note: "체력 회복" }
+    ]
+  },
+  pika: {
+    id: "pika", name: "피카츄", cry: "피카피카~ 츄!",
+    moves: [
+      { name: "백만볼트",       kind: "atk",  min: 17, max: 23, acc: 0.95, fx: "⚡", note: "잘 맞아요" },
+      { name: "전광석화",       kind: "atk",  min: 10, max: 14, acc: 1.00, fx: "💨", note: "꼭 맞아요" },
+      { name: "아이언테일",     kind: "atk",  min: 26, max: 34, acc: 0.65, fx: "💥", note: "세지만 빗나가기도" },
+      { name: "쿨쿨 휴식",      kind: "heal", amt: 25, fx: "💤", note: "체력 회복" }
+    ]
+  }
+};
+const MAX_HP = 100, HEALS = 2;
+
+/* ---------- 상태 ---------- */
+const $ = id => document.getElementById(id);
+let mode = "1p";
+let myPick = "ping";
+let players = [];   // [0] = 아래쪽(내 캐릭터), [1] = 위쪽(상대)
+let turn = 0;
+let busy = false;
+let soundOn = true;
+const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const sleep = ms => new Promise(r => setTimeout(r, reduce ? Math.min(ms, 250) : ms));
+const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+
+/* ---------- 소리 (따로 파일 없이 브라우저가 직접 만드는 효과음) ---------- */
+let ac = null;
+function audio() {
+  if (!soundOn) return null;
+  try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+  if (ac.state === "suspended") ac.resume();
+  return ac;
+}
+function tone(freq, dur, type = "square", when = 0, vol = 0.08, slideTo = null) {
+  const a = audio(); if (!a) return;
+  const t = a.currentTime + when;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+const SFX = {
+  tap:  () => tone(660, 0.07, "triangle"),
+  zap:  () => { tone(900, 0.25, "sawtooth", 0, 0.06, 200); tone(1200, 0.2, "square", 0.05, 0.04, 300); },
+  love: () => { [523, 659, 784].forEach((f, i) => tone(f, 0.15, "triangle", i * 0.07, 0.08)); },
+  hit:  () => { tone(160, 0.18, "square", 0, 0.1, 60); },
+  miss: () => { tone(400, 0.25, "sine", 0, 0.08, 150); },
+  heal: () => { [440, 554, 659, 880].forEach((f, i) => tone(f, 0.14, "sine", i * 0.08, 0.08)); },
+  win:  () => { [523, 523, 523, 659, 784, 659, 784, 1047].forEach((f, i) => tone(f, 0.18, "square", i * 0.14, 0.06)); }
+};
+
+/* ---------- 고르기 화면 ---------- */
+function renderPicks() {
+  for (const id of ["ping", "pika"]) {
+    const el = id === "ping" ? $("pickPing") : $("pickPika");
+    el.innerHTML = ART[id] + FIGHTERS[id].name + "<small>" + (id === "ping" ? "사랑의 하트 요정" : "번개 쥐") + "</small>";
+    el.setAttribute("aria-pressed", String(myPick === id));
+  }
+  const two = mode === "2p";
+  $("pickTitle").textContent = two ? "2. 첫 번째 사람 캐릭터 고르기" : "2. 내 캐릭터 고르기";
+  $("pickHint").textContent = two
+    ? "첫 번째 사람은 아래쪽, 두 번째 사람은 위쪽 캐릭터예요. 폰을 번갈아 눌러요."
+    : "고른 캐릭터는 아래쪽, 컴퓨터는 위쪽에 서요.";
+}
+document.querySelectorAll(".pick").forEach(b => b.addEventListener("click", () => { myPick = b.dataset.id; SFX.tap(); renderPicks(); }));
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
+  mode = b.dataset.mode; SFX.tap();
+  document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  renderPicks();
+}));
+$("soundBtn").addEventListener("click", () => {
+  soundOn = !soundOn;
+  $("soundBtn").textContent = soundOn ? "소리 켜짐" : "소리 꺼짐";
+  $("soundBtn").setAttribute("aria-pressed", String(soundOn));
+  if (soundOn) SFX.tap();
+});
+$("homeBtn").addEventListener("click", goHome);
+$("startBtn").addEventListener("click", startBattle);
+
+function show(which) {
+  $("setup").hidden = which !== "setup";
+  $("battle").hidden = which !== "battle";
+  $("result").hidden = which !== "result";
+  $("homeBtn").hidden = which === "setup";
+  window.scrollTo(0, 0);
+}
+function goHome() { busy = false; show("setup"); renderPicks(); }
+
+/* ---------- 배틀 ---------- */
+function startBattle() {
+  SFX.tap();
+  const other = myPick === "ping" ? "pika" : "ping";
+  players = [myPick, other].map((id, i) => ({
+    ...FIGHTERS[id], hp: MAX_HP, heals: HEALS,
+    who: mode === "1p" ? (i === 0 ? "나" : "컴퓨터") : (i === 0 ? "1번" : "2번"),
+    cpu: mode === "1p" && i === 1
+  }));
+  $("fNear").innerHTML = ART[players[0].id];
+  $("fFar").innerHTML = ART[players[1].id];
+  $("fNear").className = "fighter near";
+  $("fFar").className = "fighter far";
+  turn = Math.random() < 0.5 ? 0 : 1;
+  busy = false;
+  show("battle");
+  drawHP();
+  say(`${players[0].name} vs ${players[1].name}! ${players[turn].name}부터 시작해요!`);
+  nextTurn();
+}
+
+function drawHP() {
+  [["hpNear", 0], ["hpFar", 1]].forEach(([el, i]) => {
+    const p = players[i];
+    const pct = Math.max(0, p.hp) / MAX_HP * 100;
+    const cls = pct <= 25 ? "low" : pct <= 50 ? "mid" : "";
+    const box = $(el);
+    if (!box.firstChild) {
+      box.innerHTML = `<div class="hp-name"></div><div class="hpbar"><div class="hpfill"></div></div>`;
+    }
+    box.querySelector(".hp-name").innerHTML = `${p.name} <span>${p.who} · ${Math.max(0, p.hp)}/${MAX_HP}</span>`;
+    const fill = box.querySelector(".hpfill");
+    fill.style.width = pct + "%";
+    fill.className = "hpfill " + cls;
+  });
+}
+
+function say(text) { $("msg").textContent = text; }
+
+function drawMoves() {
+  const p = players[turn];
+  const box = $("moves");
+  const waiting = p.cpu;
+  box.className = "moves " + (waiting ? "wait" : p.id);
+  box.innerHTML = "";
+  p.moves.forEach((m, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "move"; b.id = "move" + i;
+    const left = m.kind === "heal" ? ` (${p.heals}번 남음)` : "";
+    b.innerHTML = `${m.fx} ${m.name}<small>${m.note}${left}</small>`;
+    b.disabled = waiting || busy || (m.kind === "heal" && (p.heals <= 0 || p.hp >= MAX_HP));
+    b.addEventListener("click", () => act(i));
+    box.appendChild(b);
+  });
+}
+
+function nextTurn() {
+  const p = players[turn];
+  const t = $("turn");
+  t.className = "turn " + p.id;
+  t.textContent = p.cpu ? `컴퓨터(${p.name})가 생각 중...` : `${p.who === "나" ? "" : p.who + " 사람, "}${p.name} 차례! 기술을 골라요`;
+  drawMoves();
+  if (p.cpu) setTimeout(() => act(cpuChoice()), reduce ? 400 : 1100);
+}
+
+function cpuChoice() {
+  const me = players[turn], foe = players[1 - turn];
+  if (me.hp <= 35 && me.heals > 0 && Math.random() < 0.7) return 3;
+  if (foe.hp <= 14) return 1;          // 꼭 맞는 기술로 마무리
+  const r = Math.random();
+  return r < 0.45 ? 0 : r < 0.75 ? 2 : 1;
+}
+
+function center(el, arena) {
+  const a = arena.getBoundingClientRect(), r = el.getBoundingClientRect();
+  return { x: r.left - a.left + r.width / 2, y: r.top - a.top + r.height / 2 };
+}
+
+function popText(text, target, cls) {
+  const arena = $("arena");
+  const c = center(target, arena);
+  const d = document.createElement("div");
+  d.className = "dmg " + (cls || "");
+  d.textContent = text;
+  d.style.left = c.x + "px"; d.style.top = c.y + "px";
+  arena.appendChild(d);
+  d.animate([
+    { transform: "translate(-50%,-50%) scale(.6)", opacity: 0 },
+    { transform: "translate(-50%,-110%) scale(1.15)", opacity: 1, offset: .3 },
+    { transform: "translate(-50%,-190%) scale(1)", opacity: 0 }
+  ], { duration: reduce ? 600 : 1100, easing: "ease-out" }).onfinish = () => d.remove();
+}
+
+async function fly(fx, fromEl, toEl) {
+  const arena = $("arena");
+  const a = center(fromEl, arena), b = center(toEl, arena);
+  const count = 3;
+  const jobs = [];
+  for (let k = 0; k < count; k++) {
+    const s = document.createElement("div");
+    s.className = "fx"; s.textContent = fx;
+    s.style.left = "0px"; s.style.top = "0px";
+    arena.appendChild(s);
+    const wob = (k - 1) * 18;
+    const anim = s.animate([
+      { transform: `translate(${a.x}px, ${a.y}px) translate(-50%,-50%) scale(.5)`, opacity: 0 },
+      { transform: `translate(${(a.x + b.x) / 2 + wob}px, ${(a.y + b.y) / 2 - 30 - wob}px) translate(-50%,-50%) scale(1.1) rotate(20deg)`, opacity: 1, offset: .5 },
+      { transform: `translate(${b.x}px, ${b.y}px) translate(-50%,-50%) scale(1.3)`, opacity: 1 }
+    ], { duration: reduce ? 200 : 520, delay: k * 110, easing: "ease-in", fill: "forwards" });
+    jobs.push(anim.finished.then(() => s.remove()));
+  }
+  await Promise.all(jobs);
+}
+
+function lunge(el, dir) {
+  if (reduce) return;
+  el.animate([
+    { transform: "translate(0,0)" },
+    { transform: `translate(${dir * 10}%, ${-dir * 6}%)` },
+    { transform: "translate(0,0)" }
+  ], { duration: 320, easing: "ease-out" });
+}
+
+async function act(i) {
+  if (busy) return;
+  const me = players[turn], foe = players[1 - turn];
+  const m = me.moves[i];
+  if (!m) return;
+  if (m.kind === "heal" && (me.heals <= 0 || me.hp >= MAX_HP)) return;
+  busy = true; drawMoves();
+  const meEl = turn === 0 ? $("fNear") : $("fFar");
+  const foeEl = turn === 0 ? $("fFar") : $("fNear");
+
+  if (m.kind === "heal") {
+    me.heals--;
+    const before = me.hp;
+    me.hp = Math.min(MAX_HP, me.hp + m.amt);
+    say(`${me.name}의 ${m.name}! ${m.fx}`);
+    SFX.heal();
+    popText("+" + (me.hp - before), meEl, "heal");
+    drawHP();
+    await sleep(1100);
+    say(`${me.name}의 체력이 ${me.hp - before}만큼 올랐어요!`);
+    await sleep(900);
+  } else {
+    say(`${me.name}의 ${m.name}!`);
+    lunge(meEl, turn === 0 ? 1 : -1);
+    (me.id === "pika" ? SFX.zap : SFX.love)();
+    await sleep(250);
+    await fly(m.fx, meEl, foeEl);
+    if (Math.random() > m.acc) {
+      SFX.miss();
+      popText("빗나감!", foeEl, "miss");
+      say(`앗! ${foe.name}이(가) 쏙 피했어요!`);
+      await sleep(1300);
+    } else {
+      let dmg = rand(m.min, m.max);
+      const crit = Math.random() < 0.1;
+      if (crit) dmg = Math.round(dmg * 1.5);
+      foe.hp = Math.max(0, foe.hp - dmg);
+      SFX.hit();
+      foeEl.classList.remove("hit"); void foeEl.offsetWidth; foeEl.classList.add("hit");
+      popText("-" + dmg, foeEl);
+      drawHP();
+      say(crit ? `크리티컬! 아주 세게 맞았어요! (${dmg})` : `${foe.name}에게 ${dmg}만큼 맞았어요!`);
+      await sleep(1300);
+    }
+  }
+
+  if (foe.hp <= 0) {
+    foeEl.classList.add("down");
+    say(`${foe.name}이(가) 쓰러졌어요! ${me.name} 승리!`);
+    await sleep(1400);
+    return finish(turn);
+  }
+  turn = 1 - turn;
+  busy = false;
+  nextTurn();
+}
+
+/* ---------- 결과 ---------- */
+function finish(winnerIdx) {
+  const w = players[winnerIdx], l = players[1 - winnerIdx];
+  let head;
+  if (mode === "1p") head = winnerIdx === 0 ? "이겼다! 최고야!" : "아쉬워! 다시 해볼까?";
+  else head = `${w.who} 사람 승리!`;
+  const box = $("result");
+  box.innerHTML = `
+    <h2>${head}</h2>
+    ${ART[w.id]}
+    <p><b>${w.name}</b>: “${w.cry}”</p>
+    <p>남은 체력 ${w.hp} · 상대는 ${l.name}</p>
+    <div class="row">
+      <button class="btn" id="againBtn" type="button">한 번 더!</button>
+      <button class="btn sub-btn" id="backBtn" type="button">캐릭터 바꾸기</button>
+    </div>`;
+  show("result");
+  $("againBtn").addEventListener("click", startBattle);
+  $("backBtn").addEventListener("click", goHome);
+  if (mode === "2p" || winnerIdx === 0) { SFX.win(); confetti(); } else { SFX.miss(); }
+}
+
+function confetti() {
+  if (reduce) return;
+  const colors = ["#FF5FA2", "#FFD23F", "#3CC46B", "#6FB8FF", "#B57BFF"];
+  for (let i = 0; i < 70; i++) {
+    const c = document.createElement("div");
+    c.className = "confetti";
+    c.style.left = Math.random() * 100 + "vw";
+    c.style.background = colors[i % colors.length];
+    c.style.animation = `fall ${2 + Math.random() * 2}s linear ${Math.random() * 0.8}s forwards`;
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 5000);
+  }
+}
+
+renderPicks();
+</script>
+</body>
+</html>
