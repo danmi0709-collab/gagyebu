@@ -178,6 +178,20 @@
   #soundsFart button { background: #DDF3C8; }
   #soundsPoop button { background: #F3DCC2; }
   .sounds button:focus-visible { outline: 4px solid var(--pink); outline-offset: 2px; }
+  /* 방귀 안개, 머리 위 똥 */
+  .stink {
+    position: fixed; inset: 0; z-index: 40; pointer-events: none; opacity: 0;
+    background:
+      radial-gradient(circle at 25% 65%, rgba(120, 190, 50, .55), transparent 45%),
+      radial-gradient(circle at 75% 35%, rgba(160, 210, 60, .5), transparent 50%),
+      radial-gradient(circle at 50% 50%, rgba(100, 170, 40, .35), transparent 70%),
+      rgba(150, 200, 90, .3);
+    -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+  }
+  .head-poop {
+    position: absolute; top: 0; z-index: 4; pointer-events: none; line-height: 1;
+    font-size: clamp(26px, 8.5vw, 44px); transform: translateX(-50%);
+  }
   .seg.three { grid-template-columns: 1fr 1fr 1fr; }
 
   /* 수학 파워 문제 */
@@ -781,6 +795,37 @@ async function fly(fx, fromEl, toEl) {
   await Promise.all(jobs);
 }
 
+// 방귀: 화면 전체가 초록색으로 뿌옇게 됐다가 사라짐
+function stinkFog(foeEl) {
+  const f = document.createElement("div");
+  f.className = "stink";
+  document.body.appendChild(f);
+  f.animate([
+    { opacity: 0, transform: "scale(1.05)" },
+    { opacity: 1, transform: "scale(1)", offset: 0.15 },
+    { opacity: 0.9, transform: "scale(1.02) translateX(-1%)", offset: 0.6 },
+    { opacity: 0, transform: "scale(1.06) translateX(1%)" }
+  ], { duration: reduce ? 1200 : 2600, easing: "ease-in-out" }).onfinish = () => f.remove();
+  setTimeout(() => popText("으엑!", foeEl, "miss"), 350);
+}
+// 똥: 상대 머리 위에 철퍼덕 붙어서 그 판 끝까지 남음 (최대 3개)
+function stickPoop(foeEl) {
+  const have = foeEl.querySelectorAll(".head-poop").length;
+  if (have >= 3) return;
+  const p = document.createElement("div");
+  p.className = "head-poop";
+  p.textContent = "💩";
+  p.style.left = ["50%", "28%", "72%"][have];
+  foeEl.appendChild(p);
+  if (reduce) return;
+  p.animate([
+    { transform: "translate(-50%, -160%) scale(.8)", opacity: 0 },
+    { transform: "translate(-50%, 8%) scale(1.25, .7)", opacity: 1, offset: 0.55 },
+    { transform: "translate(-50%, -12%) scale(.9, 1.1)", offset: 0.75 },
+    { transform: "translate(-50%, 0) scale(1)" }
+  ], { duration: 650, easing: "ease-out" });
+}
+
 function lunge(el, dir) {
   if (reduce) return;
   el.animate([
@@ -852,6 +897,8 @@ async function act(i) {
       SFX.hit();
       foeEl.classList.remove("hit"); void foeEl.offsetWidth; foeEl.classList.add("hit");
       popText("-" + dmg, foeEl);
+      if (m.sfx === "fart") stinkFog(foeEl);
+      if (m.sfx === "poop") stickPoop(foeEl);
       drawHP();
       say(crit ? `크리티컬! 아주 세게 맞았어요! (${dmg})`
         : m.hitMsg ? `${m.hitMsg} (${dmg})`
