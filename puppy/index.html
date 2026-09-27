@@ -1,0 +1,793 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>퍼피 구조대 수학 출동</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1f5fbf">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="퍼피 수학">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sky1:#bfe6ff; --sky2:#fff7d6; --ink:#2b2b3a; --card:#ffffff;
+  --blue:#1f5fbf; --red:#d62828; --yellow:#ffc400; --green:#2e9e4f; --pink:#ff5fa2; --orange:#ff8a00;
+  --shadow:0 6px 0 rgba(0,0,0,.15);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{margin:0;height:100%;background:var(--sky2)}
+body{margin:0;min-height:100%}
+body{font-family:'Jua','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:var(--ink);
+  background:linear-gradient(180deg,var(--sky1),var(--sky2));min-height:100vh;overflow-x:hidden;user-select:none;-webkit-user-select:none}
+button{font-family:inherit;cursor:pointer;border:none}
+.screen{display:none;max-width:760px;margin:0 auto;padding:12px 16px 90px;min-height:100vh}
+.screen.on{display:block}
+h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shadow:2px 2px 0 #fff,4px 4px 0 rgba(0,0,0,.12);line-height:1.2}
+.sub{text-align:center;font-size:18px;margin:0 0 14px;color:#555}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.btn{font-size:22px;padding:14px 20px;border-radius:18px;background:#fff;color:var(--ink);box-shadow:var(--shadow);transition:transform .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.btn.big{font-size:26px;padding:18px 22px;flex:1;min-width:220px}
+.btn.easy{background:#7ed957;color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.25)}
+.btn.hard{background:#ff7a2f;color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.25)}
+.btn.blue{background:var(--blue);color:#fff}
+.btn.small{font-size:17px;padding:9px 14px;border-radius:14px}
+.pups{display:flex;justify-content:center;flex-wrap:wrap;gap:4px;margin:8px 0}
+.pups svg{filter:drop-shadow(0 3px 2px rgba(0,0,0,.18))}
+.namebox{display:flex;gap:8px;align-items:center;justify-content:center;margin:10px 0 16px;font-size:20px}
+.namebox input{font-family:inherit;font-size:22px;padding:8px 12px;border-radius:12px;border:3px solid #9cc9ff;width:150px;text-align:center}
+.lvlbox{background:rgba(255,255,255,.7);border-radius:20px;padding:12px;margin:10px 0}
+.lvlbox p{margin:6px 0 0;font-size:15px;color:#555;text-align:center}
+/* 상단바 */
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.pill{background:#fff;border-radius:999px;padding:6px 14px;font-size:19px;box-shadow:0 3px 0 rgba(0,0,0,.12);display:flex;align-items:center;gap:6px}
+.fartbtn{position:fixed;right:14px;bottom:14px;width:70px;height:70px;border-radius:50%;background:#8b5a2b;color:#fff;font-size:34px;
+  box-shadow:0 6px 0 #5a3a1a;z-index:50}
+.fartbtn:active{transform:translateY(4px);box-shadow:0 2px 0 #5a3a1a}
+.fartbtn small{display:block;font-size:12px;margin-top:-6px}
+/* 지도 */
+.hq{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.75);border-radius:20px;padding:10px 14px;margin-bottom:12px}
+.hq .t{font-size:19px;line-height:1.35}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.scene{background:#fff;border-radius:20px;padding:12px 10px;text-align:center;box-shadow:var(--shadow);position:relative;font-size:17px;line-height:1.3;min-height:150px}
+.scene .ic{font-size:52px;display:block;margin-bottom:4px}
+.scene .alert{position:absolute;top:-10px;right:-6px;background:var(--red);color:#fff;border-radius:50%;width:38px;height:38px;font-size:26px;line-height:38px;animation:bounce 1s infinite}
+.scene.done{background:#e3ffd9;opacity:.85}
+.scene.done .alert{display:none}
+.scene .ok{font-size:16px;color:var(--green);margin-top:4px}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+/* 문제 */
+.qhead{display:flex;align-items:center;gap:10px;background:#fff;border-radius:20px;padding:8px 12px;box-shadow:var(--shadow)}
+.qhead .t{font-size:20px;line-height:1.3}
+.qhead .lv{margin-left:auto;font-size:15px;padding:4px 10px;border-radius:999px;color:#fff;white-space:nowrap}
+.qcard{background:#fff;border-radius:22px;padding:16px;margin-top:12px;box-shadow:var(--shadow)}
+.qtext{font-size:24px;line-height:1.55;word-break:keep-all}
+.qtext b{color:#c2410c}
+.vis{margin:12px 0 4px;display:flex;justify-content:center;flex-wrap:wrap;gap:8px;align-items:center}
+.ansrow{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:14px;font-size:26px}
+.ans{min-width:110px;height:64px;border:4px dashed #9cc9ff;border-radius:16px;font-size:40px;display:flex;align-items:center;justify-content:center;background:#f5fbff}
+.ans.shake{animation:shake .4s;border-color:var(--red)}
+.ans.good{border-color:var(--green);border-style:solid;background:#eaffea}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+.tools{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px auto 0;max-width:360px}
+.pad button{font-size:32px;height:64px;border-radius:16px;background:#fff;box-shadow:var(--shadow)}
+.pad button:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.pad .go{background:var(--green);color:#fff;font-size:26px}
+.pad .del{background:#ffd6d6;font-size:26px}
+.msg{margin-top:12px;border-radius:16px;padding:12px 14px;font-size:20px;line-height:1.5;display:none;word-break:keep-all}
+.msg.on{display:block}
+.msg.hint{background:#fff5c2}
+.msg.exp{background:#e6f0ff}
+/* 시각 자료 */
+.tens{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.ten{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;border:3px solid #b07a3b;border-radius:8px;padding:3px;background:#fff8ec;font-size:15px;line-height:1}
+.ones{display:flex;flex-wrap:wrap;gap:2px;max-width:120px;font-size:18px;align-items:center}
+.slots{display:flex;gap:4px;font-size:28px;flex-wrap:wrap;justify-content:center}
+.seq{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.seq span{background:#f0f7ff;border:3px solid #9cc9ff;border-radius:12px;padding:6px 10px;font-size:26px;min-width:52px;text-align:center}
+.seq span.q{background:#fff3c4;border-color:#ffb300}
+.cards{display:flex;gap:10px}
+.cards span{width:56px;height:74px;border-radius:10px;background:#fff;border:3px solid #8b5a2b;font-size:38px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 0 rgba(0,0,0,.15)}
+.plus{font-size:30px;color:#888}
+/* 구조 연출 */
+.overlay{position:fixed;inset:0;background:rgba(20,40,80,.55);display:none;align-items:center;justify-content:center;z-index:40;padding:16px}
+.overlay.on{display:flex}
+.pop{background:#fff;border-radius:26px;padding:20px 18px;max-width:520px;width:100%;text-align:center;box-shadow:0 10px 0 rgba(0,0,0,.2);animation:popin .35s}
+@keyframes popin{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+.stage{position:relative;height:150px;overflow:hidden;border-radius:18px;background:linear-gradient(#cdefff,#e9ffd9)}
+.stage .victim{position:absolute;right:28px;bottom:24px;font-size:66px;transition:transform .4s}
+.stage .runner{position:absolute;left:-110px;bottom:10px;animation:run 1.1s ease-out forwards}
+@keyframes run{to{left:calc(100% - 230px)}}
+.pop h2{margin:12px 0 4px;font-size:30px;color:var(--green)}
+.pop .d{font-size:19px;line-height:1.45;word-break:keep-all}
+.earn{display:flex;align-items:center;justify-content:center;gap:10px;margin:12px 0;font-size:24px;min-height:70px}
+.coin-drop{animation:drop .6s cubic-bezier(.3,1.4,.6,1) both}
+@keyframes drop{from{transform:translateY(-120px) rotate(-200deg);opacity:0}to{transform:none;opacity:1}}
+.cloud{position:fixed;font-size:60px;pointer-events:none;z-index:60;animation:puff 1.4s ease-out forwards}
+@keyframes puff{from{transform:scale(.3);opacity:1}to{transform:scale(2.2) translateY(-60px);opacity:0}}
+/* 저금통/가게 */
+.bank{background:#fff;border-radius:22px;padding:16px;box-shadow:var(--shadow);text-align:center}
+.bank .total{font-size:40px;color:#b8860b;margin:6px 0}
+.moneypile{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;margin:10px 0;min-height:60px}
+.shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:14px}
+.item{background:#fff;border-radius:18px;padding:12px;text-align:center;box-shadow:var(--shadow);font-size:18px}
+.item .ic{font-size:48px}
+.item .pr{color:#b8860b;font-size:20px;margin:4px 0}
+.item.own{background:#fff7d1}
+.stickers{font-size:40px;letter-spacing:4px;margin-top:6px;min-height:48px}
+.guide{background:#fff;border-radius:18px;padding:14px 16px;font-size:16px;line-height:1.6;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;box-shadow:var(--shadow)}
+.guide h3{margin:10px 0 4px;font-family:'Jua',sans-serif;font-size:20px}
+.guide ul{margin:4px 0;padding-left:20px}
+.guide th,.guide td{border:1px solid #dde;padding:4px 3px;text-align:center}
+.note{color:#b45309}
+.toggle{font-size:16px}
+@media (max-width:420px){
+  h1{font-size:28px}.qtext{font-size:21px}.pad button{height:58px}.scene{min-height:140px}
+  .stage .runner{animation-name:run2}@keyframes run2{to{left:calc(100% - 200px)}}
+}
+</style>
+</head>
+<body>
+
+<!-- 시작 화면 -->
+<section id="s-start" class="screen on">
+  <h1>🐾 퍼피 구조대<br>수학 출동! 🚨</h1>
+  <p class="sub">문제를 맞히면 위험에 빠진 친구를 구할 수 있어요!</p>
+  <div class="pups" id="startPups"></div>
+  <div class="namebox">대원 이름: <input id="nameIn" maxlength="6" placeholder="이름"></div>
+  <div class="lvlbox">
+    <div class="row">
+      <button class="btn big easy" onclick="startRound('easy')">🙂 쉬움</button>
+      <button class="btn big hard" onclick="startRound('hard')">🧠 도전</button>
+    </div>
+    <p>쉬움: 교과서 기본 문제 · 도전: 생각을 많이 해야 하는 사고력 문제</p>
+  </div>
+  <div class="row" style="margin-top:12px">
+    <button class="btn" onclick="showBank()">🐷 저금통 · 가게</button>
+    <button class="btn" onclick="show('s-guide')">📖 어른용 안내</button>
+  </div>
+  <div class="row" style="margin-top:12px"><button class="btn blue" id="installBtn" style="display:none" onclick="installApp()">📲 홈 화면에 설치</button></div>
+  <div class="row" style="margin-top:12px">
+    <label class="pill toggle"><input type="checkbox" id="autoRead" checked> 문제 읽어주기</label>
+    <label class="pill toggle"><input type="checkbox" id="fartOn" checked> 정답 방귀 축하</label>
+  </div>
+</section>
+
+<!-- 구조 지도 -->
+<section id="s-map" class="screen">
+  <div class="top">
+    <button class="btn small" onclick="goHome()">🏠 처음으로</button>
+    <span class="pill" id="mapLv"></span>
+    <span class="pill">🐷 <span id="mapMoney">0</span>원</span>
+  </div>
+  <div class="hq">
+    <div id="hqPup"></div>
+    <div class="t"><b>구조 본부 긴급 연락!</b><br><span id="hqMsg">도움이 필요한 친구를 눌러요!</span></div>
+  </div>
+  <div class="grid" id="sceneGrid"></div>
+</section>
+
+<!-- 문제 -->
+<section id="s-q" class="screen">
+  <div class="qhead">
+    <div id="qPup"></div>
+    <div class="t" id="qTitle"></div>
+    <span class="lv" id="qLv"></span>
+  </div>
+  <div class="qcard">
+    <div class="qtext" id="qText"></div>
+    <div class="vis" id="qVis"></div>
+    <div class="ansrow"><div class="ans" id="ansBox"></div><span id="qUnit"></span></div>
+    <div class="tools">
+      <button class="btn small" onclick="readQ()">🔊 다시 듣기</button>
+      <button class="btn small" onclick="showHint()">💡 힌트</button>
+      <button class="btn small" onclick="backToMap()">↩ 다른 친구 먼저</button>
+    </div>
+    <div class="msg hint" id="hintBox"></div>
+    <div class="msg exp" id="expBox"></div>
+    <div class="pad" id="pad"></div>
+  </div>
+</section>
+
+<!-- 저금통 · 가게 -->
+<section id="s-bank" class="screen">
+  <div class="top">
+    <button class="btn small" onclick="goHome()">🏠 처음으로</button>
+  </div>
+  <div class="bank">
+    <div style="font-size:24px">🐷 <span id="bankName"></span>의 저금통</div>
+    <div class="total"><span id="bankTotal">0</span>원</div>
+    <div class="moneypile" id="bankPile"></div>
+    <div style="font-size:16px;color:#666" id="bankExplain"></div>
+    <div class="stickers" id="stickers"></div>
+  </div>
+  <h2 style="text-align:center;margin:18px 0 0">🏪 퍼피 가게</h2>
+  <div class="shop" id="shop"></div>
+</section>
+
+<!-- 어른용 안내 -->
+<section id="s-guide" class="screen">
+  <div class="top"><button class="btn small" onclick="goHome()">🏠 처음으로</button></div>
+  <div class="guide">
+    <h3>📊 우리 아이 유형별 기록</h3>
+    <p style="margin:2px 0 6px">최근 6번 중 틀린 비율이 높은 유형일수록 다음 출동에서 더 자주 나와요(최대 5배). '한 번에'는 첫 답이 정답이었던 비율이에요.</p>
+    <div id="report"></div>
+    <h3>📚 어떤 내용을 다루나요?</h3>
+    초등 1학년 2학기 수학(2022 개정 교육과정 기준)의 단원 내용을 바탕으로 만들었습니다.
+    <ul>
+      <li><b>100까지의 수</b>: 10개씩 묶음과 낱개, 수의 순서(바로 앞·뒤), 크기 비교, 짝수·홀수</li>
+      <li><b>덧셈과 뺄셈</b>: 받아올림·받아내림 없는 (몇십몇)±(몇), (몇십)±(몇십), 세 수의 덧셈, 10 만들기, 받아올림 있는 (몇)+(몇), 받아내림 있는 (십몇)−(몇)</li>
+      <li><b>모양과 시각</b>: ■ ▲ ● 모양 찾기, 몇 시 / 몇 시 30분 읽기</li>
+      <li><b>규칙 찾기</b>: 수의 규칙(1씩, 2씩, 5씩, 10씩 커지기)</li>
+    </ul>
+    <p class="note">⚠️ 단원 이름과 순서는 교과서(출판사)·적용 연도에 따라 조금 다를 수 있어요. 아이 교과서 차례와 한 번 맞춰 보세요.</p>
+    <h3>🧠 도전(사고력) 문제 유형</h3>
+    <ul>
+      <li>□가 있는 식 (어떤 수 구하기), 거꾸로 생각하기</li>
+      <li>줄 서기(앞에서 ○번째, 뒤에서 ○번째), 사이에 있는 수 세기</li>
+      <li>수 카드로 가장 큰/작은 수 만들기, 낱개가 10개 넘는 묶음 문제</li>
+      <li>합과 차로 두 수 찾기, 규칙의 ○번째 수, 시곗바늘 돌리기, 비교의 연결(A&gt;B&gt;C)</li>
+    </ul>
+    <h3>💰 돈 문제에 대해</h3>
+    <p class="note">⚠️ 동전·돈 계산은 1학년 교육과정의 정식 단원이 아니에요. 10원짜리로 '몇십' 세기를 연습하는 확장 활동으로 넣었고, 50원은 도전 단계에만 나와요.</p>
+    <h3>🎮 보상 규칙</h3>
+    <ul>
+      <li>쉬움: 한 번에 맞히면 100원, 두 번째에 맞히면 50원, 해설을 보면 10원</li>
+      <li>도전: 한 번에 500원, 두 번째 100원, 해설 보면 10원</li>
+      <li>틀리면 자동으로 힌트, 두 번 틀리면 풀이를 보여줘요(좌절 방지).</li>
+      <li>모은 돈은 이 기기(브라우저)에만 저장돼요.</li>
+    </ul>
+    <h3>📲 홈 화면에 앱으로 설치</h3>
+    주소: <b>danmi0709-collab.github.io/gagyebu/puppy/</b>
+    <ul>
+      <li><b>안드로이드(크롬)</b>: 시작 화면의 '📲 홈 화면에 설치' 버튼, 또는 오른쪽 위 ⋮ → '홈 화면에 추가'</li>
+      <li><b>아이폰·아이패드(사파리)</b>: 아래쪽 공유 버튼(□↑) → '홈 화면에 추가'</li>
+      <li>한 번 열어 두면 인터넷이 없어도 실행돼요. 기록과 저금통은 설치한 앱 안에 따로 저장돼요.</li>
+    </ul>
+    <h3>🔊 소리</h3>
+    방귀·동전 소리는 녹음 파일이 아니라 브라우저가 직접 합성해요. 휴대폰 무음 모드를 끄고 볼륨을 올려 주세요. '문제 읽어주기'는 기기의 한국어 음성을 씁니다.
+    <p style="margin-top:10px">
+      <button class="btn small" onclick="if(confirm('저금통과 산 물건을 모두 지울까요?')){resetSave()}">🗑 저금통 초기화</button>
+      <button class="btn small" onclick="if(confirm('유형별 기록을 모두 지울까요?')){resetStats()}">🗑 기록 초기화</button>
+    </p>
+  </div>
+</section>
+
+<!-- 구조 성공/라운드 끝 팝업 -->
+<div class="overlay" id="ov"><div class="pop" id="pop"></div></div>
+
+<button class="fartbtn" id="fartBtn" aria-label="방귀 버튼">💨<small>뿡!</small></button>
+
+<script>
+'use strict';
+/* ================== 저장 ================== */
+const SAVE_KEY='pupmath_v1';
+let S={name:'',money:0,items:[],rescued:0,stats:{}};
+try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); if(s) S=Object.assign(S,s);}catch(e){}
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}}
+function resetSave(){S.money=0;S.items=[];S.rescued=0;save();goHome();}
+function resetStats(){S.stats={};save();renderReport();}
+/* ================== 약한 유형 기록 ================== */
+const RECENT=6; // 최근 몇 번까지 보고 판단할지
+function stat(key){ if(!S.stats) S.stats={}; return S.stats[key]||(S.stats[key]={n:0,ok:0,r:[]}); }
+function logResult(key,firstTry){ const t=stat(key); t.n++; if(firstTry) t.ok++; t.r.push(firstTry?1:0); if(t.r.length>RECENT) t.r.shift(); save(); }
+function missRate(key){ const t=S.stats&&S.stats[key]; if(!t||!t.r.length) return null; return t.r.filter(x=>!x).length/t.r.length; }
+function weight(key){ const m=missRate(key); return m===null?1.5:1+4*m; } // 처음 보는 유형 1.5배, 많이 틀릴수록 최대 5배
+function isWeak(key){ const m=missRate(key); return m!==null&&m>=.5; }
+function weightedPick(keys,n){ const pool=keys.slice(),out=[];
+  while(out.length<n&&pool.length){ const ws=pool.map(weight),sum=ws.reduce((a,b)=>a+b,0); let x=Math.random()*sum,i=0;
+    while(i<pool.length-1&&(x-=ws[i])>0) i++; out.push(pool.splice(i,1)[0]); }
+  return out; }
+
+/* ================== 도우미 ================== */
+const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const $=id=>document.getElementById(id);
+function bat(w){const c=w.charCodeAt(w.length-1);if(c>=0xAC00&&c<=0xD7A3)return (c-0xAC00)%28!==0;return false;}
+const 이가=w=>w+(bat(w)?'이':'가');
+const 은는=w=>w+(bat(w)?'은':'는');
+const 을를=w=>w+(bat(w)?'을':'를');
+const 와과=w=>w+(bat(w)?'과':'와');
+
+/* ================== 퍼피 ================== */
+const PUPS={
+  chase:   {name:'체이스',hat:'#1f5fbf',fur:'#9a6433',light:'#f0cfa0',ear:'up',  sym:'⭐',job:'경찰'},
+  marshall:{name:'마셜',  hat:'#d62828',fur:'#ffffff',light:'#ffffff',ear:'flop',sym:'🔥',job:'소방',spots:true},
+  skye:    {name:'스카이',hat:'#ff5fa2',fur:'#d9a066',light:'#f5deb3',ear:'flop',sym:'🪽',job:'헬리콥터'},
+  rubble:  {name:'러블',  hat:'#ffc400',fur:'#c98a4b',light:'#f6e0c0',ear:'small',sym:'🔧',job:'공사'},
+  rocky:   {name:'로키',  hat:'#2e9e4f',fur:'#9aa3a8',light:'#e4e8ea',ear:'up',  sym:'♻️',job:'재활용'},
+  zuma:    {name:'주마',  hat:'#ff8a00',fur:'#7a4a24',light:'#b98555',ear:'flop',sym:'⚓',job:'바다'},
+};
+function pupSVG(id,size){
+  const p=PUPS[id]; size=size||80;
+  let ears='';
+  if(p.ear==='up') ears=`<path d="M22 42 L26 12 L42 34 Z" fill="${p.fur}" stroke="#0003" stroke-width="1.5"/><path d="M78 42 L74 12 L58 34 Z" fill="${p.fur}" stroke="#0003" stroke-width="1.5"/>`;
+  else if(p.ear==='flop') ears=`<ellipse cx="20" cy="56" rx="10" ry="20" fill="${id==='marshall'?'#e8e8e8':p.fur}" transform="rotate(18 20 56)" stroke="#0002"/><ellipse cx="80" cy="56" rx="10" ry="20" fill="${id==='marshall'?'#e8e8e8':p.fur}" transform="rotate(-18 80 56)" stroke="#0002"/>`;
+  else ears=`<ellipse cx="24" cy="42" rx="8" ry="7" fill="${p.fur}"/><ellipse cx="76" cy="42" rx="8" ry="7" fill="${p.fur}"/>`;
+  const spots=p.spots?`<circle cx="33" cy="48" r="3.5" fill="#333"/><circle cx="68" cy="72" r="3" fill="#333"/><circle cx="72" cy="50" r="2.5" fill="#333"/>`:'';
+  return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" aria-label="${p.name}">
+  ${ears}
+  <ellipse cx="50" cy="58" rx="30" ry="27" fill="${p.fur}" stroke="#0002" stroke-width="1.5"/>
+  ${spots}
+  <ellipse cx="50" cy="70" rx="16" ry="11" fill="${p.light}"/>
+  <circle cx="39" cy="56" r="6" fill="#fff"/><circle cx="61" cy="56" r="6" fill="#fff"/>
+  <circle cx="40" cy="57" r="3.8" fill="#3a2a1a"/><circle cx="62" cy="57" r="3.8" fill="#3a2a1a"/>
+  <circle cx="41.3" cy="55.5" r="1.3" fill="#fff"/><circle cx="63.3" cy="55.5" r="1.3" fill="#fff"/>
+  <ellipse cx="50" cy="65" rx="5" ry="3.6" fill="#222"/>
+  <path d="M43 72 Q50 78 57 72" stroke="#222" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M47 75 Q50 80 53 75" fill="#ff7b8a"/>
+  <path d="M22 40 Q50 4 78 40 Z" fill="${p.hat}" stroke="#0003" stroke-width="1.5"/>
+  <rect x="18" y="37" width="64" height="7" rx="3.5" fill="${p.hat}" stroke="#0003"/>
+  <circle cx="50" cy="26" r="7" fill="#fff" opacity=".9"/>
+  <text x="50" y="30" font-size="10" text-anchor="middle">${p.sym}</text>
+  <rect x="30" y="84" width="40" height="7" rx="3.5" fill="#333"/>
+  <circle cx="50" cy="90" r="7" fill="${p.hat}" stroke="#fff" stroke-width="1.5"/>
+  </svg>`;
+}
+
+/* ================== 돈 그림 (실물 비율) ================== */
+let gid=0;
+const COIN_MM={10:18,50:21.6,100:24,500:26.5};
+function coinSVG(v,scale){
+  scale=scale||2.1; const d=COIN_MM[v]*scale; const id='cg'+(gid++);
+  const copper=v===10;
+  const g=copper?['#f6c49a','#c9824b','#8b4a22']:['#ffffff','#c9ced6','#7d858f'];
+  const rim=copper?'#7a3f1c':'#6b737c';
+  const reeded=(v===100||v===500);
+  let motif='';
+  if(v===10) motif=`<g fill="none" stroke="${rim}" stroke-width="1.6" opacity=".65"><path d="M44 30h12M42 35h16M40 41h20M43 47h14M41 53h18M44 58h12"/></g>`;
+  if(v===50) motif=`<g stroke="${rim}" stroke-width="1.5" fill="none" opacity=".6"><path d="M50 60 Q46 44 54 30"/></g><g fill="${rim}" opacity=".55"><ellipse cx="55" cy="33" rx="2.4" ry="1.3"/><ellipse cx="52" cy="38" rx="2.4" ry="1.3"/><ellipse cx="50" cy="43" rx="2.4" ry="1.3"/><ellipse cx="49" cy="48" rx="2.4" ry="1.3"/></g>`;
+  if(v===100) motif=`<path d="M46 30 q8 -2 10 6 q2 6 -2 10 l2 8 q-6 3 -12 0 l1 -6 q-5 -2 -4 -9 q1 -7 5 -9z" fill="${rim}" opacity=".45"/>`;
+  if(v===500) motif=`<path d="M30 46 Q40 36 50 42 Q58 30 72 32 Q62 38 58 44 Q66 46 70 52 Q58 50 50 48 Q40 54 30 46Z" fill="${rim}" opacity=".45"/>`;
+  return `<svg class="coin" viewBox="0 0 100 100" width="${d}" height="${d}" aria-label="${v}원 동전">
+  <defs><radialGradient id="${id}" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="${g[0]}"/><stop offset=".55" stop-color="${g[1]}"/><stop offset="1" stop-color="${g[2]}"/></radialGradient></defs>
+  <circle cx="50" cy="50" r="48" fill="url(#${id})" stroke="${rim}" stroke-width="2"/>
+  ${reeded?`<circle cx="50" cy="50" r="47" fill="none" stroke="${rim}" stroke-width="3" stroke-dasharray="1.2 1.6" opacity=".7"/>`:''}
+  <circle cx="50" cy="50" r="40" fill="none" stroke="${rim}" stroke-width="1.2" opacity=".5"/>
+  ${motif}
+  <text x="50" y="${v===10?84:82}" font-family="Arial,sans-serif" font-weight="bold" font-size="${v>=100?20:22}" text-anchor="middle" fill="${rim}">${v}</text>
+  <ellipse cx="34" cy="26" rx="14" ry="7" fill="#fff" opacity=".35" transform="rotate(-30 34 26)"/>
+  </svg>`;
+}
+function billSVG(){
+  const id='bg'+(gid++);
+  return `<svg viewBox="0 0 136 64" width="118" height="56" aria-label="1000원 지폐">
+  <defs><linearGradient id="${id}" x1="0" x2="1"><stop offset="0" stop-color="#d9e8f5"/><stop offset=".5" stop-color="#9fc0e0"/><stop offset="1" stop-color="#6f9cc9"/></linearGradient></defs>
+  <rect x="1" y="1" width="134" height="62" rx="4" fill="url(#${id})" stroke="#3e6d9c" stroke-width="2"/>
+  <rect x="6" y="6" width="124" height="52" rx="3" fill="none" stroke="#3e6d9c" stroke-width="1" stroke-dasharray="3 2" opacity=".6"/>
+  <circle cx="98" cy="32" r="17" fill="#ffffff" opacity=".45"/>
+  <text x="12" y="22" font-family="Arial" font-weight="bold" font-size="14" fill="#1d4a7a">1000</text>
+  <text x="124" y="56" font-family="Arial" font-weight="bold" font-size="11" fill="#1d4a7a" text-anchor="end">1000</text>
+  <text x="44" y="42" font-size="15" fill="#1d4a7a" font-family="Jua,sans-serif" text-anchor="middle">천 원</text>
+  <text x="98" y="36" font-size="8" fill="#1d4a7a" text-anchor="middle" font-family="Jua,sans-serif">놀이용</text>
+  </svg>`;
+}
+function moneyHTML(v){ return v===1000?billSVG():coinSVG(v); }
+function breakdown(n){ const out=[]; for(const u of [1000,500,100,50,10]){ while(n>=u){out.push(u);n-=u;} } return out; }
+
+/* ================== 소리 (실시간 합성) ================== */
+let AC=null;
+function ac(){ if(!AC){ const C=window.AudioContext||window.webkitAudioContext; if(!C) return null; AC=new C(); } if(AC.state==='suspended') AC.resume(); return AC; }
+function master(c){
+  if(!c._out){ const comp=c.createDynamicsCompressor(); comp.threshold.value=-14; comp.ratio.value=4; comp.connect(c.destination); c._out=comp; }
+  return c._out;
+}
+const FARTS={
+  short:{dur:[.22,.4],  f:[95,150], slide:-.35,open:.35,noise:.25,wet:0,  flutter:.25,lp:900},
+  long: {dur:[.9,1.5],  f:[70,110], slide:-.45,open:.42,noise:.2, wet:0,  flutter:.35,lp:800},
+  squeak:{dur:[.45,.8], f:[280,440],slide:.35, open:.22,noise:.08,wet:0,  flutter:.18,lp:2600},
+  wet:  {dur:[.6,1.0],  f:[55,90],  slide:-.2, open:.55,noise:.45,wet:1,  flutter:.55,lp:1100},
+  big:  {dur:[1.3,2.1], f:[42,68],  slide:-.25,open:.5, noise:.3, wet:.35,flutter:.45,lp:700},
+  triple:null
+};
+function fart(kind,when){
+  const c=ac(); if(!c) return;
+  kind=kind||pick(['short','long','squeak','wet','big','triple']);
+  if(kind==='triple'){ fart('short',0); fart('short',.34); fart('long',.7); return; }
+  const p=FARTS[kind], sr=c.sampleRate;
+  const dur=p.dur[0]+Math.random()*(p.dur[1]-p.dur[0]);
+  const n=Math.floor(dur*sr), buf=c.createBuffer(1,n,sr), d=buf.getChannelData(0);
+  const f0=p.f[0]+Math.random()*(p.f[1]-p.f[0]);
+  const pts=[]; for(let k=0;k<dur*22+3;k++) pts.push(Math.random()*2-1);
+  let ph=0,amp=1,open=p.open,cr=0,gap=0;
+  for(let i=0;i<n;i++){
+    const t=i/sr,u=t/dur,x=t*22,k=Math.floor(x),fr=x-k;
+    const fl=pts[k]*(1-fr)+pts[k+1]*fr;                       // 부드러운 떨림
+    const f=f0*(1+p.slide*u)*(1+p.flutter*.5*fl)*(1+.06*Math.sin(2*Math.PI*7*t));
+    ph+=f/sr;
+    if(ph>=1){ ph-=1; amp=.55+Math.random()*.45; open=p.open*(.75+Math.random()*.5);
+      if(p.wet&&Math.random()<.05*p.wet) gap=Math.floor(sr*(.01+Math.random()*.03)); }
+    let pulse=ph<open?Math.pow(Math.sin(Math.PI*ph/open),2):0;  // 괄약근 떨림 펄스
+    const nz=Math.random()*2-1;
+    let s=(pulse-open*.5)*amp+nz*pulse*p.noise+nz*.025;
+    if(p.wet){ if(Math.random()<.0018*p.wet) cr=1; s+=nz*cr*.8; cr*=.993; }
+    if(gap>0){ gap--; s*=.15; }
+    const env=Math.min(1,t/.015)*(u>.8?Math.pow((1-u)/.2,1.5):1)*(.7+.3*(fl+1)/2);
+    d[i]=s*env;
+  }
+  const src=c.createBufferSource(); src.buffer=buf;
+  const lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=p.lp; lp.Q.value=1.2;
+  const body=c.createBiquadFilter(); body.type='peaking'; body.frequency.value=kind==='squeak'?600:170; body.gain.value=7; body.Q.value=1;
+  const g=c.createGain(); g.gain.value=1.1;
+  src.connect(lp).connect(body).connect(g).connect(master(c));
+  src.start(c.currentTime+(when||0));
+}
+function noiseBuf(c,sec){ const b=c.createBuffer(1,Math.floor(c.sampleRate*sec),c.sampleRate),d=b.getChannelData(0); for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1; return b; }
+function clink(t0,f0,vol){ // 금속 동전 부딪힘: 비정수배 배음 + 짧은 충돌음
+  const c=ac(); if(!c) return;
+  const R_=[1,2.32,4.25,6.63,9.38], G_=[1,.55,.35,.22,.12], D_=[.45,.25,.14,.09,.06];
+  R_.forEach((r,i)=>{ const o=c.createOscillator(),g=c.createGain(); o.type='sine'; o.frequency.value=f0*r*(1+(Math.random()-.5)*.01);
+    g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(vol*G_[i]*.35,t0+.002); g.gain.exponentialRampToValueAtTime(.0001,t0+D_[i]*(.7+Math.random()*.6));
+    o.connect(g).connect(master(c)); o.start(t0); o.stop(t0+1); });
+  const nb=c.createBufferSource(); nb.buffer=noiseBuf(c,.02); const hp=c.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=5000;
+  const ng=c.createGain(); ng.gain.setValueAtTime(vol*.5,t0); ng.gain.exponentialRampToValueAtTime(.0001,t0+.02);
+  nb.connect(hp).connect(ng).connect(master(c)); nb.start(t0);
+}
+function coinSound(count){ // 짤랑짤랑
+  const c=ac(); if(!c) return; let t=c.currentTime+.02;
+  for(let i=0;i<(count||4);i++){ const f=2300+Math.random()*1400; clink(t,f,.9); clink(t+.03+Math.random()*.03,f*1.07,.45); t+=.06+Math.random()*.09; }
+}
+function bankDrop(delay){ // 저금통에 동전 '땡그랑'
+  const c=ac(); if(!c) return; const t=c.currentTime+(delay||0);
+  clink(t,1650,1); clink(t+.09,1700,.5); clink(t+.16,1720,.25);
+  const o=c.createOscillator(),g=c.createGain(); o.frequency.setValueAtTime(180,t); o.frequency.exponentialRampToValueAtTime(70,t+.12);
+  g.gain.setValueAtTime(.5,t); g.gain.exponentialRampToValueAtTime(.0001,t+.15); o.connect(g).connect(master(c)); o.start(t); o.stop(t+.2);
+}
+function registerSound(){ // 계산대 '촤르륵 딩!'
+  const c=ac(); if(!c) return; const t=c.currentTime;
+  const nb=c.createBufferSource(); nb.buffer=noiseBuf(c,.35); const bp=c.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=2500; bp.Q.value=.8;
+  const ng=c.createGain(); ng.gain.setValueAtTime(.0001,t); ng.gain.linearRampToValueAtTime(.35,t+.05); ng.gain.exponentialRampToValueAtTime(.0001,t+.35);
+  nb.connect(bp).connect(ng).connect(master(c)); nb.start(t);
+  [1,2.76,5.4].forEach((r,i)=>{ const o=c.createOscillator(),g=c.createGain(); o.frequency.value=1760*r; const tt=t+.32;
+    g.gain.setValueAtTime(0,tt); g.gain.linearRampToValueAtTime([.35,.12,.06][i],tt+.003); g.gain.exponentialRampToValueAtTime(.0001,tt+1.4);
+    o.connect(g).connect(master(c)); o.start(tt); o.stop(tt+1.5); });
+  coinSound(3);
+}
+function tones(list,type){ const c=ac(); if(!c) return; let t=c.currentTime;
+  list.forEach(([f,d])=>{ const o=c.createOscillator(),g=c.createGain(); o.type=type||'triangle'; o.frequency.value=f;
+    g.gain.setValueAtTime(.0001,t); g.gain.linearRampToValueAtTime(.25,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g).connect(master(c)); o.start(t); o.stop(t+d+.05); t+=d*.8; }); }
+const sOK=()=>tones([[523,.12],[659,.12],[784,.12],[1047,.3]]);
+const sNo=()=>tones([[330,.22],[262,.35]],'sine');
+const sSiren=()=>tones([[880,.25],[660,.25],[880,.25],[660,.25]],'sine');
+function puff(x,y,emo){ const e=document.createElement('div'); e.className='cloud'; e.textContent=emo||'💨';
+  e.style.left=(x-30)+'px'; e.style.top=(y-30)+'px'; document.body.appendChild(e); setTimeout(()=>e.remove(),1500); }
+$('fartBtn').onclick=e=>{ const k=S.items.includes('whoopee')&&Math.random()<.5?'big':undefined; fart(k); const r=e.currentTarget.getBoundingClientRect(); puff(r.left-20,r.top-10); };
+
+/* ================== 말하기 ================== */
+function speak(t){
+  try{ if(!('speechSynthesis' in window)) return; speechSynthesis.cancel();
+    const clean=t.replace(/<[^>]+>/g,' ').replace(/□/g,'네모').replace(/[^\p{L}\p{N}\s.,?!~+\-=]/gu,' ').replace(/\+/g,' 더하기 ').replace(/=/g,' 는 ');
+    const u=new SpeechSynthesisUtterance(clean); u.lang='ko-KR'; u.rate=.92; u.pitch=1.1; speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* ================== 시각 자료 ================== */
+function tensVis(t,u,emo){
+  let h='<div class="tens">';
+  for(let i=0;i<t;i++) h+='<div class="ten">'+('<span>'+emo+'</span>').repeat(10)+'</div>';
+  if(u) h+='<div class="ones">'+('<span>'+emo+'</span>').repeat(u)+'</div>';
+  return h+'</div>';
+}
+function coinsVis(list){ return '<div class="vis" style="margin:0">'+list.map(v=>`<span class="coin-drop" style="animation-delay:${Math.random()*.3}s">${moneyHTML(v)}</span>`).join('')+'</div>'; }
+function clockSVG(h,m){
+  let nums=''; for(let i=1;i<=12;i++){ const a=i*Math.PI/6; nums+=`<text x="${50+36*Math.sin(a)}" y="${54+36*-Math.cos(a)}" font-size="10" text-anchor="middle" font-family="Arial" font-weight="bold">${i}</text>`; }
+  let ticks=''; for(let i=0;i<60;i++){ const a=i*Math.PI/30, r1=i%5?44:41; ticks+=`<line x1="${50+r1*Math.sin(a)}" y1="${50-r1*Math.cos(a)}" x2="${50+46*Math.sin(a)}" y2="${50-46*Math.cos(a)}" stroke="#555" stroke-width="${i%5?.6:1.4}"/>`; }
+  const ha=((h%12)+m/60)*30, ma=m*6;
+  return `<svg viewBox="0 0 100 100" width="170" height="170" aria-label="시계">
+  <circle cx="50" cy="50" r="49" fill="#ffd54f"/><circle cx="50" cy="50" r="46" fill="#fff" stroke="#333" stroke-width="1.5"/>${ticks}${nums}
+  <line x1="50" y1="50" x2="50" y2="27" stroke="#d62828" stroke-width="4" stroke-linecap="round" transform="rotate(${ha} 50 50)"/>
+  <line x1="50" y1="50" x2="50" y2="12" stroke="#1f5fbf" stroke-width="2.6" stroke-linecap="round" transform="rotate(${ma} 50 50)"/>
+  <circle cx="50" cy="50" r="3" fill="#333"/></svg>`;
+}
+function shapesVis(list){
+  const cols=['#ff6b6b','#4dabf7','#51cf66','#fcc419','#b197fc','#ff922b'];
+  let h='<svg viewBox="0 0 300 120" width="100%" style="max-width:420px">';
+  list.forEach((s,i)=>{ const x=10+(i%6)*48, y=8+Math.floor(i/6)*58, c=pick(cols), sz=R(34,40);
+    if(s==='sq') h+=`<rect x="${x+(40-sz)/2}" y="${y+(40-sz)/2}" width="${sz}" height="${sz}" rx="3" fill="${c}" stroke="#333" stroke-width="2"/>`;
+    if(s==='tri') h+=`<polygon points="${x+20},${y+2} ${x+40},${y+40} ${x},${y+40}" fill="${c}" stroke="#333" stroke-width="2"/>`;
+    if(s==='ci') h+=`<circle cx="${x+20}" cy="${y+21}" r="${sz/2}" fill="${c}" stroke="#333" stroke-width="2"/>`;
+  });
+  return h+'</svg>';
+}
+
+/* ================== 문제 만들기 ================== */
+// c = {pup:이름, pup2:다른 이름, N:아이 이름}
+const EASY={
+  tens(c){ const t=R(2,9),u=R(1,9),a=t*10+u;
+    return {topic:'100까지의 수',q:`${이가(c.pup)} 치운 강아지 똥을 10개씩 봉지에 담았더니 <b>${t}봉지</b>와 낱개 <b>${u}개</b>가 되었어요. 똥은 모두 몇 개일까요?`,a,unit:'개',
+      vis:tensVis(t,u,'💩'),hint:`10개씩 ${t}봉지는 ${t*10}개예요. 거기에 낱개 ${u}개를 붙여요.`,exp:`10개씩 묶음 ${t}개 → <b>${t*10}</b><br>낱개 ${u}개 → ${t*10}과 ${u}을 합치면 <b>${a}</b>`}; },
+  add(c){ const t=R(1,8),u=R(0,7),a=t*10+u,b=R(1,9-u),s=a+b;
+    const v=pick([[`${이가(c.N)} 오늘 방귀를 뿡뿡 <b>${a}번</b> 뀌었어요. 저녁에 고구마를 먹고 <b>${b}번</b>을 더 뀌었어요. 방귀는 모두 몇 번일까요?`,'번'],
+                  [`${이가(c.pup)} 공원에서 강아지 똥을 <b>${a}개</b> 치웠어요. 놀이터에서 <b>${b}개</b>를 더 치웠어요. 치운 똥은 모두 몇 개일까요?`,'개']]);
+    return {topic:'덧셈',q:v[0],a:s,unit:v[1],hint:`낱개끼리 먼저 더해요. ${u} + ${b} = ${u+b}`,exp:`${a} + ${b}<br>10개씩 묶음 ${t}개는 그대로, 낱개는 ${u} + ${b} = ${u+b}<br>그래서 <b>${s}</b>`}; },
+  sub(c){ const t=R(2,9),u=R(1,9),a=t*10+u,b=R(1,u),d=a-b;
+    const v=pick([[`방귀 풍선이 <b>${a}개</b> 있었어요. 그중 <b>${b}개</b>가 "뿌웅~" 하고 날아갔어요. 남은 방귀 풍선은 몇 개일까요?`,'개'],
+                  [`똥이 <b>${a}개</b> 있었어요. ${이가(c.pup)} <b>${b}개</b>를 치웠어요. 남은 똥은 몇 개일까요?`,'개']]);
+    return {topic:'뺄셈',q:v[0],a:d,unit:v[1],hint:`낱개끼리 먼저 빼요. ${u} - ${b} = ${u-b}`,exp:`${a} - ${b}<br>10개씩 묶음 ${t}개는 그대로, 낱개는 ${u} - ${b} = ${u-b}<br>그래서 <b>${d}</b>`}; },
+  money(c){ if(Math.random()<.5){ const x=R(1,8),y=R(1,9-x);
+      return {topic:'(몇십)+(몇십)',q:`${은는(c.pup)} 저금통에 <b>${x*10}원</b>이 있었어요. 구조를 잘해서 <b>${y*10}원</b>을 더 받았어요. 모두 얼마일까요?`,a:(x+y)*10,unit:'원',
+        vis:coinsVis(Array(x).fill(10))+'<span class="plus">+</span>'+coinsVis(Array(y).fill(10)),hint:`10원짜리 동전이 모두 몇 개인지 세어 봐요.`,exp:`10원짜리 ${x}개 + ${y}개 = ${x+y}개<br>10원짜리 ${x+y}개는 <b>${(x+y)*10}원</b>`}; }
+    const x=R(3,9),y=R(1,x-1);
+    return {topic:'(몇십)-(몇십)',q:`${은는(c.pup)} <b>${x*10}원</b>이 있었어요. 방귀 소리 나는 장난감을 <b>${y*10}원</b>에 샀어요. 남은 돈은 얼마일까요?`,a:(x-y)*10,unit:'원',
+      vis:coinsVis(Array(x).fill(10)),hint:`동전 ${x}개 중에서 ${y}개를 손가락으로 가려 봐요.`,exp:`10원짜리 ${x}개 - ${y}개 = ${x-y}개<br>그래서 <b>${(x-y)*10}원</b>`}; },
+  make10(c){ const a=R(1,9);
+    return {topic:'10 만들기',q:`방귀를 <b>10번</b> 뀌면 '방귀 로켓'이 슝~ 날아가요! ${이가(c.pup)} 지금까지 <b>${a}번</b> 뀌었어요. 몇 번 더 뀌어야 할까요?`,a:10-a,unit:'번',
+      vis:`<div class="slots">${'💨'.repeat(a)}${'⚪'.repeat(10-a)}</div>`,hint:`빈 동그라미 ⚪를 세어 봐요.`,exp:`${a}와 더해서 10이 되는 수는 <b>${10-a}</b><br>${a} + ${10-a} = 10`}; },
+  three(c){ const a=R(1,6),b=R(1,6),d=R(1,6),s=a+b+d;
+    return {topic:'세 수의 덧셈',q:`강아지 세 마리가 똥을 쌌어요. 체이스는 <b>${a}개</b>, 마셜은 <b>${b}개</b>, 러블은 <b>${d}개</b>! 똥은 모두 몇 개일까요?`,a:s,unit:'개',
+      vis:`<div class="slots">${'💩'.repeat(a)}</div><span class="plus">+</span><div class="slots">${'💩'.repeat(b)}</div><span class="plus">+</span><div class="slots">${'💩'.repeat(d)}</div>`,
+      hint:`앞의 두 수를 먼저 더해요. ${a} + ${b} = ?`,exp:`${a} + ${b} = ${a+b}<br>${a+b} + ${d} = <b>${s}</b>`}; },
+  carry(c){ const a=R(3,9),b=R(Math.max(2,11-a),9),s=a+b,k=10-a;
+    return {topic:'받아올림 있는 덧셈',q:`${이가(c.N)} 방귀 스티커를 <b>${a}장</b> 모았어요. 오늘 <b>${b}장</b>을 더 받았어요. 스티커는 모두 몇 장일까요?`,a:s,unit:'장',
+      hint:`${b}를 ${k}와 ${b-k}로 가르면 ${a} + ${k} = 10을 만들 수 있어요!`,exp:`${b}를 ${k}와 ${b-k}로 갈라요.<br>${a} + ${k} = 10<br>10 + ${b-k} = <b>${s}</b>`}; },
+  borrow(c){ const a=R(11,18),b=R(Math.max(2,a-9),9),d=a-b,k=a-10;
+    return {topic:'받아내림 있는 뺄셈',q:`똥 산에 똥이 <b>${a}개</b> 있었어요. 로키가 <b>${b}개</b>를 치웠어요. 남은 똥은 몇 개일까요?`,a:d,unit:'개',
+      vis:tensVis(1,k,'💩'),hint:`10개 묶음에서 먼저 ${b}개를 빼 봐요. 10 - ${b} = ${10-b}`,exp:`10 - ${b} = ${10-b}<br>남은 낱개 ${k}개를 더하면 ${10-b} + ${k} = <b>${d}</b>`}; },
+  clock(c){ const h=R(1,12),m=pick([0,30]);
+    return {topic:'시각 읽기',q:`${이가(c.pup)} 출동한 시각이에요. 시계는 몇 시${m?' 30분':''}일까요?<br>□시${m?' 30분':''} ← □에 들어갈 수를 써요.`,a:h,unit:m?'시 30분':'시',
+      vis:clockSVG(h,m),hint:m?`짧은바늘(빨강)이 두 숫자 사이에 있으면, 앞의 숫자를 읽어요. 긴바늘이 6이면 30분!`:`긴바늘(파랑)이 12에 있으면 '몇 시 정각'이에요. 짧은바늘(빨강)이 가리키는 숫자를 읽어요.`,
+      exp:`짧은바늘이 ${m?h+'과 '+(h%12+1)+' 사이':h}, 긴바늘이 ${m?6:12}${m?'을':'를'} 가리켜요.<br>그래서 <b>${h}시${m?' 30분':''}</b>`}; },
+  pattern(c){ const step=pick([1,2,5,10]); let st;
+    if(step===10) st=10*R(1,5); else if(step===5) st=5*R(1,10); else if(step===2) st=R(2,60); else st=R(10,90);
+    const arr=[0,1,2,3,4].map(i=>st+i*step), hide=R(2,4);
+    return {topic:'규칙 찾기',q:`방귀 번호표에 규칙이 있어요! 빈칸에 알맞은 수는 무엇일까요?`,a:arr[hide],unit:'',
+      vis:`<div class="seq">${arr.map((v,i)=>i===hide?'<span class="q">?</span>':`<span>${v}</span>`).join('')}</div>`,
+      hint:`${arr[0]} 다음에 ${arr[1]}이에요. 얼마씩 커지나요?`,exp:`${step}씩 커지는 규칙이에요.<br>${arr.join(', ')} → 빈칸은 <b>${arr[hide]}</b>`}; },
+  order(c){ const n=R(20,98); const v=pick([['바로 뒤의 수',n+1],['바로 앞의 수',n-1],['1만큼 더 큰 수',n+1],['1만큼 더 작은 수',n-1]]);
+    return {topic:'수의 순서',q:`러블이 <b>${n}번</b> 똥 상자를 찾았어요. ${n}의 <b>${v[0]}</b>는 몇일까요?`,a:v[1],unit:'',
+      hint:v[1]>n?`수를 셀 때 ${n} 다음에 오는 수예요.`:`수를 셀 때 ${n} 바로 전에 오는 수예요.`,exp:`${v[1]>n?n+', '+v[1]:v[1]+', '+n}<br>${n}의 ${v[0]}는 <b>${v[1]}</b>`}; },
+  shapes(c){ const cnt={sq:R(2,5),tri:R(2,5),ci:R(2,5)}; let list=[]; for(const k in cnt) for(let i=0;i<cnt[k];i++) list.push(k); list=shuffle(list);
+    const tgt=pick(['sq','tri','ci']), nm={sq:'■ 네모',tri:'▲ 세모',ci:'● 동그라미'}[tgt];
+    return {topic:'모양 찾기',q:`${이가(c.pup)} 모양 블록으로 방귀 대포를 만들어요. <b>${nm}</b> 모양은 몇 개일까요?`,a:cnt[tgt],unit:'개',vis:shapesVis(list),
+      hint:`${nm} 모양을 하나씩 손가락으로 짚으면서 세어 봐요.`,exp:`${nm} 모양은 <b>${cnt[tgt]}개</b>예요.`}; },
+  compare(c){ let a=R(21,98),b=R(21,98); while(a===b) b=R(21,98);
+    return {topic:'수의 크기 비교',q:`똥 줍기 대회! 체이스는 <b>${a}개</b>, 마셜은 <b>${b}개</b>를 주웠어요. 더 많이 주운 친구는 몇 개를 주웠을까요?`,a:Math.max(a,b),unit:'개',
+      hint:`10개씩 묶음의 수(앞자리)부터 비교해요. 같으면 낱개를 비교해요.`,exp:`${a}와 ${b} 중 더 큰 수는 <b>${Math.max(a,b)}</b>`}; },
+  coins10(c){ const n=R(2,9);
+    return {topic:'몇십 세기(돈)',q:`${은는(c.pup)} 저금통에 10원짜리 동전이 있어요. 모두 얼마일까요?`,a:n*10,unit:'원',vis:coinsVis(Array(n).fill(10)),
+      hint:`"10, 20, 30…" 하고 10씩 세어 봐요.`,exp:`10원짜리 ${n}개 → ${Array.from({length:n},(_,i)=>(i+1)*10).join(', ')}<br>모두 <b>${n*10}원</b>`}; },
+};
+const ORD=['첫째','둘째','셋째','넷째','다섯째','여섯째','일곱째'];
+const HARD={
+  unknown(c){ const x=R(3,9),a=R(3,9);
+    if(Math.random()<.5) return {topic:'어떤 수 구하기',q:`${이가(c.pup)} 아침에 방귀를 몇 번 뀌었어요. 점심에 <b>${a}번</b>을 더 뀌었더니 모두 <b>${x+a}번</b>이 되었어요. 아침에 뀐 방귀는 몇 번일까요?`,a:x,unit:'번',
+      hint:`□ + ${a} = ${x+a}예요. 거꾸로 ${x+a} - ${a}를 해 봐요.`,exp:`□ + ${a} = ${x+a}<br>□ = ${x+a} - ${a} = <b>${x}</b>`};
+    return {topic:'어떤 수 구하기',q:`방귀 풍선이 몇 개 있었어요. 그중 <b>${a}개</b>가 뻥! 터져서 <b>${x}개</b>가 남았어요. 처음에 방귀 풍선은 몇 개였을까요?`,a:x+a,unit:'개',
+      hint:`□ - ${a} = ${x}예요. 터진 풍선을 다시 붙여 보면? ${x} + ${a}`,exp:`□ - ${a} = ${x}<br>□ = ${x} + ${a} = <b>${x+a}</b>`}; },
+  reverse(c){ const t=R(3,9),u=R(2,9),a=t*10+u,xt=R(1,t-1),xu=R(0,u),x=xt*10+xu,l=a-x;
+    return {topic:'거꾸로 생각하기',q:`똥 산에 똥이 <b>${a}개</b> 있었어요. ${이가(c.pup)} 몇 개를 치웠더니 <b>${l}개</b>가 남았어요. ${이가(c.pup)} 치운 똥은 몇 개일까요?`,a:x,unit:'개',
+      hint:`${a} - □ = ${l}이에요. 처음 개수에서 남은 개수를 빼 봐요.`,exp:`${a} - □ = ${l}<br>□ = ${a} - ${l} = <b>${x}</b>`}; },
+  line(c){ const m=R(2,7),n=R(2,7),s=m+n-1;
+    const pic='○'.repeat(m-1)+'●'+'○'.repeat(n-1);
+    return {topic:'줄 서기',q:`강아지들이 한 줄로 서서 똥 치우기 순서를 기다려요. ${은는(c.pup)} 앞에서 <b>${m}번째</b>, 뒤에서 <b>${n}번째</b>예요. 줄에 선 강아지는 모두 몇 마리일까요?`,a:s,unit:'마리',
+      hint:`○로 그림을 그려 봐요. ${을를(c.pup)} 두 번 세지 않게 조심!`,exp:`${pic}<br>● 앞에 ${m-1}마리, ● 뒤에 ${n-1}마리, 그리고 ${c.pup} 1마리<br>${m-1} + ${n-1} + 1 = <b>${s}</b>`}; },
+  between(c){ const a=R(21,85),k=R(3,8),b=a+k+1;
+    return {topic:'사이에 있는 수',q:`<b>${a}번</b> 집과 <b>${b}번</b> 집 <b>사이</b>에 있는 집들이 방귀 구름에 갇혔어요! 사이에 있는 집은 몇 채일까요?`,a:k,unit:'채',
+      hint:`${a+1}부터 세어 봐요. ${a}번과 ${b}번 집은 빼요!`,exp:`${Array.from({length:k},(_,i)=>a+1+i).join(', ')}<br>모두 <b>${k}채</b>`}; },
+  cards(c){ const zero=Math.random()<.35; let ds=shuffle([1,2,3,4,5,6,7,8,9]).slice(0,zero?2:3); if(zero) ds.push(0); ds=shuffle(ds);
+    const big=Math.random()<.5; const s=ds.slice().sort((x,y)=>x-y); let ans,why;
+    if(big){ ans=s[2]*10+s[1]; why=`가장 큰 ${s[2]}을(를) 10개씩 묶음 자리에, 다음 큰 ${s[1]}을(를) 낱개 자리에!`; }
+    else if(zero){ ans=s[1]*10; why=`0은 맨 앞에 올 수 없어요. 0 다음 작은 ${s[1]}을(를) 앞에, 0을 뒤에!`; }
+    else { ans=s[0]*10+s[1]; why=`가장 작은 ${s[0]}을(를) 앞에, 다음 작은 ${s[1]}을(를) 뒤에!`; }
+    return {topic:'수 카드',q:`💩 숫자 카드 3장 중에서 2장을 골라 두 자리 수를 만들어요. 만들 수 있는 <b>가장 ${big?'큰':'작은'} 수</b>는 무엇일까요?`,a:ans,unit:'',
+      vis:`<div class="cards">${ds.map(d=>`<span>${d}</span>`).join('')}</div>`,hint:big?`가장 큰 카드를 앞(10개씩 묶음 자리)에 놓아요.`:`가장 작은 카드를 앞에 놓아요.${zero?' 그런데 0이 맨 앞에 오면 두 자리 수가 아니에요!':''}`,
+      exp:`${why}<br>답: <b>${ans}</b>`}; },
+  bundle(c){ const t=R(2,6),u=R(11,19),a=t*10+u;
+    return {topic:'묶음과 낱개',q:`똥 봉지가 10개씩 묶음 <b>${t}개</b>와 낱개 <b>${u}개</b> 있어요. 똥은 모두 몇 개일까요?`,a,unit:'개',
+      hint:`낱개 ${u}개 안에 10개 묶음이 하나 숨어 있어요!`,exp:`낱개 ${u}개 = 10개씩 묶음 1개 + 낱개 ${u-10}개<br>10개씩 묶음 ${t}+1 = ${t+1}개, 낱개 ${u-10}개<br>그래서 <b>${a}</b>`}; },
+  coins(c){ const v=R(0,3);
+    if(v===0){ const a=R(3,9); return {topic:'돈(확장)',q:`10원짜리 동전이 <b>${a}개</b> 있어요. <b>100원</b>이 되려면 10원짜리가 몇 개 더 있어야 할까요?`,a:10-a,unit:'개',vis:coinsVis(Array(a).fill(10)),
+      hint:`10원짜리가 10개 모이면 100원이에요.`,exp:`10원짜리 10개 = 100원<br>10 - ${a} = <b>${10-a}</b>`}; }
+    if(v===1){ const n=R(3,9); return {topic:'돈(확장)',q:`똥 모양 젤리는 한 개에 <b>10원</b>이에요. <b>${n*10}원</b>으로 똥 젤리를 몇 개 살 수 있을까요?`,a:n,unit:'개',vis:coinsVis(Array(n).fill(10)),
+      hint:`10원짜리 동전 한 개로 젤리 한 개! 동전을 세어 봐요.`,exp:`${n*10}원은 10원짜리 ${n}개 → 젤리 <b>${n}개</b>`}; }
+    if(v===2) return {topic:'돈(확장)',q:`<b>50원</b>짜리 동전 1개는 <b>10원</b>짜리 동전 몇 개와 같을까요?`,a:5,unit:'개',vis:coinsVis([50])+'<span class="plus">=</span><span style="font-size:40px">❓</span>',
+      hint:`10, 20, 30… 하고 50이 될 때까지 세어 봐요.`,exp:`10, 20, 30, 40, 50 → <b>5개</b>`};
+    const x=R(1,4); return {topic:'돈(확장)',q:`${을를(c.pup)} 도와준 친구가 동전을 줬어요. 모두 얼마일까요?`,a:50+10*x,unit:'원',vis:coinsVis([50,...Array(x).fill(10)]),
+      hint:`50에서 시작해서 10씩 세어 봐요. 50, 60…`,exp:`50, ${Array.from({length:x},(_,i)=>60+i*10).join(', ')}<br>모두 <b>${50+10*x}원</b>`}; },
+  sumdiff(c){ const big=R(5,12),small=R(1,big-1),s=big+small,d=big-small;
+    return {topic:'합과 차',q:`체이스와 마셜이 뀐 방귀를 더하면 <b>${s}번</b>이에요. 체이스가 마셜보다 <b>${d}번</b> 더 많이 뀌었어요. 체이스는 방귀를 몇 번 뀌었을까요?`,a:big,unit:'번',
+      hint:`더해서 ${s}가 되는 두 수를 차례로 써 보고, 그중 차이가 ${d}인 짝을 찾아요.`,exp:`${big} + ${small} = ${s}, ${big} - ${small} = ${d}<br>체이스는 <b>${big}번</b>`}; },
+  nth(c){ const st=R(1,5),step=pick([2,3,5]),k=R(5,7),ans=st+(k-1)*step;
+    return {topic:'규칙의 ○번째',q:`${이가(c.pup)} 방귀 연습을 해요. 첫째 날 <b>${st}번</b>, 둘째 날 <b>${st+step}번</b>, 셋째 날 <b>${st+2*step}번</b>… 이렇게 늘어나면 <b>${ORD[k-1]} 날</b>에는 몇 번 뀔까요?`,a:ans,unit:'번',
+      hint:`날마다 ${step}번씩 늘어나요. 넷째 날, 다섯째 날… 차례로 써 봐요.`,exp:`${Array.from({length:k},(_,i)=>st+i*step).join(' → ')}<br>${ORD[k-1]} 날은 <b>${ans}번</b>`}; },
+  clockThink(c){ const h=R(1,11),v=R(0,2); const w=x=>((x-1)%12)+1;
+    if(v===0) return {topic:'시곗바늘',q:`지금은 <b>${h}시</b>예요. 긴바늘이 <b>한 바퀴</b> 돌면 몇 시가 될까요?`,a:w(h+1),unit:'시',vis:clockSVG(h,0),hint:`긴바늘이 한 바퀴 돌면 짧은바늘은 숫자 한 칸을 움직여요.`,exp:`긴바늘 한 바퀴 = 1시간<br>${h}시 → <b>${w(h+1)}시</b>`};
+    if(v===1) return {topic:'시곗바늘',q:`지금은 <b>${h}시</b>예요. 러블이 똥 청소를 하는 동안 긴바늘이 <b>두 바퀴</b> 돌았어요. 몇 시가 되었을까요?`,a:w(h+2),unit:'시',vis:clockSVG(h,0),hint:`한 바퀴에 1시간! 두 바퀴면?`,exp:`${h}시 → ${w(h+1)}시 → <b>${w(h+2)}시</b>`};
+    return {topic:'시곗바늘',q:`지금은 <b>${h}시 30분</b>이에요. 긴바늘이 <b>반 바퀴</b> 더 돌면 몇 시가 될까요?`,a:w(h+1),unit:'시',vis:clockSVG(h,30),hint:`긴바늘이 6에서 반 바퀴 돌면 12로 가요.`,exp:`긴바늘이 12에 오면 정각!<br>짧은바늘은 ${w(h+1)}을(를) 가리켜서 <b>${w(h+1)}시</b>`}; },
+  steps(c){ const a=R(9,16),b=R(2,a-4),d=R(2,7),ans=a-b+d;
+    return {topic:'여러 단계 계산',q:`똥 산에 똥이 <b>${a}개</b> 있었어요. ${이가(c.pup)} <b>${b}개</b>를 치웠는데, 그사이 코끼리가 <b>${d}개</b>를 더 쌌어요! 지금 똥은 몇 개일까요?`,a:ans,unit:'개',
+      hint:`먼저 치운 뒤 남은 수를 구하고, 그다음 더 싼 똥을 더해요.`,exp:`${a} - ${b} = ${a-b}<br>${a-b} + ${d} = <b>${ans}</b>`}; },
+  oddeven(c){ const a=R(20,80),b=a+R(7,11),ev=Math.random()<.5; const list=[]; for(let i=a+1;i<b;i++) if((i%2===0)===ev) list.push(i);
+    return {topic:'짝수와 홀수',q:`<b>${a}</b>보다 크고 <b>${b}</b>보다 작은 수 중에서 <b>${ev?'짝수':'홀수'}</b>는 몇 개일까요?<br><small>(${ev?'짝수: 둘씩 짝을 지으면 남는 게 없는 수':'홀수: 둘씩 짝을 지으면 하나가 남는 수'})</small>`,a:list.length,unit:'개',
+      hint:`${a+1}부터 ${b-1}까지 모두 써 보고, 낱개 자리가 ${ev?'0, 2, 4, 6, 8':'1, 3, 5, 7, 9'}인 수를 찾아요.`,exp:`${list.join(', ')}<br>모두 <b>${list.length}개</b>`}; },
+  chain(c){ const x=R(2,6),d1=R(1,4),d2=R(1,4),ans=x+d1+d2;
+    return {topic:'비교 연결하기',q:`스카이는 방귀를 <b>${x}번</b> 뀌었어요. 마셜은 스카이보다 <b>${d1}번 더</b>, 체이스는 마셜보다 <b>${d2}번 더</b> 뀌었어요. 체이스는 몇 번 뀌었을까요?`,a:ans,unit:'번',
+      hint:`먼저 마셜이 몇 번 뀌었는지 구해요.`,exp:`마셜: ${x} + ${d1} = ${x+d1}<br>체이스: ${x+d1} + ${d2} = <b>${ans}</b>`}; },
+};
+
+/* ================== 구조 장면 ================== */
+const SCENES=[
+  {icon:'🐱',t:'고양이가 나무에서 못 내려와요!',pup:'marshall',msg:'마셜이 사다리로 고양이를 안전하게 내려 줬어요!'},
+  {icon:'🏄',t:'파도에 휩쓸린 서퍼를 구해요!',pup:'zuma',msg:'주마가 호버크래프트로 서퍼를 구했어요!'},
+  {icon:'🎈',t:'풍선에 매달린 아이가 날아가요!',pup:'skye',msg:'스카이가 헬리콥터로 아이를 잡았어요!'},
+  {icon:'🪨',t:'바위가 굴러와 길이 막혔어요!',pup:'rubble',msg:'러블이 굴착기로 바위를 치웠어요!'},
+  {icon:'🐢',t:'거북이가 쓰레기에 걸렸어요!',pup:'rocky',msg:'로키가 쓰레기를 치우고 거북이를 풀어 줬어요!'},
+  {icon:'🚦',t:'신호등이 고장 나서 차들이 엉켰어요!',pup:'chase',msg:'체이스가 호루라기로 차들을 정리했어요!'},
+  {icon:'🔥',t:'바비큐 그릴에 불이 났어요!',pup:'marshall',msg:'마셜이 물대포로 불을 껐어요!'},
+  {icon:'🧒',t:'숲에서 길을 잃은 친구를 찾아요!',pup:'chase',msg:'체이스가 냄새를 킁킁 맡아서 친구를 찾았어요!'},
+  {icon:'⛵',t:'배가 고장 나서 떠내려가요!',pup:'zuma',msg:'주마가 배를 끌고 항구로 돌아왔어요!'},
+  {icon:'💩',t:'거대한 똥 산사태! 마을이 똥에 파묻혀요!',pup:'rubble',msg:'러블이 삽으로 똥을 싹싹 치웠어요! 휴~ 냄새!',poo:1},
+  {icon:'💨',t:'지독한 방귀 구름이 마을을 덮었어요!',pup:'skye',msg:'스카이의 프로펠러 바람으로 방귀 구름이 날아갔어요!',poo:1},
+  {icon:'🚽',t:'학교 변기가 꽉 막혀서 넘쳐요!',pup:'rocky',msg:'로키가 뚫어뻥으로 뻥! 변기를 뚫었어요!',poo:1},
+  {icon:'🐘',t:'코끼리가 방귀를 참다가 배가 빵빵해졌어요!',pup:'marshall',msg:'마셜이 배를 살살 문질러 주자… 뿌우우웅~! 코끼리가 시원해졌어요!',poo:1,bigFart:1},
+];
+
+/* ================== 게임 진행 ================== */
+let G=null; // {lv, scenes:[{...,done,gen}], cur, tries, earned}
+function name(){ return (S.name||'대원').trim()||'대원'; }
+function renderReport(){
+  const ctx={pup:'체이스',pup2:'마셜',N:'대원'}; let rows='';
+  for(const [lv,set,pre] of [['쉬움',EASY,'e:'],['도전',HARD,'h:']]) for(const k in set){ const t=S.stats&&S.stats[pre+k]; if(!t||!t.n) continue;
+    const topic=k==='money'?'몇십 덧셈·뺄셈(돈)':set[k](ctx).topic, pct=Math.round(t.ok/t.n*100), m=missRate(pre+k);
+    rows+=`<tr${m>=.5?' style="background:#fff1e6"':''}><td>${lv}</td><td>${m>=.5?'🔁 ':''}${topic}</td><td>${t.n}</td><td>${pct}%</td><td>${t.r.map(x=>x?'○':'✕').join('')}</td></tr>`; }
+  $('report').innerHTML=rows?`<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap">
+    <tr style="background:#eef5ff"><th>단계</th><th>유형</th><th>푼 수</th><th>한 번에</th><th>최근</th></tr>${rows}</table></div>`
+    :'<p style="color:#888">아직 기록이 없어요. 한 판 하고 오면 여기에 쌓여요.</p>';
+}
+function show(id){ if(id==='s-guide') renderReport(); document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id)); window.scrollTo(0,0); }
+function goHome(){ try{speechSynthesis.cancel();}catch(e){} $('ov').classList.remove('on'); $('nameIn').value=S.name||''; show('s-start'); }
+$('nameIn').addEventListener('input',e=>{S.name=e.target.value.trim();save();});
+
+function startRound(lv){
+  ac(); S.name=$('nameIn').value.trim(); save();
+  const poo=shuffle(SCENES.filter(s=>s.poo)).slice(0,2), rest=shuffle(SCENES.filter(s=>!s.poo)).slice(0,3);
+  const pre=lv==='easy'?'e:':'h:', gens=weightedPick(Object.keys(lv==='easy'?EASY:HARD).map(k=>pre+k),5).map(k=>k.slice(2));
+  G={lv,cur:-1,earned:0,scenes:shuffle([...poo,...rest]).map((s,i)=>Object.assign({},s,{done:false,gen:gens[i%gens.length]}))};
+  sSiren(); renderMap(); show('s-map');
+}
+function renderMap(){
+  $('mapLv').textContent=G.lv==='easy'?'🙂 쉬움':'🧠 도전';
+  $('mapMoney').textContent=S.money.toLocaleString();
+  const left=G.scenes.filter(s=>!s.done).length;
+  $('hqMsg').textContent=left?`${name()} 대원, 도움이 필요한 친구가 ${left}명 있어요! 눌러서 출동!`:'모두 구했어요!';
+  $('hqPup').innerHTML=pupSVG('chase',64);
+  $('sceneGrid').innerHTML=G.scenes.map((s,i)=>`<button class="scene ${s.done?'done':''}" onclick="openQ(${i})" ${s.done?'disabled':''}>
+    <span class="alert">!</span><span class="ic">${s.done?'😄':s.icon}</span>${s.t}
+    ${s.done?'<div class="ok">✅ 구조 완료</div>':`<div style="margin-top:6px">${pupSVG(s.pup,44)}</div>`}</button>`).join('');
+}
+function openQ(i){
+  const s=G.scenes[i]; if(s.done) return; ac();
+  G.cur=i; s.tries=s.tries||0; G.input=''; G.hinted=false;
+  const pups=Object.keys(PUPS), other=pick(pups.filter(p=>p!==s.pup));
+  const ctx={pup:PUPS[s.pup].name,pup2:PUPS[other].name,N:name()};
+  if(!s.q) s.q=(G.lv==='easy'?EASY:HARD)[s.gen](ctx);
+  const q=s.q;
+  $('qPup').innerHTML=pupSVG(s.pup,58);
+  $('qTitle').innerHTML=`${s.icon} ${s.t}<br><small style="color:#666">${PUPS[s.pup].name} 출동! · ${q.topic}</small>${isWeak(tkey(s))?'<br><small style="color:#c2410c">🔁 다시 도전 유형</small>':''}`;
+  $('qLv').textContent=G.lv==='easy'?'쉬움':'도전';
+  $('qLv').style.background=G.lv==='easy'?'#7ed957':'#ff7a2f';
+  $('qText').innerHTML=q.q; $('qVis').innerHTML=q.vis||''; $('qVis').style.display=q.vis?'flex':'none';
+  $('qUnit').textContent=q.unit;
+  $('hintBox').className='msg hint'; $('expBox').className='msg exp';
+  drawAns(); buildPad(); show('s-q');
+  if($('autoRead').checked) setTimeout(readQ,300);
+}
+function readQ(){ const q=G&&G.scenes[G.cur]&&G.scenes[G.cur].q; if(q) speak(q.q.replace(/<small>.*?<\/small>/,'')); }
+function showHint(){ const q=G.scenes[G.cur].q; G.hinted=true; $('hintBox').innerHTML='💡 '+q.hint; $('hintBox').classList.add('on'); speak(q.hint); }
+function backToMap(){ try{speechSynthesis.cancel();}catch(e){} renderMap(); show('s-map'); }
+function buildPad(){
+  const keys=['1','2','3','4','5','6','7','8','9','⌫','0','확인'];
+  $('pad').innerHTML=keys.map(k=>`<button class="${k==='확인'?'go':k==='⌫'?'del':''}" data-k="${k}">${k}</button>`).join('');
+  $('pad').querySelectorAll('button').forEach(b=>b.onclick=()=>key(b.dataset.k));
+}
+function drawAns(cls){ const b=$('ansBox'); b.textContent=G.input||''; b.className='ans'+(cls?' '+cls:''); }
+function key(k){
+  if(G.locked) return;
+  if(k==='⌫') G.input=G.input.slice(0,-1);
+  else if(k==='확인') return check();
+  else if(G.input.length<3){ G.input=(G.input==='0'?'':G.input)+k; tones([[600+Number(k)*40,.06]],'sine'); }
+  drawAns();
+}
+document.addEventListener('keydown',e=>{
+  if(!$('s-q').classList.contains('on')||$('ov').classList.contains('on')) return;
+  if(/^[0-9]$/.test(e.key)) key(e.key); else if(e.key==='Backspace') key('⌫'); else if(e.key==='Enter') key('확인');
+});
+function tkey(s){ return (G.lv==='easy'?'e:':'h:')+s.gen; }
+function check(){
+  const s=G.scenes[G.cur],q=s.q; if(G.input==='') return;
+  if(Number(G.input)===q.a){
+    if(!s.logged){ s.logged=true; logResult(tkey(s),true); }
+    drawAns('good'); sOK(); G.locked=true;
+    const pay=(G.lv==='easy'?[100,50,10]:[500,100,10])[Math.min(s.tries,2)];
+    setTimeout(()=>{G.locked=false; rescue(pay);},600);
+    return;
+  }
+  if(!s.logged){ s.logged=true; logResult(tkey(s),false); }
+  s.tries++; sNo(); drawAns('shake'); setTimeout(()=>{G.input='';drawAns();},450);
+  if(s.tries===1){ $('hintBox').innerHTML='앗, 아까워요! 다시 생각해 봐요.<br>💡 '+q.hint; $('hintBox').classList.add('on'); speak('아까워요! 힌트를 보고 다시 해 봐요.'); }
+  else if(s.tries>=2){ $('expBox').innerHTML=`📘 이렇게 풀어요<br>${q.exp}<br><br>정답: <b>${q.a}${q.unit}</b> — 정답을 직접 눌러서 친구를 구해요!`; $('expBox').classList.add('on'); speak('이렇게 풀어요. 정답을 직접 눌러서 친구를 구해요!'); }
+}
+function rescue(pay){
+  const s=G.scenes[G.cur]; s.done=true; S.money+=pay; S.rescued++; G.earned+=pay; save();
+  try{speechSynthesis.cancel();}catch(e){}
+  const coins=breakdown(pay);
+  $('pop').innerHTML=`<div class="stage"><div class="victim" id="vic">${s.icon}</div><div class="runner">${pupSVG(s.pup,96)}</div></div>
+    <h2>🎉 구조 성공!</h2><div class="d">${s.msg}</div>
+    <div class="earn" id="earn"></div>
+    <button class="btn blue big" onclick="afterRescue()">${G.scenes.every(x=>x.done)?'🏁 결과 보기':'🗺 다음 구조하러 가기'}</button>`;
+  $('ov').classList.add('on');
+  speak('구조 성공! '+s.msg);
+  setTimeout(()=>{ $('vic').textContent='😄'; $('vic').style.transform='scale(1.2)'; },1100);
+  if($('fartOn').checked){ setTimeout(()=>{ fart(s.bigFart?'big':pick(['short','long','squeak','wet','triple'])); const r=$('pop').getBoundingClientRect(); puff(r.left+r.width*.3,r.top+60); },1250); }
+  setTimeout(()=>{ $('earn').innerHTML=coins.map((v,i)=>`<span class="coin-drop" style="animation-delay:${i*.15}s">${moneyHTML(v)}</span>`).join('')+`<span>+${pay}원</span>`;
+    coinSound(pay>=500?6:pay>=100?4:2); coins.forEach((_,i)=>bankDrop(.5+i*.15)); },1900);
+}
+function afterRescue(){
+  $('ov').classList.remove('on');
+  if(G.scenes.every(x=>x.done)) return roundEnd();
+  renderMap(); show('s-map');
+}
+function roundEnd(){
+  const e=G.earned;
+  $('pop').innerHTML=`<div style="font-size:60px">🏆💩🏆</div><h2>${name()} 대원, 모두 구했어요!</h2>
+    <div class="d">이번 출동에서 번 돈: <b>${e.toLocaleString()}원</b><br>이 돈을 동전으로 바꾸면 👇</div>
+    <div class="moneypile">${breakdown(e).map(v=>moneyHTML(v)).join('')}</div>
+    <div class="d">저금통에는 모두 <b>${S.money.toLocaleString()}원</b>!<br>🎺 축하 방귀 연주 시작~!</div>
+    <div class="row" style="margin-top:12px"><button class="btn easy" onclick="startRound('${G.lv}')">🚨 또 출동!</button><button class="btn" onclick="showBank()">🐷 저금통·가게</button></div>`;
+  $('ov').classList.add('on'); registerSound();
+  speak(`모두 구했어요! 이번에 ${e}원을 벌었어요. 축하 방귀 연주 시작!`);
+  if($('fartOn').checked) ['short','squeak','short','wet','long','big'].forEach((k,i)=>setTimeout(()=>{ fart(k); puff(40+Math.random()*(innerWidth-80),innerHeight*(.25+Math.random()*.5),pick(['💨','💩','💨'])); },3200+i*700));
+}
+
+/* ================== 저금통 · 가게 ================== */
+const SHOP=[
+  {id:'bone',icon:'🦴',name:'뼈다귀 간식',price:300},
+  {id:'poocushion',icon:'💩',name:'똥 모양 쿠션',price:500},
+  {id:'whoopee',icon:'🎈',name:'방귀 쿠션 (방귀 버튼이 더 커져요!)',price:800},
+  {id:'hat',icon:'⛑️',name:'구조대 모자',price:1000},
+  {id:'poogold',icon:'🌟',name:'황금 똥 트로피',price:2000},
+  {id:'badge',icon:'🏅',name:'구조대 대장 배지',price:3000},
+];
+function showBank(){
+  $('ov').classList.remove('on'); ac();
+  $('bankName').textContent=name(); $('bankTotal').textContent=S.money.toLocaleString();
+  const b=breakdown(S.money), cnt={}; b.forEach(v=>cnt[v]=(cnt[v]||0)+1);
+  $('bankPile').innerHTML=S.money?b.slice(0,40).map(v=>moneyHTML(v)).join('')+(b.length>40?'<span>…</span>':''):'<span style="color:#999">아직 비어 있어요. 구조하러 가요!</span>';
+  $('bankExplain').innerHTML=Object.keys(cnt).sort((x,y)=>y-x).map(v=>`${Number(v).toLocaleString()}원 ${v==1000?'지폐':'동전'} ${cnt[v]}${v==1000?'장':'개'}`).join(' + ')||'';
+  $('stickers').textContent=S.items.map(id=>(SHOP.find(x=>x.id===id)||{}).icon||'').join(' ');
+  $('shop').innerHTML=SHOP.map(it=>{ const own=S.items.includes(it.id);
+    return `<div class="item ${own?'own':''}"><div class="ic">${it.icon}</div><div>${it.name}</div><div class="pr">${it.price.toLocaleString()}원</div>
+      ${own?'<div>✅ 샀어요</div>':`<button class="btn small ${S.money>=it.price?'easy':''}" onclick="buy('${it.id}')">사기</button>`}</div>`; }).join('');
+  show('s-bank');
+}
+function buy(id){
+  const it=SHOP.find(x=>x.id===id);
+  if(S.money<it.price){ sNo(); const need=it.price-S.money; alert(`${need.toLocaleString()}원이 더 필요해요! 구조를 더 해서 모아 볼까요?`); return; }
+  const before=S.money; S.money-=it.price; S.items.push(id); save(); registerSound();
+  if(id==='whoopee'||id==='poocushion') setTimeout(()=>fart(id==='whoopee'?'big':'wet'),900);
+  speak(`${it.name}을 샀어요! ${before}원에서 ${it.price}원을 빼면 ${S.money}원이 남아요.`);
+  showBank();
+}
+
+/* ================== 앱 설치 (홈 화면) ================== */
+let installEvt=null;
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEvt=e; $('installBtn').style.display=''; });
+window.addEventListener('appinstalled',()=>{ $('installBtn').style.display='none'; });
+function installApp(){ if(!installEvt) return; installEvt.prompt(); installEvt.userChoice.finally(()=>{ installEvt=null; $('installBtn').style.display='none'; }); }
+if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+
+/* 시작 화면 그리기 */
+$('startPups').innerHTML=Object.keys(PUPS).map(k=>pupSVG(k,72)).join('');
+$('nameIn').value=S.name||'';
+</script>
+</body>
+</html>
