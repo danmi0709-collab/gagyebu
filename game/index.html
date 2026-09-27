@@ -170,6 +170,14 @@
   .move.special { grid-column: 1 / -1; min-height: 64px; }
   .moves .move.special { background: var(--c2, #fff); }
   .moves.wait .move.special { background: #eee; }
+  .sounds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .sounds button {
+    font-family: var(--display); font-size: 16px; color: var(--ink); cursor: pointer;
+    border: 3px solid var(--ink); border-radius: 12px; padding: 8px 4px; line-height: 1.2;
+  }
+  #soundsFart button { background: #DDF3C8; }
+  #soundsPoop button { background: #F3DCC2; }
+  .sounds button:focus-visible { outline: 4px solid var(--pink); outline-offset: 2px; }
   .seg.three { grid-template-columns: 1fr 1fr 1fr; }
 
   /* 수학 파워 문제 */
@@ -283,6 +291,13 @@
         <button type="button" id="mathHard" data-math="hard" aria-pressed="false">도전<br><small>받아올림 있음</small></button>
       </div>
       <p class="hint" id="mathHint"></p>
+    </div>
+
+    <div class="panel">
+      <h2>방귀·똥 소리 들어보기</h2>
+      <p class="hint">특별 공격을 쓰면 이 중 하나가 랜덤으로 나와요.</p>
+      <div class="sounds" id="soundsFart"></div>
+      <div class="sounds" id="soundsPoop"></div>
     </div>
 
     <button class="btn" id="startBtn" type="button">배틀 시작!</button>
@@ -493,18 +508,98 @@ const SFX = {
   hit:  () => { tone(160, 0.18, "square", 0, 0.1, 60); },
   miss: () => { tone(400, 0.25, "sine", 0, 0.08, 150); },
   heal: () => { [440, 554, 659, 880].forEach((f, i) => tone(f, 0.14, "sine", i * 0.08, 0.08)); },
-  fart: () => {
-    const a = audio(); if (!a) return;
-    const t = a.currentTime, o = a.createOscillator(), g = a.createGain();
-    const lfo = a.createOscillator(), lg = a.createGain();
-    o.type = "sawtooth"; o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(60, t + 0.6);
-    lfo.frequency.value = 28; lg.gain.value = 30; lfo.connect(lg).connect(o.frequency);
-    g.gain.setValueAtTime(0.12, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.65);
-    o.connect(g).connect(a.destination); o.start(t); lfo.start(t); o.stop(t + 0.7); lfo.stop(t + 0.7);
-  },
-  poop: () => { tone(220, 0.12, "square", 0, 0.1, 70); tone(90, 0.2, "sawtooth", 0.1, 0.1, 50); tone(700, 0.2, "sine", 0.3, 0.07, 250); },
+  fart: () => grossSound("fart"),
+  poop: () => grossSound("poop"),
   win:  () => { [523, 523, 523, 659, 784, 659, 784, 1047].forEach((f, i) => tone(f, 0.18, "square", i * 0.14, 0.06)); }
 };
+
+/* ---------- 방귀·똥 소리 (소리 파일 없이 직접 만드는 소리) ---------- */
+// 방귀: 공기가 빠르게 끊겼다 나갔다 하는 "부르르" 떨림 + 바람 새는 소리
+function fartBuf(a, o) {
+  const sr = a.sampleRate, n = Math.floor(o.dur * sr);
+  const buf = a.createBuffer(1, n, sr), d = buf.getChannelData(0);
+  let ph = 0, fm = 1, am = 1, tf = 1, ta = 1, next = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / sr, u = t / o.dur;
+    if (i >= next) {                           // 20~50ms마다 떨림 방향이 바뀜
+      tf = 1 + (Math.random() * 2 - 1) * o.jit;
+      ta = 1 - Math.random() * o.flutter;
+      next = i + sr * (0.02 + Math.random() * 0.03);
+    }
+    fm += (tf - fm) * 0.004; am += (ta - am) * 0.006;
+    ph += (o.f0 + (o.f1 - o.f0) * u) * fm / sr;
+    if (ph >= 1) ph -= 1;
+    const pulse = Math.exp(-ph * o.sharp);
+    const s = o.buzz * (pulse - 1 / o.sharp) + o.noise * (Math.random() * 2 - 1) * (o.buzz ? pulse : 1);
+    const env = Math.min(1, t / (o.att || 0.015)) * Math.min(1, (o.dur - t) / (o.rel || 0.08));
+    d[i] = s * env * am;
+  }
+  return buf;
+}
+// 똥: 자글자글 터지는 "뿌지지직" (짧은 소리 조각을 불규칙하게 이어 붙임)
+function crackleBuf(a, o) {
+  const sr = a.sampleRate, n = Math.floor(o.dur * sr);
+  const buf = a.createBuffer(1, n, sr), d = buf.getChannelData(0);
+  let i = 0;
+  while (i < n) {
+    const len = Math.floor(sr * (0.004 + Math.random() * 0.016));
+    const amp = 0.3 + Math.random() * 0.7, f = 60 + Math.random() * 70;
+    for (let k = 0; k < len && i + k < n; k++) {
+      const dec = Math.exp(-k / (len * 0.35));
+      d[i + k] += amp * dec * ((Math.random() * 2 - 1) * 0.8 + Math.sin(2 * Math.PI * f * k / sr) * o.wet);
+    }
+    i += len + Math.floor(sr * Math.random() * (2 / o.density));
+  }
+  for (let k = 0; k < n; k++) d[k] *= Math.min(1, k / (sr * 0.01)) * Math.min(1, (n - k) / (sr * 0.05));
+  return buf;
+}
+const GROSS_VOL = 0.6;   // 방귀·똥 소리 전체 크기
+function playBuf(buf, when, { lp = 1500, hp = 40, vol = 0.8 } = {}) {
+  const a = audio(); if (!a) return;
+  const src = a.createBufferSource(), h = a.createBiquadFilter(), l = a.createBiquadFilter(), g = a.createGain();
+  src.buffer = buf; h.type = "highpass"; h.frequency.value = hp; l.type = "lowpass"; l.frequency.value = lp; g.gain.value = vol * GROSS_VOL;
+  src.connect(h).connect(l).connect(g).connect(a.destination);
+  src.start(a.currentTime + when);
+}
+function fart(when, o, f) { const a = audio(); if (a) playBuf(fartBuf(a, { buzz: 1, noise: 0.35, sharp: 8, jit: 0.1, flutter: 0.3, ...o }), when, f); }
+function crackle(when, o, f) { const a = audio(); if (a) playBuf(crackleBuf(a, { wet: 0.4, density: 40, ...o }), when, { lp: 1800, hp: 120, vol: 1.8, ...f }); }
+function plop(when, big) {
+  const a = audio(); if (!a) return;
+  const t = a.currentTime + when, o = a.createOscillator(), g = a.createGain();
+  o.type = "sine"; o.frequency.setValueAtTime(big ? 520 : 750, t); o.frequency.exponentialRampToValueAtTime(big ? 110 : 180, t + 0.1);
+  g.gain.setValueAtTime((big ? 0.5 : 0.35) * GROSS_VOL * 1.3, t); g.gain.exponentialRampToValueAtTime(0.0001, t + (big ? 0.25 : 0.16));
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.3);
+  for (let k = 0; k < (big ? 4 : 2); k++) {                 // 튀는 물방울
+    const w = t + 0.08 + Math.random() * 0.25, s = a.createOscillator(), sg = a.createGain();
+    s.type = "sine"; const f = 1100 + Math.random() * 1200;
+    s.frequency.setValueAtTime(f, w); s.frequency.exponentialRampToValueAtTime(f * 1.6, w + 0.03);
+    sg.gain.setValueAtTime(0.08, w); sg.gain.exponentialRampToValueAtTime(0.0001, w + 0.05);
+    s.connect(sg).connect(a.destination); s.start(w); s.stop(w + 0.06);
+  }
+}
+const FARTS = [
+  { label: "뿌우웅~",   play: () => fart(0, { dur: 0.9, f0: 95, f1: 68, jit: 0.12, flutter: 0.35 }, { lp: 900 }) },
+  { label: "뽀옹!",     play: () => fart(0, { dur: 0.3, f0: 170, f1: 260, jit: 0.05, flutter: 0.1, sharp: 10, noise: 0.2 }, { lp: 2200 }) },
+  { label: "뿡뿡뿡!",   play: () => { fart(0, { dur: 0.16, f0: 125, f1: 110 }, { lp: 1200 }); fart(0.22, { dur: 0.16, f0: 115, f1: 100 }, { lp: 1200 }); fart(0.44, { dur: 0.4, f0: 105, f1: 80 }, { lp: 1100 }); } },
+  { label: "피쉬시~",   play: () => fart(0, { dur: 1.3, f0: 1, f1: 1, buzz: 0, noise: 0.6, flutter: 0.4, att: 0.25, rel: 0.4 }, { lp: 3200, hp: 500, vol: 0.9 }) },
+  { label: "부르르릉!", play: () => fart(0, { dur: 1.1, f0: 55, f1: 88, jit: 0.25, flutter: 0.85, sharp: 6, noise: 0.5 }, { lp: 750, vol: 0.65 }) },
+  { label: "삐이익!",   play: () => fart(0, { dur: 0.55, f0: 320, f1: 230, jit: 0.07, flutter: 0.2, sharp: 14, noise: 0.25 }, { lp: 3200, vol: 0.6 }) }
+];
+const POOPS = [
+  { label: "뿌지직!",       play: () => { crackle(0, { dur: 0.55 }); plop(0.7); } },
+  { label: "뿌지지지지직!", play: () => { crackle(0, { dur: 1.3, density: 50 }); plop(1.45); } },
+  { label: "뿌직 뿌직!",    play: () => { crackle(0, { dur: 0.25 }); crackle(0.4, { dur: 0.25 }); plop(0.8); } },
+  { label: "뿌르르륵!",     play: () => { fart(0, { dur: 0.9, f0: 50, f1: 70, flutter: 0.9, noise: 0.8, sharp: 5 }, { lp: 700, vol: 0.55 }); crackle(0.1, { dur: 0.7, wet: 0.9, density: 30 }, { lp: 1000, vol: 1.2 }); plop(1.05); } },
+  { label: "퐁당!",         play: () => { crackle(0, { dur: 0.18 }); plop(0.3, true); } },
+  { label: "뿌지직… 퐁! 퐁!", play: () => { crackle(0, { dur: 0.7, density: 45 }); plop(0.85); plop(1.15); } }
+];
+const GROSS = { fart: FARTS, poop: POOPS };
+// 소리를 내고, 화면에 띄울 글자를 돌려줌
+function grossSound(kind) {
+  const v = pick(GROSS[kind]);
+  v.play();
+  return v.label;
+}
 
 /* ---------- 고르기 화면 ---------- */
 function renderPicks() {
@@ -739,8 +834,8 @@ async function act(i) {
     if (m.special) me.specials--;
     say(`${power ? "수학 파워! " : ""}${me.name}의 ${m.name}!`);
     lunge(meEl, turn === 0 ? 1 : -1);
-    SFX[m.sfx || me.sfx]();
-    if (m.shout) popText(m.shout, meEl, "miss");
+    const sound = SFX[m.sfx || me.sfx]();
+    if (m.shout) popText(typeof sound === "string" ? sound : m.shout, meEl, "miss");
     await sleep(250);
     await fly(power ? m.fx + m.fx : m.fx, meEl, foeEl);
     if (Math.random() > m.acc) {
@@ -1046,6 +1141,14 @@ function confetti() {
 
 renderPicks();
 renderMath();
+[["soundsFart", FARTS, "💨"], ["soundsPoop", POOPS, "💩"]].forEach(([id, list, icon]) => {
+  list.forEach((v, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.id = id + i; b.textContent = icon + " " + v.label;
+    b.addEventListener("click", () => { if (!soundOn) $("soundBtn").click(); v.play(); });
+    $(id).appendChild(b);
+  });
+});
 </script>
 </body>
 </html>
