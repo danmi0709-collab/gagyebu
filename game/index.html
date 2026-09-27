@@ -131,7 +131,7 @@
   }
   .hpcard.far  { left: 4%; top: 6%; }
   .hpcard.near { right: 4%; bottom: 20%; }
-  .hp-name { font-size: 20px; display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+  .hp-name { font-size: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; column-gap: 6px; white-space: nowrap; }
   .hp-name span { font-family: var(--body); font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
   .hpbar { height: 14px; border-radius: 999px; background: #E9E2F0; border: 2px solid var(--ink); overflow: hidden; }
   .hpfill { height: 100%; width: 100%; background: var(--good); transition: width .6s ease, background-color .3s; }
@@ -165,6 +165,10 @@
   .moves.ping .move { background: var(--pink-soft); }
   .moves.pika .move { background: var(--yellow-soft); }
   .moves.wait .move { background: #eee; }
+  .move.special { grid-column: 1 / -1; min-height: 64px; }
+  .moves.ping .move.special { background: #F3DCC2; }
+  .moves.pika .move.special { background: #DDF3C8; }
+  .moves.wait .move.special { background: #eee; }
   .seg.three { grid-template-columns: 1fr 1fr 1fr; }
 
   /* 수학 파워 문제 */
@@ -184,6 +188,14 @@
     border: 3px dashed var(--ink); background: #fff; color: var(--ink);
   }
   .quiz-ans.empty { color: #C9C0D6; }
+  .quiz-ans { font: inherit; cursor: pointer; line-height: 1.1; }
+  .quiz-ans.active { border-color: var(--pink); border-style: solid; box-shadow: 0 0 0 3px var(--pink-soft); }
+  .slots { display: inline-flex; align-items: center; gap: 6px; }
+  .unit { font-size: .62em; }
+  .quiz.clock .quiz-q { font-size: clamp(26px, 8vw, 38px); }
+  .quiz-clock { display: flex; justify-content: center; }
+  .quiz-clock svg { width: 52%; max-width: 190px; height: auto; }
+  .quiz-text { margin: 0; font-size: 20px; line-height: 1.45; text-align: center; text-wrap: balance; }
   .quiz.ok .quiz-ans { border-style: solid; background: #D4F7DF; border-color: var(--good); }
   .quiz.no .quiz-ans { border-style: solid; background: #FFE0E1; border-color: var(--bad); }
   .quiz-say { margin: 0; text-align: center; font-family: var(--display); font-size: 20px; min-height: 1.3em; }
@@ -288,7 +300,9 @@
     <div class="moves" id="moves"></div>
     <div class="quiz" id="quiz" hidden>
       <p class="quiz-head" id="quizHead">문제를 맞히면 기술이 1.5배!</p>
-      <div class="quiz-q" aria-live="polite"><span id="quizQ">34 + 25 =</span><span class="quiz-ans empty" id="quizAns">?</span></div>
+      <div class="quiz-clock" id="quizClock" hidden></div>
+      <p class="quiz-text" id="quizText" hidden></p>
+      <div class="quiz-q" aria-live="polite"><span id="quizQ"></span><span class="slots" id="quizSlots"></span></div>
       <p class="quiz-say" id="quizSay"></p>
       <div class="pad" id="pad">
         <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
@@ -353,20 +367,24 @@ const FIGHTERS = {
       { name: "하트 빔",        kind: "atk",  min: 17, max: 23, acc: 0.95, fx: "💖", note: "잘 맞아요" },
       { name: "반짝 날개",      kind: "atk",  min: 10, max: 14, acc: 1.00, fx: "✨", note: "꼭 맞아요" },
       { name: "러브 대폭발",    kind: "atk",  min: 26, max: 34, acc: 0.65, fx: "🌟", note: "세지만 빗나가기도" },
-      { name: "하츄 응원",      kind: "heal", amt: 25, fx: "💗", note: "체력 회복" }
+      { name: "하츄 응원",      kind: "heal", amt: 25, fx: "💗", note: "체력 회복" },
+      { name: "똥 폭탄",        kind: "atk",  min: 24, max: 30, acc: 1.00, fx: "💩", note: "시계 문제를 맞히면 발사", special: true,
+        sfx: "poop", shout: "뿌직!", hitMsg: "똥 폭탄 명중! 으악, 냄새!" }
     ]
   },
   pika: {
     id: "pika", name: "피카츄", cry: "피카피카~ 츄!",
     moves: [
       { name: "백만볼트",       kind: "atk",  min: 17, max: 23, acc: 0.95, fx: "⚡", note: "잘 맞아요" },
-      { name: "전광석화",       kind: "atk",  min: 10, max: 14, acc: 1.00, fx: "💨", note: "꼭 맞아요" },
+      { name: "전광석화",       kind: "atk",  min: 10, max: 14, acc: 1.00, fx: "💫", note: "꼭 맞아요" },
       { name: "아이언테일",     kind: "atk",  min: 26, max: 34, acc: 0.65, fx: "💥", note: "세지만 빗나가기도" },
-      { name: "쿨쿨 휴식",      kind: "heal", amt: 25, fx: "💤", note: "체력 회복" }
+      { name: "쿨쿨 휴식",      kind: "heal", amt: 25, fx: "💤", note: "체력 회복" },
+      { name: "뿡뿡 방귀",      kind: "atk",  min: 24, max: 30, acc: 1.00, fx: "💨", note: "시계 문제를 맞히면 발사", special: true,
+        sfx: "fart", shout: "뿡!", hitMsg: "뿌웅~ 방귀 명중! 코를 막아요!" }
     ]
   }
 };
-const MAX_HP = 100, HEALS = 2;
+const MAX_HP = 100, HEALS = 2, SPECIALS = 3;
 
 /* ---------- 상태 ---------- */
 const $ = id => document.getElementById(id);
@@ -377,7 +395,7 @@ let turn = 0;
 let busy = false;
 let soundOn = true;
 let mathLevel = "easy";            // "off" | "easy" | "hard"
-let mathStats = [];                // 사람별 [맞힌 수, 푼 수]
+let stats = [];                    // 사람별 { math: [맞힌 수, 푼 수], clock: [...] }
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const sleep = ms => new Promise(r => setTimeout(r, reduce ? Math.min(ms, 250) : ms));
 const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
@@ -406,6 +424,16 @@ const SFX = {
   hit:  () => { tone(160, 0.18, "square", 0, 0.1, 60); },
   miss: () => { tone(400, 0.25, "sine", 0, 0.08, 150); },
   heal: () => { [440, 554, 659, 880].forEach((f, i) => tone(f, 0.14, "sine", i * 0.08, 0.08)); },
+  fart: () => {
+    const a = audio(); if (!a) return;
+    const t = a.currentTime, o = a.createOscillator(), g = a.createGain();
+    const lfo = a.createOscillator(), lg = a.createGain();
+    o.type = "sawtooth"; o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(60, t + 0.6);
+    lfo.frequency.value = 28; lg.gain.value = 30; lfo.connect(lg).connect(o.frequency);
+    g.gain.setValueAtTime(0.12, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.65);
+    o.connect(g).connect(a.destination); o.start(t); lfo.start(t); o.stop(t + 0.7); lfo.stop(t + 0.7);
+  },
+  poop: () => { tone(220, 0.12, "square", 0, 0.1, 70); tone(90, 0.2, "sawtooth", 0.1, 0.1, 50); tone(700, 0.2, "sine", 0.3, 0.07, 250); },
   win:  () => { [523, 523, 523, 659, 784, 659, 784, 1047].forEach((f, i) => tone(f, 0.18, "square", i * 0.14, 0.06)); }
 };
 
@@ -435,7 +463,8 @@ const MATH_HINT = {
 };
 function renderMath() {
   document.querySelectorAll("#mathSeg button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.math === mathLevel)));
-  $("mathHint").textContent = MATH_HINT[mathLevel] + (mathLevel === "off" ? "" : " 맞히면 기술이 1.5배로 세져요!");
+  $("mathHint").textContent = MATH_HINT[mathLevel] + (mathLevel === "off" ? "" : " 맞히면 기술이 1.5배로 세져요!")
+    + ` 방귀·똥 공격은 ${mathLevel === "hard" ? "몇 시 몇 분, 몇 분 전 같은" : "몇 시, 몇 시 30분 같은"} 시계 문제를 맞혀야 나가요.`;
 }
 document.querySelectorAll("#mathSeg button").forEach(b => b.addEventListener("click", () => {
   mathLevel = b.dataset.math; SFX.tap(); renderMath();
@@ -463,7 +492,7 @@ function startBattle() {
   SFX.tap();
   const other = myPick === "ping" ? "pika" : "ping";
   players = [myPick, other].map((id, i) => ({
-    ...FIGHTERS[id], hp: MAX_HP, heals: HEALS,
+    ...FIGHTERS[id], hp: MAX_HP, heals: HEALS, specials: SPECIALS,
     who: mode === "1p" ? (i === 0 ? "나" : "컴퓨터") : (i === 0 ? "1번" : "2번"),
     cpu: mode === "1p" && i === 1
   }));
@@ -472,7 +501,7 @@ function startBattle() {
   $("fNear").className = "fighter near";
   $("fFar").className = "fighter far";
   turn = Math.random() < 0.5 ? 0 : 1;
-  mathStats = [[0, 0], [0, 0]];
+  stats = [0, 1].map(() => ({ math: [0, 0], clock: [0, 0] }));
   closeQuiz();
   busy = false;
   show("battle");
@@ -507,10 +536,10 @@ function drawMoves() {
   box.innerHTML = "";
   p.moves.forEach((m, i) => {
     const b = document.createElement("button");
-    b.type = "button"; b.className = "move"; b.id = "move" + i;
-    const left = m.kind === "heal" ? ` (${p.heals}번 남음)` : "";
+    b.type = "button"; b.className = "move" + (m.special ? " special" : ""); b.id = "move" + i;
+    const left = m.kind === "heal" ? ` (${p.heals}번 남음)` : m.special ? ` (${p.specials}번 남음)` : "";
     b.innerHTML = `${m.fx} ${m.name}<small>${m.note}${left}</small>`;
-    b.disabled = waiting || busy || (m.kind === "heal" && (p.heals <= 0 || p.hp >= MAX_HP));
+    b.disabled = waiting || busy || (m.kind === "heal" && (p.heals <= 0 || p.hp >= MAX_HP)) || (m.special && p.specials <= 0);
     b.addEventListener("click", () => act(i));
     box.appendChild(b);
   });
@@ -529,6 +558,7 @@ function cpuChoice() {
   const me = players[turn], foe = players[1 - turn];
   if (me.hp <= 35 && me.heals > 0 && Math.random() < 0.7) return 3;
   if (foe.hp <= 14) return 1;          // 꼭 맞는 기술로 마무리
+  if (me.specials > 0 && Math.random() < 0.2) return 4;
   const r = Math.random();
   return r < 0.45 ? 0 : r < 0.75 ? 2 : 1;
 }
@@ -589,12 +619,24 @@ async function act(i) {
   const m = me.moves[i];
   if (!m) return;
   if (m.kind === "heal" && (me.heals <= 0 || me.hp >= MAX_HP)) return;
+  if (m.special && me.specials <= 0) return;
   busy = true; drawMoves();
   let power = false;
-  if (mathLevel !== "off" && !me.cpu) {
-    const who = mode === "2p" ? `${me.who} 사람,` : "";
-    const res = await askMath(who);
+  const who = mode === "2p" ? `${me.who} 사람, ` : "";
+  if (m.special && !me.cpu) {
+    // 방귀·똥 공격은 시계 문제를 맞혀야 나감
+    const res = await askQuiz(makeClockProblem(mathLevel === "hard" ? "hard" : "easy"),
+      `${who}시계 문제를 맞혀야 ${eulreul(m.name)} 쓸 수 있어요!`);
     if (res === null) return;          // 처음으로 돌아가서 문제가 닫힘
+    if (!res) {
+      say(`앗! ${iga(m.name)} 쏙 들어갔어요. 다음엔 꼭 맞혀요! (남은 횟수는 그대로)`);
+      await sleep(1600);
+      turn = 1 - turn; busy = false; nextTurn();
+      return;
+    }
+  } else if (mathLevel !== "off" && !me.cpu) {
+    const res = await askQuiz(makeProblem(mathLevel), `${who}문제를 맞히면 기술이 1.5배!`);
+    if (res === null) return;
     power = res;
   }
   const meEl = turn === 0 ? $("fNear") : $("fFar");
@@ -612,9 +654,11 @@ async function act(i) {
     say(`${me.name}의 체력이 ${me.hp - before}만큼 올랐어요!`);
     await sleep(900);
   } else {
+    if (m.special) me.specials--;
     say(`${power ? "수학 파워! " : ""}${me.name}의 ${m.name}!`);
     lunge(meEl, turn === 0 ? 1 : -1);
-    (me.id === "pika" ? SFX.zap : SFX.love)();
+    (m.sfx ? SFX[m.sfx] : me.id === "pika" ? SFX.zap : SFX.love)();
+    if (m.shout) popText(m.shout, meEl, "miss");
     await sleep(250);
     await fly(power ? m.fx + m.fx : m.fx, meEl, foeEl);
     if (Math.random() > m.acc) {
@@ -633,6 +677,7 @@ async function act(i) {
       popText("-" + dmg, foeEl);
       drawHP();
       say(crit ? `크리티컬! 아주 세게 맞았어요! (${dmg})`
+        : m.hitMsg ? `${m.hitMsg} (${dmg})`
         : power ? `수학 파워로 ${foe.name}에게 ${dmg}만큼 맞았어요!`
         : `${foe.name}에게 ${dmg}만큼 맞았어요!`);
       await sleep(1300);
@@ -649,6 +694,20 @@ async function act(i) {
   busy = false;
   nextTurn();
 }
+
+/* ---------- 문제 공통 ---------- */
+// 문제 모양: { kind: "math"|"clock", clock: {h,m}|null, text, inline, slots: [{unit, ans, max}], answerText }
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+// 받침 있는 말 뒤에는 "이/을", 없으면 "가/를"
+function hasBatchim(word) {
+  const c = String(word).trim().slice(-1);
+  const NUM = { "0": true, "1": true, "2": false, "3": true, "4": false, "5": false, "6": true, "7": true, "8": true, "9": false };
+  if (c in NUM) return NUM[c];
+  const code = c.charCodeAt(0);
+  return code >= 0xAC00 && code <= 0xD7A3 && (code - 0xAC00) % 28 !== 0;
+}
+const iga = w => w + (hasBatchim(w) ? "이" : "가");
+const eulreul = w => w + (hasBatchim(w) ? "을" : "를");
 
 /* ---------- 수학 파워 문제 ---------- */
 // 쉬움: 받아올림·받아내림 없음 / 도전: 받아올림·받아내림 있음. 답은 항상 99 이하.
@@ -668,21 +727,117 @@ function makeProblem(level) {
       if (level === "easy" ? !borrow : borrow) break;
     }
   }
-  return { text: `${a} ${plus ? "+" : "−"} ${b} =`, answer: plus ? a + b : a - b };
+  const ans = plus ? a + b : a - b;
+  return { kind: "math", clock: null, text: "", inline: `${a} ${plus ? "+" : "−"} ${b} =`,
+           slots: [{ unit: "", ans, max: 3 }], answerText: String(ans) };
 }
 
-let quizDone = null, quizInput = "", quizProb = null, quizLocked = false;
-function quizRender() {
-  const el = $("quizAns");
-  el.textContent = quizInput || "?";
-  el.classList.toggle("empty", !quizInput);
+/* ---------- 시계 문제 (방귀·똥 공격용) ---------- */
+// 쉬움: 몇 시, 몇 시 30분 (1학년 2학기 시계 보기)
+// 도전: 5분 단위, 몇 분 전, 1시간 = 60분 (2학년 2학기 시각과 시간)
+const H = () => rand(1, 12);
+function addMin(h, m, d) {
+  let t = ((h % 12) * 60 + m + d) % 720; if (t < 0) t += 720;
+  const hh = Math.floor(t / 60);
+  return { h: hh === 0 ? 12 : hh, m: t % 60 };
 }
-function askMath(who) {
-  quizProb = makeProblem(mathLevel);
-  quizInput = ""; quizLocked = false;
-  $("quiz").className = "quiz";
-  $("quizHead").textContent = `${who} 문제를 맞히면 기술이 1.5배!`;
-  $("quizQ").textContent = quizProb.text;
+const fmt = (h, m) => m === 0 ? `${h}시` : `${h}시 ${m}분`;
+const timeSlots = t => t.m === 0
+  ? [{ unit: "시", ans: t.h, max: 2 }]
+  : [{ unit: "시", ans: t.h, max: 2 }, { unit: "분", ans: t.m, max: 2 }];
+const askTime = t => `몇 시${t.m === 0 ? "" : " 몇 분"}일까요?`;
+const NAMES = ["하리", "하츄핑", "피카츄"];
+
+const CLOCK_EASY = [
+  () => { const t = { h: H(), m: 0 };
+    return { clock: t, text: "시계가 가리키는 시각은 몇 시일까요?", slots: timeSlots(t), answerText: fmt(t.h, 0) }; },
+  () => { const t = { h: H(), m: 30 };
+    return { clock: t, text: "시계가 가리키는 시각은 몇 시 몇 분일까요?", slots: timeSlots(t), answerText: fmt(t.h, 30) }; },
+  () => { const h = H();
+    return { clock: { h, m: 0 }, text: "짧은바늘(분홍)이 가리키는 숫자는 무엇일까요?", slots: [{ unit: "", ans: h, max: 2 }], answerText: String(h) }; },
+  () => { const h = H();
+    return { clock: null, text: `긴바늘이 12, 짧은바늘이 ${eulreul(h)} 가리켜요. 몇 시일까요?`, slots: [{ unit: "시", ans: h, max: 2 }], answerText: `${h}시` }; },
+  () => { const h = H();
+    return { clock: null, text: `${h}시 30분에는 긴바늘이 어떤 숫자를 가리킬까요?`, slots: [{ unit: "", ans: 6, max: 2 }], answerText: "6" }; },
+  () => { const s = { h: H(), m: pick([0, 30]) }, t = addMin(s.h, s.m, 60);
+    return { clock: s, text: `이 시각에서 1시간이 지나면 ${askTime(t)}`, slots: timeSlots(t), answerText: fmt(t.h, t.m) }; },
+  () => { const s = { h: H(), m: 0 }, t = addMin(s.h, 0, 30);
+    return { clock: s, text: `이 시각에서 30분이 지나면 ${askTime(t)}`, slots: timeSlots(t), answerText: fmt(t.h, t.m) }; },
+  () => { const s = H(), d = rand(1, 3), e = addMin(s, 0, d * 60).h, who = pick(NAMES);
+    return { clock: null, text: `${iga(who)} ${s}시에 놀기 시작해서 ${e}시에 끝냈어요. 몇 시간 놀았을까요?`,
+             slots: [{ unit: "시간", ans: d, max: 1 }], answerText: `${d}시간` }; }
+];
+const CLOCK_HARD = [
+  () => { const t = { h: H(), m: rand(1, 11) * 5 };
+    return { clock: t, text: "시계가 가리키는 시각은 몇 시 몇 분일까요?", slots: timeSlots(t), answerText: fmt(t.h, t.m) }; },
+  () => { const t = { h: H(), m: rand(1, 11) * 5 };
+    return { clock: t, text: "긴바늘(파랑)이 가리키는 숫자는 무엇일까요?", slots: [{ unit: "", ans: t.m / 5, max: 2 }], answerText: String(t.m / 5) }; },
+  () => { const s = { h: H(), m: rand(0, 9) * 5 }, d = pick([10, 15, 20, 25, 40]), t = addMin(s.h, s.m, d);
+    return { clock: s, text: `이 시각에서 ${d}분이 지나면 ${askTime(t)}`, slots: timeSlots(t), answerText: fmt(t.h, t.m) }; },
+  () => { const h = H(), k = pick([5, 10, 15]), t = addMin(h, 0, -k);
+    return { clock: t, text: "시계를 보고 빈칸에 알맞은 수를 써요.", inline: `${h}시`,
+             slots: [{ unit: "분 전", ans: k, max: 2 }], answerText: `${h}시 ${k}분 전` }; },
+  () => { const n = rand(1, 3);
+    return { clock: null, text: "빈칸에 알맞은 수를 써요.", inline: `${n}시간 =`, slots: [{ unit: "분", ans: n * 60, max: 3 }], answerText: `${n * 60}분` }; },
+  () => { const k = pick([10, 20, 30, 40, 50]);
+    return { clock: null, text: "빈칸에 알맞은 수를 써요.", inline: `1시간 ${k}분 =`, slots: [{ unit: "분", ans: 60 + k, max: 3 }], answerText: `${60 + k}분` }; },
+  () => { const k = pick([5, 10, 15, 20, 30, 40]);
+    return { clock: null, text: "빈칸에 알맞은 수를 써요.", inline: `${60 + k}분 = 1시간`, slots: [{ unit: "분", ans: k, max: 2 }], answerText: `1시간 ${k}분` }; },
+  () => { const s = { h: H(), m: rand(0, 6) * 5 }, d = pick([15, 20, 25, 30, 35, 40, 45]), e = addMin(s.h, s.m, d), who = pick(NAMES);
+    return { clock: null, text: `${iga(who)} ${fmt(s.h, s.m)}에 숙제를 시작해서 ${fmt(e.h, e.m)}에 끝냈어요. 숙제를 몇 분 동안 했을까요?`,
+             slots: [{ unit: "분", ans: d, max: 2 }], answerText: `${d}분` }; }
+];
+function makeClockProblem(level) {
+  const p = pick(level === "hard" ? CLOCK_HARD : CLOCK_EASY)();
+  return { kind: "clock", inline: "", ...p };
+}
+
+function clockSVG(h, m) {
+  const cx = 100, cy = 100;
+  const at = (deg, r) => { const a = (deg - 90) * Math.PI / 180; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; };
+  let s = `<svg viewBox="0 0 200 200" role="img" aria-label="시계"><circle cx="100" cy="100" r="92" fill="#fff" stroke="#2B2240" stroke-width="6"/>`;
+  for (let i = 0; i < 60; i++) {
+    const big = i % 5 === 0, [x1, y1] = at(i * 6, big ? 76 : 80), [x2, y2] = at(i * 6, 86);
+    s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#2B2240" stroke-width="${big ? 3 : 1.2}"/>`;
+  }
+  for (let n = 1; n <= 12; n++) {
+    const [x, y] = at(n * 30, 62);
+    s += `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Jua, sans-serif" font-size="20" fill="#2B2240">${n}</text>`;
+  }
+  const [hx, hy] = at(((h % 12) + m / 60) * 30, 42), [mx, my] = at(m * 6, 70);
+  s += `<line x1="100" y1="100" x2="${hx}" y2="${hy}" stroke="#FF3D8B" stroke-width="9" stroke-linecap="round"/>`;
+  s += `<line x1="100" y1="100" x2="${mx}" y2="${my}" stroke="#2F6FD6" stroke-width="5" stroke-linecap="round"/>`;
+  s += `<circle cx="100" cy="100" r="6" fill="#2B2240"/></svg>`;
+  return s;
+}
+
+/* ---------- 문제 풀기 화면 ---------- */
+let quizDone = null, quizProb = null, quizLocked = false, quizVals = [], quizActive = 0;
+function quizRender() {
+  const box = $("quizSlots");
+  box.innerHTML = "";
+  quizProb.slots.forEach((sl, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "quiz-ans" + (quizVals[i] ? "" : " empty") + (i === quizActive && quizProb.slots.length > 1 ? " active" : "");
+    b.textContent = quizVals[i] || "?";
+    b.setAttribute("aria-label", (sl.unit || "답") + " 칸");
+    b.addEventListener("click", () => { if (!quizLocked) { quizActive = i; quizRender(); } });
+    box.appendChild(b);
+    if (sl.unit) { const u = document.createElement("span"); u.className = "unit"; u.textContent = sl.unit; box.appendChild(u); }
+  });
+}
+function askQuiz(prob, head) {
+  quizProb = prob;
+  quizVals = prob.slots.map(() => ""); quizActive = 0; quizLocked = false;
+  $("quiz").className = "quiz " + prob.kind;
+  $("quizHead").textContent = head;
+  $("quizClock").innerHTML = prob.clock ? clockSVG(prob.clock.h, prob.clock.m) : "";
+  $("quizClock").hidden = !prob.clock;
+  $("quizText").textContent = prob.text || "";
+  $("quizText").hidden = !prob.text;
+  $("quizQ").textContent = prob.inline || "";
+  $("quizQ").hidden = !prob.inline;
   $("quizSay").textContent = "";
   quizRender();
   $("moves").hidden = true;
@@ -696,23 +851,36 @@ function closeQuiz() {
 }
 async function quizKey(k) {
   if (!quizDone || quizLocked) return;
-  if (k === "del") { quizInput = quizInput.slice(0, -1); SFX.tap(); return quizRender(); }
+  const slots = quizProb.slots;
+  if (k === "del") {
+    if (!quizVals[quizActive] && quizActive > 0) quizActive--;
+    quizVals[quizActive] = quizVals[quizActive].slice(0, -1);
+    SFX.tap(); return quizRender();
+  }
   if (k === "ok") {
-    if (!quizInput) { $("quizSay").textContent = "숫자를 먼저 눌러요!"; return; }
+    const empty = quizVals.findIndex(v => !v);
+    if (empty >= 0) { quizActive = empty; quizRender(); $("quizSay").textContent = "빈칸에 숫자를 넣어요!"; return; }
     quizLocked = true;
-    const ok = Number(quizInput) === quizProb.answer;
-    const st = mathStats[turn]; st[1]++; if (ok) st[0]++;
+    const ok = slots.every((sl, i) => Number(quizVals[i]) === sl.ans);
+    const st = stats[turn][quizProb.kind]; st[1]++; if (ok) st[0]++;
     $("quiz").classList.add(ok ? "ok" : "no");
-    if (ok) { SFX.heal(); $("quizSay").innerHTML = `<span class="power">딩동댕! 수학 파워 1.5배!</span>`; }
-    else { SFX.miss(); $("quizSay").textContent = `아쉬워! 정답은 ${quizProb.answer}이에요.`; }
-    await sleep(ok ? 1100 : 2200);
+    if (ok) {
+      SFX.heal();
+      $("quizSay").innerHTML = `<span class="power">${quizProb.kind === "clock" ? "딩동댕! 특별 기술 발사!" : "딩동댕! 수학 파워 1.5배!"}</span>`;
+    } else { SFX.miss(); $("quizSay").textContent = `아쉬워! 정답은 ${quizProb.answerText}이에요.`; }
+    await sleep(ok ? 1100 : 2600);
     const d = quizDone; quizDone = null;
     $("quiz").hidden = true; $("moves").hidden = false;
     if (d) d(ok);
     return;
   }
-  if (quizInput.length >= 3) return;
-  quizInput = (quizInput === "0" ? "" : quizInput) + k;
+  const sl = slots[quizActive];
+  let v = quizVals[quizActive];
+  if (v.length >= sl.max) return;
+  v = (v === "0" ? "" : v) + k;
+  quizVals[quizActive] = v;
+  // "시" 칸은 숫자를 다 넣으면 다음 칸으로 넘어감 (1은 10·11·12일 수 있어서 기다림)
+  if (sl.unit === "시" && quizActive < slots.length - 1 && (v.length >= 2 || v !== "1")) quizActive++;
   SFX.tap(); quizRender();
 }
 document.querySelectorAll("#pad button").forEach(b => b.addEventListener("click", () => quizKey(b.dataset.k)));
@@ -725,11 +893,14 @@ document.addEventListener("keydown", e => {
 
 /* ---------- 결과 ---------- */
 function mathLine() {
-  if (mathLevel === "off") return "";
-  const rows = players.map((p, i) => [p, mathStats[i]]).filter(([p, st]) => !p.cpu && st[1] > 0);
-  if (!rows.length) return "";
-  return rows.map(([p, [ok, all]]) =>
-    `<p><b>${mode === "2p" ? p.who + " 사람" : "수학 파워"}</b>: 문제 ${all}개 중 ${ok}개 맞힘!</p>`).join("");
+  const out = [];
+  players.forEach((p, i) => {
+    if (p.cpu) return;
+    const parts = [["수학", stats[i].math], ["시계", stats[i].clock]]
+      .filter(([, st]) => st[1] > 0).map(([n, [ok, all]]) => `${n} ${all}개 중 ${ok}개`);
+    if (parts.length) out.push(`<p><b>${mode === "2p" ? p.who + " 사람" : "맞힌 문제"}</b>: ${parts.join(", ")}</p>`);
+  });
+  return out.join("");
 }
 function finish(winnerIdx) {
   const w = players[winnerIdx], l = players[1 - winnerIdx];
