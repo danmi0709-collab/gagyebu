@@ -165,6 +165,39 @@
   .moves.ping .move { background: var(--pink-soft); }
   .moves.pika .move { background: var(--yellow-soft); }
   .moves.wait .move { background: #eee; }
+  .seg.three { grid-template-columns: 1fr 1fr 1fr; }
+
+  /* 수학 파워 문제 */
+  .quiz {
+    background: var(--paper); border: 3px solid var(--ink); border-radius: 18px;
+    padding: 12px; display: flex; flex-direction: column; gap: 10px;
+    box-shadow: 0 5px 0 var(--ink);
+  }
+  .quiz-head { font-family: var(--display); font-size: 18px; margin: 0; color: var(--muted); text-align: center; }
+  .quiz-q {
+    font-family: var(--display); font-size: clamp(28px, 9vw, 44px); text-align: center;
+    display: flex; justify-content: center; align-items: center; gap: 8px; white-space: nowrap;
+    font-variant-numeric: tabular-nums; line-height: 1.1;
+  }
+  .quiz-ans {
+    min-width: 2.2em; padding: 2px 8px; border-radius: 12px;
+    border: 3px dashed var(--ink); background: #fff; color: var(--ink);
+  }
+  .quiz-ans.empty { color: #C9C0D6; }
+  .quiz.ok .quiz-ans { border-style: solid; background: #D4F7DF; border-color: var(--good); }
+  .quiz.no .quiz-ans { border-style: solid; background: #FFE0E1; border-color: var(--bad); }
+  .quiz-say { margin: 0; text-align: center; font-family: var(--display); font-size: 20px; min-height: 1.3em; }
+  .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .pad button {
+    font-family: var(--display); font-size: 26px; color: var(--ink);
+    background: #fff; border: 3px solid var(--ink); border-radius: 14px;
+    padding: 8px 0; cursor: pointer; box-shadow: 0 4px 0 var(--ink);
+  }
+  .pad button:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+  .pad button.ok-key { background: var(--good); color: #fff; }
+  .pad button.del-key { font-size: 18px; }
+  .pad button:focus-visible { outline: 4px solid var(--pink); outline-offset: 2px; }
+  .power { color: #E07B00; }
 
   /* 흔들림, 번쩍임 */
   @keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-9%); } 40% { transform: translateX(8%); } 60% { transform: translateX(-6%); } 80% { transform: translateX(4%); } }
@@ -212,7 +245,7 @@
 
     <div class="panel">
       <h2>1. 몇 명이 할까?</h2>
-      <div class="seg" role="group" aria-label="게임 인원">
+      <div class="seg" id="modeSeg" role="group" aria-label="게임 인원">
         <button type="button" id="mode1" data-mode="1p" aria-pressed="true">혼자 하기<br><small>컴퓨터랑</small></button>
         <button type="button" id="mode2" data-mode="2p" aria-pressed="false">둘이 하기<br><small>엄마·아빠랑</small></button>
       </div>
@@ -225,6 +258,16 @@
         <button type="button" class="pick" id="pickPika" data-id="pika" aria-pressed="false"></button>
       </div>
       <p class="hint" id="pickHint">고른 캐릭터는 아래쪽, 상대는 위쪽에 서요.</p>
+    </div>
+
+    <div class="panel">
+      <h2>3. 수학 파워</h2>
+      <div class="seg three" id="mathSeg" role="group" aria-label="수학 문제 난이도">
+        <button type="button" id="mathOff" data-math="off" aria-pressed="false">끄기</button>
+        <button type="button" id="mathEasy" data-math="easy" aria-pressed="true">쉬움<br><small>34+25</small></button>
+        <button type="button" id="mathHard" data-math="hard" aria-pressed="false">도전<br><small>38+47</small></button>
+      </div>
+      <p class="hint" id="mathHint"></p>
     </div>
 
     <button class="btn" id="startBtn" type="button">배틀 시작!</button>
@@ -243,6 +286,17 @@
     </div>
     <p class="msg" id="msg" aria-live="polite">배틀 시작!</p>
     <div class="moves" id="moves"></div>
+    <div class="quiz" id="quiz" hidden>
+      <p class="quiz-head" id="quizHead">문제를 맞히면 기술이 1.5배!</p>
+      <div class="quiz-q" aria-live="polite"><span id="quizQ">34 + 25 =</span><span class="quiz-ans empty" id="quizAns">?</span></div>
+      <p class="quiz-say" id="quizSay"></p>
+      <div class="pad" id="pad">
+        <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+        <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+        <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+        <button type="button" class="del-key" data-k="del">지우기</button><button type="button" data-k="0">0</button><button type="button" class="ok-key" data-k="ok">확인</button>
+      </div>
+    </div>
   </section>
 
   <!-- 3. 결과 -->
@@ -322,6 +376,8 @@ let players = [];   // [0] = 아래쪽(내 캐릭터), [1] = 위쪽(상대)
 let turn = 0;
 let busy = false;
 let soundOn = true;
+let mathLevel = "easy";            // "off" | "easy" | "hard"
+let mathStats = [];                // 사람별 [맞힌 수, 푼 수]
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const sleep = ms => new Promise(r => setTimeout(r, reduce ? Math.min(ms, 250) : ms));
 const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
@@ -367,10 +423,22 @@ function renderPicks() {
     : "고른 캐릭터는 아래쪽, 컴퓨터는 위쪽에 서요.";
 }
 document.querySelectorAll(".pick").forEach(b => b.addEventListener("click", () => { myPick = b.dataset.id; SFX.tap(); renderPicks(); }));
-document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
+document.querySelectorAll("#modeSeg button").forEach(b => b.addEventListener("click", () => {
   mode = b.dataset.mode; SFX.tap();
-  document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  document.querySelectorAll("#modeSeg button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
   renderPicks();
+}));
+const MATH_HINT = {
+  off:  "수학 문제 없이 바로 싸워요.",
+  easy: "기술을 쓰기 전에 문제가 나와요. 받아올림·받아내림 없는 두 자리 수 덧셈·뺄셈이에요.",
+  hard: "기술을 쓰기 전에 문제가 나와요. 받아올림·받아내림이 있는 두 자리 수 덧셈·뺄셈이에요."
+};
+function renderMath() {
+  document.querySelectorAll("#mathSeg button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.math === mathLevel)));
+  $("mathHint").textContent = MATH_HINT[mathLevel] + (mathLevel === "off" ? "" : " 맞히면 기술이 1.5배로 세져요!");
+}
+document.querySelectorAll("#mathSeg button").forEach(b => b.addEventListener("click", () => {
+  mathLevel = b.dataset.math; SFX.tap(); renderMath();
 }));
 $("soundBtn").addEventListener("click", () => {
   soundOn = !soundOn;
@@ -388,7 +456,7 @@ function show(which) {
   $("homeBtn").hidden = which === "setup";
   window.scrollTo(0, 0);
 }
-function goHome() { busy = false; show("setup"); renderPicks(); }
+function goHome() { busy = false; closeQuiz(); show("setup"); renderPicks(); }
 
 /* ---------- 배틀 ---------- */
 function startBattle() {
@@ -404,6 +472,8 @@ function startBattle() {
   $("fNear").className = "fighter near";
   $("fFar").className = "fighter far";
   turn = Math.random() < 0.5 ? 0 : 1;
+  mathStats = [[0, 0], [0, 0]];
+  closeQuiz();
   busy = false;
   show("battle");
   drawHP();
@@ -520,14 +590,21 @@ async function act(i) {
   if (!m) return;
   if (m.kind === "heal" && (me.heals <= 0 || me.hp >= MAX_HP)) return;
   busy = true; drawMoves();
+  let power = false;
+  if (mathLevel !== "off" && !me.cpu) {
+    const who = mode === "2p" ? `${me.who} 사람,` : "";
+    const res = await askMath(who);
+    if (res === null) return;          // 처음으로 돌아가서 문제가 닫힘
+    power = res;
+  }
   const meEl = turn === 0 ? $("fNear") : $("fFar");
   const foeEl = turn === 0 ? $("fFar") : $("fNear");
 
   if (m.kind === "heal") {
     me.heals--;
     const before = me.hp;
-    me.hp = Math.min(MAX_HP, me.hp + m.amt);
-    say(`${me.name}의 ${m.name}! ${m.fx}`);
+    me.hp = Math.min(MAX_HP, me.hp + Math.round(m.amt * (power ? 1.5 : 1)));
+    say(`${power ? "수학 파워! " : ""}${me.name}의 ${m.name}! ${m.fx}`);
     SFX.heal();
     popText("+" + (me.hp - before), meEl, "heal");
     drawHP();
@@ -535,11 +612,11 @@ async function act(i) {
     say(`${me.name}의 체력이 ${me.hp - before}만큼 올랐어요!`);
     await sleep(900);
   } else {
-    say(`${me.name}의 ${m.name}!`);
+    say(`${power ? "수학 파워! " : ""}${me.name}의 ${m.name}!`);
     lunge(meEl, turn === 0 ? 1 : -1);
     (me.id === "pika" ? SFX.zap : SFX.love)();
     await sleep(250);
-    await fly(m.fx, meEl, foeEl);
+    await fly(power ? m.fx + m.fx : m.fx, meEl, foeEl);
     if (Math.random() > m.acc) {
       SFX.miss();
       popText("빗나감!", foeEl, "miss");
@@ -548,13 +625,16 @@ async function act(i) {
     } else {
       let dmg = rand(m.min, m.max);
       const crit = Math.random() < 0.1;
+      if (power) dmg = Math.round(dmg * 1.5);
       if (crit) dmg = Math.round(dmg * 1.5);
       foe.hp = Math.max(0, foe.hp - dmg);
       SFX.hit();
       foeEl.classList.remove("hit"); void foeEl.offsetWidth; foeEl.classList.add("hit");
       popText("-" + dmg, foeEl);
       drawHP();
-      say(crit ? `크리티컬! 아주 세게 맞았어요! (${dmg})` : `${foe.name}에게 ${dmg}만큼 맞았어요!`);
+      say(crit ? `크리티컬! 아주 세게 맞았어요! (${dmg})`
+        : power ? `수학 파워로 ${foe.name}에게 ${dmg}만큼 맞았어요!`
+        : `${foe.name}에게 ${dmg}만큼 맞았어요!`);
       await sleep(1300);
     }
   }
@@ -570,7 +650,87 @@ async function act(i) {
   nextTurn();
 }
 
+/* ---------- 수학 파워 문제 ---------- */
+// 쉬움: 받아올림·받아내림 없음 / 도전: 받아올림·받아내림 있음. 답은 항상 99 이하.
+function makeProblem(level) {
+  const plus = Math.random() < 0.5;
+  let a, b;
+  for (;;) {
+    a = rand(10, 99); b = rand(10, 99);
+    if (plus) {
+      if (a + b > 99) continue;
+      const carry = (a % 10) + (b % 10) >= 10;
+      if (level === "easy" ? !carry : carry) break;
+    } else {
+      if (a < b) [a, b] = [b, a];
+      if (a === b) continue;
+      const borrow = (a % 10) < (b % 10);
+      if (level === "easy" ? !borrow : borrow) break;
+    }
+  }
+  return { text: `${a} ${plus ? "+" : "−"} ${b} =`, answer: plus ? a + b : a - b };
+}
+
+let quizDone = null, quizInput = "", quizProb = null, quizLocked = false;
+function quizRender() {
+  const el = $("quizAns");
+  el.textContent = quizInput || "?";
+  el.classList.toggle("empty", !quizInput);
+}
+function askMath(who) {
+  quizProb = makeProblem(mathLevel);
+  quizInput = ""; quizLocked = false;
+  $("quiz").className = "quiz";
+  $("quizHead").textContent = `${who} 문제를 맞히면 기술이 1.5배!`;
+  $("quizQ").textContent = quizProb.text;
+  $("quizSay").textContent = "";
+  quizRender();
+  $("moves").hidden = true;
+  $("quiz").hidden = false;
+  $("quiz").scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+  return new Promise(res => { quizDone = res; });
+}
+function closeQuiz() {
+  $("quiz").hidden = true; $("moves").hidden = false;
+  if (quizDone) { const d = quizDone; quizDone = null; d(null); }
+}
+async function quizKey(k) {
+  if (!quizDone || quizLocked) return;
+  if (k === "del") { quizInput = quizInput.slice(0, -1); SFX.tap(); return quizRender(); }
+  if (k === "ok") {
+    if (!quizInput) { $("quizSay").textContent = "숫자를 먼저 눌러요!"; return; }
+    quizLocked = true;
+    const ok = Number(quizInput) === quizProb.answer;
+    const st = mathStats[turn]; st[1]++; if (ok) st[0]++;
+    $("quiz").classList.add(ok ? "ok" : "no");
+    if (ok) { SFX.heal(); $("quizSay").innerHTML = `<span class="power">딩동댕! 수학 파워 1.5배!</span>`; }
+    else { SFX.miss(); $("quizSay").textContent = `아쉬워! 정답은 ${quizProb.answer}이에요.`; }
+    await sleep(ok ? 1100 : 2200);
+    const d = quizDone; quizDone = null;
+    $("quiz").hidden = true; $("moves").hidden = false;
+    if (d) d(ok);
+    return;
+  }
+  if (quizInput.length >= 3) return;
+  quizInput = (quizInput === "0" ? "" : quizInput) + k;
+  SFX.tap(); quizRender();
+}
+document.querySelectorAll("#pad button").forEach(b => b.addEventListener("click", () => quizKey(b.dataset.k)));
+document.addEventListener("keydown", e => {
+  if ($("quiz").hidden) return;
+  if (/^[0-9]$/.test(e.key)) quizKey(e.key);
+  else if (e.key === "Backspace") quizKey("del");
+  else if (e.key === "Enter") { e.preventDefault(); quizKey("ok"); }
+});
+
 /* ---------- 결과 ---------- */
+function mathLine() {
+  if (mathLevel === "off") return "";
+  const rows = players.map((p, i) => [p, mathStats[i]]).filter(([p, st]) => !p.cpu && st[1] > 0);
+  if (!rows.length) return "";
+  return rows.map(([p, [ok, all]]) =>
+    `<p><b>${mode === "2p" ? p.who + " 사람" : "수학 파워"}</b>: 문제 ${all}개 중 ${ok}개 맞힘!</p>`).join("");
+}
 function finish(winnerIdx) {
   const w = players[winnerIdx], l = players[1 - winnerIdx];
   let head;
@@ -582,6 +742,7 @@ function finish(winnerIdx) {
     ${ART[w.id]}
     <p><b>${w.name}</b>: “${w.cry}”</p>
     <p>남은 체력 ${w.hp} · 상대는 ${l.name}</p>
+    ${mathLine()}
     <div class="row">
       <button class="btn" id="againBtn" type="button">한 번 더!</button>
       <button class="btn sub-btn" id="backBtn" type="button">캐릭터 바꾸기</button>
@@ -607,6 +768,7 @@ function confetti() {
 }
 
 renderPicks();
+renderMath();
 </script>
 </body>
 </html>
