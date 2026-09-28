@@ -137,8 +137,15 @@ h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shad
 .world.editing{outline:4px dashed #ff7a2f;outline-offset:-4px;touch-action:none}
 .world .road{position:absolute;left:0;right:0;top:78%;height:9%;background:#6b7280}
 .world .road:after{content:'';position:absolute;left:0;right:0;top:45%;height:8%;background:repeating-linear-gradient(90deg,#fff 0 22px,transparent 22px 44px)}
-.world .sun{position:absolute;right:7%;top:5%;font-size:44px}
-.world .cloud1{position:absolute;left:8%;top:9%;font-size:40px;opacity:.9}
+.world .deco{position:absolute;transform:translate(-50%,-100%);line-height:1;pointer-events:none}
+.world .flake{position:absolute;font-size:18px;pointer-events:none;z-index:200;animation:snowfall 6s linear infinite}
+@keyframes snowfall{from{transform:translateY(0)}to{transform:translateY(calc(var(--h,560px)*1.0))}}
+.themeprev{height:70px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:4px}
+.stage .runner.car{animation-name:runcar}
+@keyframes runcar{to{left:calc(100% - 250px)}}
+.stage .runner.air{bottom:40px;animation:flyin 1.3s ease-out forwards}
+@keyframes flyin{from{left:-170px;bottom:120px}to{left:calc(100% - 250px);bottom:34px}}
+.stage .runner .rotor{animation:spin .12s linear 14}
 .world .tower{position:absolute;left:50%;top:14%;transform:translateX(-50%);z-index:1}
 .thing{position:absolute;transform:translate(-50%,-100%);user-select:none;-webkit-user-select:none;cursor:pointer;touch-action:none}
 .thing .inner{display:block;filter:drop-shadow(0 4px 2px rgba(0,0,0,.25))}
@@ -173,7 +180,7 @@ h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shad
   <h1>🐾 퍼피 구조대<br>수학 출동! 🚨</h1>
   <p class="sub">문제를 맞히면 위험에 빠진 친구를 구할 수 있어요!</p>
   <div class="pups" id="startPups"></div>
-  <div class="namebox">대원 이름: <input id="nameIn" maxlength="6" placeholder="이름"></div>
+  <div class="namebox">대원 이름: <input id="nameIn" maxlength="6" placeholder="하리"></div>
   <div class="lvlbox">
     <div class="row">
       <button class="btn big easy" onclick="startRound('easy')">🙂 쉬움</button>
@@ -260,18 +267,10 @@ h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shad
     <button class="btn small" onclick="goHome()">🏠 처음으로</button>
     <span class="pill">🐷 <span id="baseMoney">0</span>원</span>
     <button class="btn small hard" id="editBtn" onclick="toggleEdit()">✏️ 꾸미기</button>
+    <button class="btn small blue" onclick="takePhoto()">📸 사진</button>
   </div>
   <div class="world" id="world">
-    <div class="sun">☀️</div><div class="cloud1">☁️</div>
-    <svg class="tower" viewBox="0 0 120 200" width="34%" aria-label="구조대 타워">
-      <rect x="44" y="70" width="32" height="120" fill="#e5e7eb" stroke="#9aa3a8" stroke-width="3"/>
-      <rect x="20" y="182" width="80" height="18" rx="4" fill="#c7cdd4"/>
-      <path d="M8 70 Q60 -6 112 70Z" fill="#dc2626"/><rect x="8" y="62" width="104" height="18" rx="6" fill="#1f5fbf"/>
-      <ellipse cx="60" cy="48" rx="34" ry="14" fill="#cfefff" stroke="#1f5fbf" stroke-width="3"/>
-      <circle cx="60" cy="130" r="18" fill="#1f5fbf"/><text x="60" y="137" font-size="20" text-anchor="middle">🐾</text>
-      <rect x="57" y="-2" width="6" height="18" fill="#9aa3a8"/><circle cx="60" cy="-2" r="5" fill="#ffc400"/>
-    </svg>
-    <div class="road"></div>
+    <div id="scenery"></div>
     <div id="things"></div>
   </div>
   <p id="baseHint" style="text-align:center;font-size:17px;margin:8px 0 0;color:#555"></p>
@@ -285,6 +284,8 @@ h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shad
   <h2 style="text-align:center;margin:18px 0 0">🚨 구조대 차량</h2>
   <p style="text-align:center;margin:4px 0 0;color:#666">비싸요! 열심히 구조해서 모아요.</p>
   <div class="shop" id="vehShop"></div>
+  <h2 style="text-align:center;margin:18px 0 0">🎨 기지 배경</h2>
+  <div class="shop" id="themeShop"></div>
   <h2 style="text-align:center;margin:18px 0 0">🌳 기지 꾸미기</h2>
   <div class="shop" id="decoShop"></div>
   <p style="text-align:center;margin-top:12px"><button class="btn small" onclick="showBank()">🐷 저금통 · 쿠폰 · 가게</button></p>
@@ -365,10 +366,10 @@ h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shad
 'use strict';
 /* ================== 저장 ================== */
 const SAVE_KEY='pupmath_v1';
-let S={name:'',money:0,items:[],rescued:0,stats:{},coupons:[],couponNo:0,veh:[],deco:{},base:[],uid:0};
+let S={name:'',money:0,items:[],rescued:0,stats:{},coupons:[],couponNo:0,veh:[],deco:{},base:[],uid:0,themes:[],theme:'town'};
 try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); if(s) S=Object.assign(S,s);}catch(e){}
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}}
-function resetSave(){S.money=0;S.items=[];S.rescued=0;S.coupons=[];S.couponNo=0;S.veh=[];S.deco={};S.base=[];save();goHome();}
+function resetSave(){S.money=0;S.items=[];S.rescued=0;S.coupons=[];S.couponNo=0;S.veh=[];S.deco={};S.base=[];S.themes=[];S.theme='town';save();goHome();}
 function resetStats(){S.stats={};save();renderReport();}
 /* ================== 약한 유형 기록 ================== */
 const RECENT=6; // 최근 몇 번까지 보고 판단할지
@@ -729,7 +730,7 @@ const SCENES=[
 
 /* ================== 게임 진행 ================== */
 let G=null; // {lv, scenes:[{...,done,gen}], cur, tries, earned}
-function name(){ return (S.name||'대원').trim()||'대원'; }
+function name(){ return (S.name||'하리').trim()||'하리'; }
 function renderReport(){
   const ctx={pup:'체이스',pup2:'마셜',N:'대원'}; let rows='';
   for(const [lv,set,pre] of [['쉬움',EASY,'e:'],['도전',HARD,'h:']]) for(const k in set){ const t=S.stats&&S.stats[pre+k]; if(!t||!t.n) continue;
@@ -758,7 +759,7 @@ function renderMap(){
   $('hqPup').innerHTML=pupSVG('chase',64);
   $('sceneGrid').innerHTML=G.scenes.map((s,i)=>`<button class="scene ${s.done?'done':''}" onclick="openQ(${i})" ${s.done?'disabled':''}>
     <span class="alert">!</span><span class="ic">${s.done?'😄':s.icon}</span>${s.t}
-    ${s.done?'<div class="ok">✅ 구조 완료</div>':`<div style="margin-top:6px">${pupSVG(s.pup,44)}</div>`}</button>`).join('');
+    ${s.done?'<div class="ok">✅ 구조 완료</div>':`<div style="margin-top:6px">${myVeh(s.pup)?vehicleSVG(myVeh(s.pup),70):pupSVG(s.pup,44)}</div>`}</button>`).join('');
 }
 function openQ(i){
   const s=G.scenes[i]; if(s.done) return; ac();
@@ -768,7 +769,7 @@ function openQ(i){
   if(!s.q) s.q=(G.lv==='easy'?EASY:HARD)[s.gen](ctx);
   const q=s.q;
   $('qPup').innerHTML=pupSVG(s.pup,58);
-  $('qTitle').innerHTML=`${s.icon} ${s.t}<br><small style="color:#666">${PUPS[s.pup].name} 출동! · ${q.topic}</small>${isWeak(tkey(s))?'<br><small style="color:#c2410c">🔁 다시 도전 유형</small>':''}`;
+  $('qTitle').innerHTML=`${s.icon} ${s.t}<br><small style="color:#666">${myVeh(s.pup)?'🚨 '+VEH[myVeh(s.pup)].name:PUPS[s.pup].name} 출동! · ${q.topic}</small>${isWeak(tkey(s))?'<br><small style="color:#c2410c">🔁 다시 도전 유형</small>':''}`;
   $('qLv').textContent=G.lv==='easy'?'쉬움':'도전';
   $('qLv').style.background=G.lv==='easy'?'#7ed957':'#ff7a2f';
   $('qText').innerHTML=q.q; $('qVis').innerHTML=q.vis||''; $('qVis').style.display=q.vis?'flex':'none';
@@ -834,9 +835,10 @@ function renderCap(){ if(!$('capSel')) return; $('capSel').value=String(capOf())
 function rescue(full){
   const pay=capPay(full), capped=pay<full;
   const s=G.scenes[G.cur]; s.done=true; S.money+=pay; addToday(pay); S.rescued++; G.earned+=pay; save();
+  const mv=myVeh(s.pup); if(mv) setTimeout(()=>vehSound(VEH[mv].snd),150);
   try{speechSynthesis.cancel();}catch(e){}
   const coins=breakdown(pay);
-  $('pop').innerHTML=`<div class="stage"><div class="victim" id="vic">${s.icon}</div><div class="runner">${pupSVG(s.pup,96)}</div></div>
+  $('pop').innerHTML=`<div class="stage"><div class="victim" id="vic">${s.icon}</div><div class="runner ${mv?(mv==='heli'?'air':'car'):''}">${mv?vehicleSVG(mv,150):pupSVG(s.pup,96)}</div></div>
     <h2>🎉 구조 성공!</h2><div class="d">${s.msg}</div>
     <div class="earn" id="earn"></div>
     <button class="btn blue big" onclick="afterRescue()">${G.scenes.every(x=>x.done)?'🏁 결과 보기':'🗺 다음 구조하러 가기'}</button>`;
@@ -1020,7 +1022,7 @@ function placeItem(k,x,y){ ensureBase(); const b={u:++S.uid,k,x:x!==undefined?x:
       const best=slots.reduce((m,sl)=>near(sl)<near(m)?sl:m,slots[0]); b.x=best[0]; b.y=best[1]; } else b.y=R(56,76); }
   S.base.push(b); save(); return b; }
 let baseEdit=false, baseSel=null, drag=null;
-function showBaseScreen(){ ensureBase(); $('ov').classList.remove('on'); ac(); baseSel=null; renderBase(); renderBaseShop(); show('s-base'); }
+function showBaseScreen(){ ensureBase(); $('ov').classList.remove('on'); ac(); baseSel=null; renderBase(); renderBaseShop(); show('s-base'); renderScenery(); renderThemeShop(); }
 function toggleEdit(){ baseEdit=!baseEdit; baseSel=null; renderBase(); }
 function renderBase(){
   ensureBase();
@@ -1083,6 +1085,93 @@ function buyBase(k){
   speak(`${name}${t==='v'?'를':''} 샀어요! ${before}원에서 ${price}원을 빼면 ${S.money}원이 남아요. 기지에 놓았어요!`);
   renderBase(); renderBaseShop(); window.scrollTo({top:0,behavior:'smooth'});
 }
+
+/* ================== 기지 배경 · 사진 ================== */
+const TOWER_INNER=`<rect x="44" y="70" width="32" height="120" fill="#e5e7eb" stroke="#9aa3a8" stroke-width="3"/>
+  <rect x="20" y="182" width="80" height="18" rx="4" fill="#c7cdd4"/>
+  <path d="M8 70 Q60 -6 112 70Z" fill="#dc2626"/><rect x="8" y="62" width="104" height="18" rx="6" fill="#1f5fbf"/>
+  <ellipse cx="60" cy="48" rx="34" ry="14" fill="#cfefff" stroke="#1f5fbf" stroke-width="3"/>
+  <circle cx="60" cy="130" r="18" fill="#1f5fbf"/><text x="60" y="137" font-size="20" text-anchor="middle">🐾</text>
+  <rect x="57" y="-2" width="6" height="18" fill="#9aa3a8"/><circle cx="60" cy="-2" r="5" fill="#ffc400"/>`;
+// 배경 설계도: 화면과 사진이 같은 설계도로 그려짐. deco=[이모지, x%, 바닥y%, 크기px]
+const THEMES={
+  town: {name:'햇살 마을', price:0,   icon:'☀️',sky:['#8fd3ff','#cdefff'],ground:['#7ed957','#5fbf45'],road:'#6b7280',
+         deco:[['☀️',88,14,44],['☁️',16,17,40],['☁️',62,10,30]]},
+  beach:{name:'바닷가 기지',price:1500,icon:'🏖️',sky:['#6ec6ff','#d6f3ff'],ground:['#f6dfa4','#e9c877'],sea:'#2fa4e7',road:'#b08d57',
+         deco:[['☀️',86,14,44],['⛵',72,56,34],['🌴',9,68,60],['🌴',93,66,50],['🦀',28,98,28],['🐚',70,99,24]]},
+  snow: {name:'눈 오는 기지',price:1500,icon:'⛄',sky:['#b8c7d9','#e8eef5'],ground:['#ffffff','#e3ebf5'],road:'#8a94a3',snow:true,
+         deco:[['☁️',15,17,44],['☁️',72,12,40],['⛄',12,74,54],['🌲',91,68,52],['🌲',80,70,40]]},
+  night:{name:'밤하늘 기지',price:2000,icon:'🌙',sky:['#0b1640','#2a3f7a'],ground:['#2f6b3a','#1f4d29'],road:'#3b4252',
+         deco:[['🌙',85,15,42],['✨',15,12,26],['⭐',40,8,20],['✨',62,20,22],['⭐',25,32,18],['🌠',70,34,26],['⭐',92,36,16]]},
+};
+const SNOW=[[8,10],[20,30],[33,6],[45,22],[58,40],[70,15],[83,28],[92,8],[15,50],[50,55],[88,50],[28,70],[65,72],[40,90],[78,88]];
+function curTheme(){ const t=S.theme&&THEMES[S.theme]&&(S.theme==='town'||(S.themes||[]).includes(S.theme))?S.theme:'town'; return THEMES[t]; }
+function worldBg(T){ return T.sea?`linear-gradient(${T.sky[0]} 0%,${T.sky[1]} 48%,${T.sea} 48%,${T.sea} 58%,${T.ground[0]} 58%,${T.ground[1]} 100%)`
+  :`linear-gradient(${T.sky[0]} 0%,${T.sky[1]} 48%,${T.ground[0]} 48%,${T.ground[1]} 100%)`; }
+function renderScenery(){
+  const T=curTheme(); $('world').style.background=worldBg(T); $('world').style.setProperty('--h',($('world').clientHeight*2||1100)+'px');
+  $('scenery').innerHTML=T.deco.map(([e,x,y,sz])=>`<span class="deco" style="left:${x}%;top:${y}%;font-size:${sz}px">${e}</span>`).join('')
+    +`<svg class="tower" viewBox="0 0 120 200" width="34%" aria-label="구조대 타워">${TOWER_INNER}</svg>`
+    +`<div class="road" style="background:${T.road}"></div>`
+    +(T.snow?SNOW.map(([x,y],i)=>`<span class="flake" style="left:${x}%;top:${y-100}%;animation-delay:-${(i*.7)%6}s">❄️</span>`).join(''):'');
+}
+function renderThemeShop(){
+  S.themes=S.themes||[]; const cur=curTheme();
+  $('themeShop').innerHTML=Object.keys(THEMES).map(id=>{ const T=THEMES[id], own=id==='town'||S.themes.includes(id), on=T===cur;
+    return `<div class="item ${on?'own':''}"><div class="themeprev" style="background:${worldBg(T)}">${T.icon}</div><div>${T.name}</div>
+      <div class="pr">${T.price?T.price.toLocaleString()+'원':'무료'}</div>
+      ${on?'<div>✅ 지금 배경</div>':own?`<button class="btn small blue" onclick="useTheme('${id}')">바꾸기</button>`
+        :S.money>=T.price?`<button class="btn small easy" onclick="buyTheme('${id}')">사기</button>`:`<div style="font-size:15px;color:#999">${(T.price-S.money).toLocaleString()}원 더 모아요</div>`}</div>`; }).join('');
+}
+function useTheme(id){ S.theme=id; save(); renderScenery(); renderThemeShop(); tones([[660,.1],[990,.18]],'sine'); window.scrollTo({top:0,behavior:'smooth'}); }
+function buyTheme(id){
+  const T=THEMES[id]; if(S.money<T.price){ sNo(); return; }
+  if(!confirm(`'${T.name}' 배경을 ${T.price.toLocaleString()}원에 살까요?\n${S.money.toLocaleString()}원 - ${T.price.toLocaleString()}원 = ${(S.money-T.price).toLocaleString()}원이 남아요.`)) return;
+  const before=S.money; S.money-=T.price; S.themes=S.themes||[]; S.themes.push(id); save(); registerSound();
+  speak(`${T.name} 배경을 샀어요! ${before}원에서 ${T.price}원을 빼면 ${S.money}원이 남아요.`);
+  $('baseMoney').textContent=S.money.toLocaleString(); renderBaseShop(); useTheme(id);
+}
+/* 사진: 화면과 같은 설계도로 SVG 한 장을 만들고 PNG로 바꿈 */
+function baseSVG(){
+  const r=$('world').getBoundingClientRect(), W=Math.round(r.width), H=Math.round(r.height), T=curTheme(), capH=46;
+  const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const emo=(e,x,y,sz)=>`<text x="${x}" y="${y-sz*.14}" font-size="${sz}" text-anchor="middle" font-family="Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,sans-serif">${e}</text>`;
+  let g=`<defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${T.sky[0]}"/><stop offset="1" stop-color="${T.sky[1]}"/></linearGradient>
+    <linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${T.ground[0]}"/><stop offset="1" stop-color="${T.ground[1]}"/></linearGradient></defs>
+    <rect width="${W}" height="${H*.48}" fill="url(#sk)"/><rect y="${H*.48}" width="${W}" height="${H*.52}" fill="url(#gr)"/>`;
+  if(T.sea) g+=`<rect y="${H*.48}" width="${W}" height="${H*.1}" fill="${T.sea}"/>`;
+  g+=T.deco.map(([e,x,y,sz])=>emo(e,x/100*W,y/100*H,sz)).join('');
+  const tw=W*.34; g+=`<svg x="${W/2-tw/2}" y="${H*.14}" width="${tw}" height="${tw*200/120}" viewBox="0 0 120 200" overflow="visible">${TOWER_INNER}</svg>`;
+  g+=`<rect y="${H*.78}" width="${W}" height="${H*.09}" fill="${T.road}"/><line x1="0" x2="${W}" y1="${H*.8205}" y2="${H*.8205}" stroke="#fff" stroke-width="${H*.0072}" stroke-dasharray="22 22"/>`;
+  S.base.slice().sort((a,b)=>a.y-b.y).forEach(b=>{ const ki=kindInfo(b.k), cx=b.x/100*W, by=b.y/100*H;
+    if(ki.veh){ const w=Math.round(130*b.s), h=w*100/160, x=cx-w/2, y=by-h;
+      const inner=vehicleSVG(ki.veh,w).replace(/^<svg /,`<svg x="0" y="0" `);
+      g+=b.f?`<g transform="translate(${x+w},${y}) scale(-1,1)">${inner}</g>`:`<g transform="translate(${x},${y})">${inner}</g>`; }
+    else { const sz=Math.round(52*b.s); g+=b.f?`<g transform="translate(${2*cx},0) scale(-1,1)">${emo(ki.emo,cx,by,sz)}</g>`:emo(ki.emo,cx,by,sz); } });
+  if(T.snow) g+=SNOW.map(([x,y])=>emo('❄️',x/100*W,y/100*H,18)).join('');
+  g+=`<rect y="${H}" width="${W}" height="${capH}" fill="#fff"/><text x="${W/2}" y="${H+30}" font-size="20" text-anchor="middle" font-family="sans-serif" font-weight="bold" fill="#1f5fbf">🐾 ${esc(name())} 대원의 구조대 기지</text>`;
+  return {svg:`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H+capH}" viewBox="0 0 ${W} ${H+capH}">${g}</svg>`,W,H:H+capH};
+}
+function basePNG(){ return new Promise((ok,no)=>{ const {svg,W,H}=baseSVG(), k=2, img=new Image();
+  img.onload=()=>{ const c=document.createElement('canvas'); c.width=W*k; c.height=H*k; const x=c.getContext('2d'); x.scale(k,k); x.drawImage(img,0,0); c.toBlob(b=>b?ok(b):no(new Error('blob')),'image/png'); };
+  img.onerror=no; img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg); }); }
+let photoBlob=null, photoURL=null;
+async function takePhoto(){
+  try{ baseEdit=false; baseSel=null; renderBase(); photoBlob=await basePNG(); }catch(e){ alert('사진을 만들지 못했어요. 다시 해 볼까요?'); return; }
+  if(photoURL) URL.revokeObjectURL(photoURL); photoURL=URL.createObjectURL(photoBlob);
+  const file=new File([photoBlob],'구조대기지.png',{type:'image/png'}), canShare=!!(navigator.canShare&&navigator.canShare({files:[file]}));
+  tones([[1400,.05],[900,.12]],'square');
+  $('pop').innerHTML=`<h2>📸 찰칵!</h2><img src="${photoURL}" alt="구조대 기지 사진" style="width:100%;border-radius:14px;box-shadow:0 3px 8px rgba(0,0,0,.2)">
+    <div class="row" style="margin-top:12px">${canShare?'<button class="btn blue" onclick="sharePhoto()">📤 공유하기</button>':''}
+    <button class="btn easy" onclick="downloadPhoto()">💾 저장</button><button class="btn" onclick="$('ov').classList.remove('on')">닫기</button></div>
+    <div style="font-size:14px;color:#888;margin-top:8px">사진을 꾹 누르면 바로 저장할 수도 있어요.</div>`;
+  $('ov').classList.add('on');
+}
+async function sharePhoto(){ try{ await navigator.share({files:[new File([photoBlob],'구조대기지.png',{type:'image/png'})],title:`${name()} 대원의 구조대 기지`}); }catch(e){ if(e.name!=='AbortError') downloadPhoto(); } }
+function downloadPhoto(){ const a=document.createElement('a'); a.href=photoURL; a.download=`구조대기지_${todayKey()}.png`; document.body.appendChild(a); a.click(); a.remove(); }
+/* 구조 장면: 산 차량으로 출동 */
+const PUPVEH={chase:'police',marshall:'fire',skye:'heli',rubble:'digger',rocky:'recycle',zuma:'hover'};
+function myVeh(pup){ const v=PUPVEH[pup]; return v&&(S.veh||[]).includes(v)?v:null; }
 
 /* 시작 화면 그리기 */
 $('startPups').innerHTML=Object.keys(PUPS).map(k=>pupSVG(k,72)).join('');
