@@ -233,6 +233,13 @@
   .cp-top small { white-space: nowrap; font-variant-numeric: tabular-nums; }
   .cp-bar { display: block; height: 10px; border-radius: 999px; background: #fff; border: 2px solid var(--ink); overflow: hidden; }
   .cp-bar span { display: block; height: 100%; background: var(--yellow); }
+  .jar { display: flex; flex-direction: column; gap: 6px; background: #FFF4E0; border: 3px solid var(--ink); border-radius: 14px; padding: 10px 12px; }
+  .jar b { font-family: var(--display); font-weight: 400; font-size: 18px; }
+  .jar small { color: var(--muted); font-size: 13px; }
+  .jar-bar { height: 16px; }
+  .jar-bar span { background: linear-gradient(90deg, #FF9CC6, #B57BFF, #6FB8FF); }
+  .cp-row select { font: inherit; font-size: 16px; padding: 6px 8px; border: 2px solid var(--ink); border-radius: 10px; background: #fff; color: var(--ink); min-width: 0; flex: 1; }
+  .stars-line small { font-size: 16px; }
   .got { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: #fff; border: 2px dashed var(--ink); border-radius: 12px; padding: 8px 10px; }
   .got small { color: var(--muted); }
   .got.used { opacity: .5; text-decoration: line-through; }
@@ -407,7 +414,8 @@
   <section id="shop" class="wrap" style="padding:0" hidden>
     <div class="panel">
       <h2>별 상점</h2>
-      <p class="bank">별 <b id="shopStars">0</b>개</p>
+      <p class="bank">쓸 수 있는 별 <b id="shopStars">0</b>개</p>
+      <div class="jar" id="goalJar"></div>
       <p class="hint">누구를 꾸밀까요? 산 아이템은 배틀에서도 보여요.</p>
       <div class="picks small" id="dressPicks"></div>
       <div class="preview" id="dressPreview"></div>
@@ -705,7 +713,8 @@ const DEFAULT_SAVE = () => ({
     { text: "놀이터 20분 더", cost: 100 },
     { text: "현금 1,000원", cost: 100 }
   ],
-  got: [], stats: {}, v: 3
+  got: [], stats: {}, v: 3,
+  goal: { text: "베스킨라빈스 아이스크림", rate: 50, stars: 0, carry: 0 }   // 목표 저금통(꺼내 쓸 수 없는 별)
 });
 let SAVE = DEFAULT_SAVE();
 try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); if (s) SAVE = Object.assign(DEFAULT_SAVE(), s, { v: s.v || 1 }); } catch (e) {}
@@ -729,9 +738,25 @@ function persist() {
 const esc = t => String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 /* ---------- 별 ---------- */
-let roundStars = 0;
-function addStars(n) { SAVE.stars += n; roundStars += n; persist(); }
-function renderStarBtn() { const b = $("starBtn"); if (b) b.textContent = `⭐ ${SAVE.stars} 상점`; }
+let roundStars = 0, roundGoal = 0;
+const goalCoupon = () => SAVE.coupons.find(c => c.text === SAVE.goal.text) || null;
+// 받은 별의 rate%는 목표 저금통으로. 반 개 같은 나머지는 carry에 모았다가 1개가 되면 넣음.
+function addStars(n) {
+  const g = SAVE.goal, gc = goalCoupon();
+  let toGoal = 0;
+  if (gc && g.rate > 0 && g.stars < gc.cost) {
+    g.carry += n * g.rate / 100;
+    toGoal = Math.min(Math.floor(g.carry), gc.cost - g.stars);
+    g.carry -= Math.floor(g.carry);
+  }
+  g.stars += toGoal; SAVE.stars += n - toGoal;
+  roundStars += n; roundGoal += toGoal;
+  persist();
+}
+function renderStarBtn() {
+  const b = $("starBtn"); if (!b) return;
+  b.textContent = `⭐ ${SAVE.stars}` + (goalCoupon() ? ` · 🍦 ${SAVE.goal.stars}` : "") + " 상점";
+}
 
 /* ---------- 약한 유형 자주 내기 ---------- */
 // 많이 틀린 유형일수록, 아직 안 나온 유형일수록 자주 나옴. 바로 전 유형은 거의 안 나옴.
@@ -788,6 +813,14 @@ function setPending(key) {
 function openShop() { SFX.tap(); dressTarget = dressTarget || myPick; setPending(null); show("shop"); renderShop(); }
 function renderShop() {
   $("shopStars").textContent = SAVE.stars;
+  const gc = goalCoupon(), jar = $("goalJar");
+  jar.hidden = !gc;
+  if (gc) {
+    const full = SAVE.goal.stars >= gc.cost;
+    jar.innerHTML = `<div class="cp-top"><b>🍦 ${esc(gc.text)} 저금통</b><small>⭐ ${SAVE.goal.stars} / ${gc.cost}</small></div>
+      <span class="cp-bar jar-bar" aria-hidden="true"><span style="width:${Math.min(100, Math.floor(SAVE.goal.stars / gc.cost * 100))}%"></span></span>
+      <small>${full ? "저금통이 꽉 찼어요! 아래 쿠폰에서 바꿀 수 있어요." : `별을 받으면 ${SAVE.goal.rate}%가 여기로 쏙! 이 별은 꺼내 쓸 수 없어요.`}</small>`;
+  }
   // 누구를 꾸밀까
   const dp = $("dressPicks"); dp.innerHTML = "";
   ORDER.forEach(id => {
@@ -833,13 +866,19 @@ function renderShop() {
     const b = document.createElement("button");
     b.type = "button"; b.className = "coupon"; b.id = "coupon-" + i;
     const pend = pending === "cp-" + i;
-    const pct = Math.min(100, Math.floor(SAVE.stars / c.cost * 100));
-    b.innerHTML = `<span class="cp-top"><span>🎁 ${esc(c.text)}</span><small>${pend ? "정말 바꿀까? 한 번 더!" : SAVE.stars >= c.cost ? `⭐ ${c.cost}로 바꾸기` : `⭐ ${SAVE.stars} / ${c.cost}`}</small></span>
-      <span class="cp-bar" aria-hidden="true"><span style="width:${pct}%"></span></span>`;
-    b.disabled = SAVE.stars < c.cost;
+    const isGoal = c.text === SAVE.goal.text;
+    const have = SAVE.stars + (isGoal ? SAVE.goal.stars : 0);
+    const pct = Math.min(100, Math.floor(have / c.cost * 100));
+    const status = pend ? "정말 바꿀까? 한 번 더!" : have >= c.cost ? `⭐ ${c.cost}로 바꾸기` : `⭐ ${have} / ${c.cost}`;
+    b.innerHTML = `<span class="cp-top"><span>${isGoal ? "🍦" : "🎁"} ${esc(c.text)}</span><small>${status}</small></span>
+      <span class="cp-bar" aria-hidden="true"><span style="width:${pct}%"></span></span>
+      ${isGoal ? `<small>저금통 ${SAVE.goal.stars} + 쓸 수 있는 별 ${SAVE.stars}</small>` : ""}`;
+    b.disabled = have < c.cost;
     b.addEventListener("click", () => {
       if (pend) {
-        SAVE.stars -= c.cost;
+        const fromGoal = isGoal ? Math.min(SAVE.goal.stars, c.cost) : 0;
+        SAVE.goal.stars -= fromGoal;
+        SAVE.stars -= c.cost - fromGoal;
         SAVE.got.unshift({ text: c.text, cost: c.cost, date: new Date().toLocaleDateString("ko-KR"), used: false });
         SAVE.got = SAVE.got.slice(0, 30);
         setPending(null); SFX.win(); confetti();
@@ -887,6 +926,17 @@ function renderParent() {
   const rows = Object.entries(SAVE.stats).filter(([, v]) => v[1] > 0)
     .sort((a, b) => a[1][0] / a[1][1] - b[1][0] / b[1][1]);
   area.innerHTML = `
+    <h3>목표 저금통</h3>
+    <p class="hint">별을 받을 때 정한 비율만큼 목표 쿠폰 저금통에 자동으로 모여요. 저금통 별은 다른 데 못 써요.</p>
+    <div class="cp-row"><span>목표</span><select id="goalSel" aria-label="목표 쿠폰">
+      <option value="">없음</option>
+      ${SAVE.coupons.map(c => `<option value="${esc(c.text)}"${c.text === SAVE.goal.text ? " selected" : ""}>${esc(c.text)} (${c.cost}별)</option>`).join("")}
+    </select></div>
+    <div class="cp-row"><span>비율</span><select id="goalRate" aria-label="저금 비율">
+      ${[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(r => `<option value="${r}"${r === SAVE.goal.rate ? " selected" : ""}>${r}%</option>`).join("")}
+    </select><span>지금 저금통 ⭐ ${SAVE.goal.stars}</span></div>
+    <div class="row"><button type="button" class="btn" id="goalSave">목표 저장</button></div>
+    <p class="hint" id="goalMsg"></p>
     <h3>쿠폰 정하기</h3>
     <p class="hint">내용과 필요한 별 개수를 적고 저장을 눌러요.</p>
     <div id="cpEdit">${SAVE.coupons.map((c, i) => `
@@ -903,17 +953,23 @@ function renderParent() {
     <h3>초기화</h3>
     <div class="row">
       <button type="button" class="btn sub-btn" id="resetStats">${pending === "rs" ? "정말? 한 번 더" : "기록 지우기"}</button>
-      <button type="button" class="btn sub-btn" id="resetAll">${pending === "ra" ? "정말? 한 번 더" : "별·아이템 지우기"}</button>
+      <button type="button" class="btn sub-btn" id="resetAll">${pending === "ra" ? "정말? 한 번 더" : "별·저금통·아이템 지우기"}</button>
     </div>
     <button type="button" class="btn sub-btn" id="parentClose">부모 설정 닫기</button>`;
   const readEdits = () => SAVE.coupons.map((c, i) => ({ text: $("cpText" + i).value.trim(), cost: Math.round(Number($("cpCost" + i).value)) }));
   area.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => {
     const list = readEdits(); list.splice(Number(b.dataset.del), 1); SAVE.coupons = list; persist(); renderParent();
   }));
+  $("goalSave").addEventListener("click", () => {
+    SAVE.goal.text = $("goalSel").value; SAVE.goal.rate = Number($("goalRate").value);
+    persist(); renderShop(); $("goalMsg").textContent = "저장했어요!";
+  });
   $("cpAdd").addEventListener("click", () => { SAVE.coupons = [...readEdits(), { text: "", cost: 10 }]; renderParent(); });
   $("cpSave").addEventListener("click", () => {
     const list = readEdits();
-    if (list.some(c => !c.text || !(c.cost >= 1 && c.cost <= 999))) { $("cpMsg").textContent = "쿠폰 내용을 쓰고, 별은 1~999 사이로 적어 주세요."; return; }
+    if (list.some(c => !c.text || !(c.cost >= 1 && c.cost <= 99999))) { $("cpMsg").textContent = "쿠폰 내용을 쓰고, 별은 1~99999 사이로 적어 주세요."; return; }
+    const gi = SAVE.coupons.findIndex(c => c.text === SAVE.goal.text);
+    if (gi >= 0 && list[gi]) SAVE.goal.text = list[gi].text;
     SAVE.coupons = list; persist(); renderShop(); $("cpMsg").textContent = "저장했어요!";
   });
   $("resetStats").addEventListener("click", () => {
@@ -921,7 +977,7 @@ function renderParent() {
     renderParent();
   });
   $("resetAll").addEventListener("click", () => {
-    if (pending === "ra") { SAVE.stars = 0; SAVE.owned = []; SAVE.wear = {}; setPending(null); persist(); renderShop(); } else { setPending("ra"); renderParent(); }
+    if (pending === "ra") { SAVE.stars = 0; SAVE.owned = []; SAVE.wear = {}; SAVE.goal.stars = 0; SAVE.goal.carry = 0; setPending(null); persist(); renderShop(); } else { setPending("ra"); renderParent(); }
   });
   $("parentClose").addEventListener("click", () => { parentOpen = false; gate = null; renderParent(); });
 }
@@ -1001,7 +1057,7 @@ function startBattle() {
   }));
   $("fNear").innerHTML = artWithGear(players[0].id);
   $("fFar").innerHTML = artWithGear(players[1].id);
-  roundStars = 0;
+  roundStars = 0; roundGoal = 0;
   $("fNear").className = "fighter near";
   $("fFar").className = "fighter far";
   turn = Math.random() < 0.5 ? 0 : 1;
@@ -1565,7 +1621,8 @@ function finish(winnerIdx) {
     <p><b>${w.name}</b>: “${w.cry}”</p>
     <p>남은 체력 ${w.hp} · 상대는 ${l.name}</p>
     ${mathLine()}
-    <p class="stars-line">이번 판 별 +${roundStars}⭐ · 모은 별 ${SAVE.stars}개</p>
+    <p class="stars-line">이번 판 별 +${roundStars}⭐${roundGoal ? ` <small>(${roundGoal}개는 🍦 저금통으로 쏙!)</small>` : ""}</p>
+    <p>쓸 수 있는 별 ${SAVE.stars}개${goalCoupon() ? ` · 🍦 저금통 ${SAVE.goal.stars} / ${goalCoupon().cost}` : ""}</p>
     <div class="row">
       <button class="btn" id="againBtn" type="button">한 번 더!</button>
       <button class="btn sub-btn" id="backBtn" type="button">캐릭터 바꾸기</button>
