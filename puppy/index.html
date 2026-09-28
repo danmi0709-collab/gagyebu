@@ -122,6 +122,16 @@ h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shad
 .item .pr{color:#b8860b;font-size:20px;margin:4px 0}
 .item.own{background:#fff7d1}
 .stickers{font-size:40px;letter-spacing:4px;margin-top:6px;min-height:48px}
+.reward{background:linear-gradient(135deg,#fff8e1,#ffe7a3);border:3px solid #f0b400}
+.ticket{position:relative;display:flex;align-items:center;gap:12px;background:#fffdf5;border:3px dashed #e0a100;border-radius:16px;padding:12px 14px;margin-top:10px;text-align:left}
+.ticket .ic{font-size:44px}
+.ticket .nm{font-size:21px}
+.ticket .meta{font-size:14px;color:#8a6d1f;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif}
+.ticket .use{margin-left:auto;white-space:nowrap}
+.ticket.used{padding-right:112px;opacity:.55;border-color:#bbb;background:#f4f4f4}
+.ticket .stamp{position:absolute;right:14px;top:50%;transform:translateY(-50%) rotate(-14deg);border:3px solid #d62828;color:#d62828;border-radius:10px;padding:2px 8px;font-size:18px;background:#fff}
+.bigticket{border:4px dashed #e0a100;border-radius:20px;background:#fffdf5;padding:16px;margin:12px 0}
+.bigticket .ic{font-size:70px}
 .guide{background:#fff;border-radius:18px;padding:14px 16px;font-size:16px;line-height:1.6;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;box-shadow:var(--shadow)}
 .guide h3{margin:10px 0 4px;font-family:'Jua',sans-serif;font-size:20px}
 .guide ul{margin:4px 0;padding-left:20px}
@@ -208,6 +218,13 @@ h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shad
     <div style="font-size:16px;color:#666" id="bankExplain"></div>
     <div class="stickers" id="stickers"></div>
   </div>
+  <h2 style="text-align:center;margin:18px 0 0">🎁 진짜 보상</h2>
+  <p style="text-align:center;margin:4px 0 0;color:#666">모은 돈으로 쿠폰을 받아요. 쿠폰은 엄마·아빠가 확인하고 써요!</p>
+  <div class="shop" id="rewards"></div>
+  <div class="bank" style="margin-top:14px">
+    <div style="font-size:22px">🎟️ 내 쿠폰함</div>
+    <div id="coupons"></div>
+  </div>
   <h2 style="text-align:center;margin:18px 0 0">🏪 퍼피 가게</h2>
   <div class="shop" id="shop"></div>
 </section>
@@ -251,6 +268,13 @@ h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shad
       <li><b>아이폰·아이패드(사파리)</b>: 아래쪽 공유 버튼(□↑) → '홈 화면에 추가'</li>
       <li>한 번 열어 두면 인터넷이 없어도 실행돼요. 기록과 저금통은 설치한 앱 안에 따로 저장돼요.</li>
     </ul>
+    <h3>🎁 진짜 보상 쿠폰</h3>
+    <ul>
+      <li>500원 현금 교환(500원) · 1000원 현금 교환(1000원) · 엄마랑 다이소 가기 1000원어치(1000원) · 엄마랑 카페 가기(5000원)</li>
+      <li>아이가 쿠폰으로 바꾸면 게임 돈이 빠지고 '내 쿠폰함'에 쿠폰이 생겨요. 여러 번 바꿀 수 있어요.</li>
+      <li>'사용'은 곱셈 문제(어른 확인)를 맞혀야 눌러져요. 실제로 주고 나서 눌러 주세요.</li>
+      <li>'저금통 초기화'를 하면 쿠폰함도 같이 지워져요.</li>
+    </ul>
     <h3>🔊 소리</h3>
     방귀·동전 소리는 녹음 파일이 아니라 브라우저가 직접 합성해요. 휴대폰 무음 모드를 끄고 볼륨을 올려 주세요. '문제 읽어주기'는 기기의 한국어 음성을 씁니다.
     <p style="margin-top:10px">
@@ -269,10 +293,10 @@ h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shad
 'use strict';
 /* ================== 저장 ================== */
 const SAVE_KEY='pupmath_v1';
-let S={name:'',money:0,items:[],rescued:0,stats:{}};
+let S={name:'',money:0,items:[],rescued:0,stats:{},coupons:[],couponNo:0};
 try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); if(s) S=Object.assign(S,s);}catch(e){}
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}}
-function resetSave(){S.money=0;S.items=[];S.rescued=0;save();goHome();}
+function resetSave(){S.money=0;S.items=[];S.rescued=0;S.coupons=[];S.couponNo=0;save();goHome();}
 function resetStats(){S.stats={};save();renderReport();}
 /* ================== 약한 유형 기록 ================== */
 const RECENT=6; // 최근 몇 번까지 보고 판단할지
@@ -757,6 +781,45 @@ const SHOP=[
   {id:'poogold',icon:'🌟',name:'황금 똥 트로피',price:2000},
   {id:'badge',icon:'🏅',name:'구조대 대장 배지',price:3000},
 ];
+const REWARDS=[
+  {id:'cash500', icon:coinSVG(500,2.2),name:'500원 현금 교환',price:500, desc:'엄마·아빠가 진짜 500원을 줘요'},
+  {id:'cash1000',icon:billSVG(),name:'1000원 현금 교환',price:1000,desc:'엄마·아빠가 진짜 1000원을 줘요'},
+  {id:'daiso',   icon:'🛍️',name:'엄마랑 다이소 가기',price:1000,desc:'다이소에서 1000원어치 골라요'},
+  {id:'cafe',    icon:'☕',name:'엄마랑 카페 가기',price:5000,desc:'엄마랑 둘이 카페 데이트!'},
+];
+const fmtDate=iso=>{ const d=new Date(iso); return `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}`; };
+function renderRewards(){
+  $('rewards').innerHTML=REWARDS.map(r=>{ const can=S.money>=r.price;
+    return `<div class="item reward"><div class="ic">${r.icon}</div><div>${r.name}</div><div style="font-size:14px;color:#666">${r.desc}</div>
+      <div class="pr">${r.price.toLocaleString()}원</div>
+      ${can?`<button class="btn small easy" onclick="buyReward('${r.id}')">쿠폰 받기</button>`:`<div style="font-size:15px;color:#999">${(r.price-S.money).toLocaleString()}원 더 모아요</div>`}</div>`; }).join('');
+  const list=(S.coupons||[]).slice().sort((a,b)=>(!!a.used-!!b.used)||b.no-a.no);
+  $('coupons').innerHTML=list.length?list.map(c=>{ const r=REWARDS.find(x=>x.id===c.id)||{icon:'🎟️',name:'쿠폰'};
+    return `<div class="ticket ${c.used?'used':''}"><div class="ic">${r.icon}</div><div><div class="nm">${r.name}</div>
+      <div class="meta">쿠폰 번호 #${c.no} · 받은 날 ${fmtDate(c.t)}${c.used?' · 쓴 날 '+fmtDate(c.used):''}</div></div>
+      ${c.used?'<div class="stamp">사용 완료</div>':`<button class="btn small blue use" onclick="useCoupon(${c.no})">✅ 사용</button>`}</div>`; }).join('')
+    :'<div style="color:#999;margin-top:8px">아직 쿠폰이 없어요. 돈을 모아서 바꿔 봐요!</div>';
+}
+function buyReward(id){
+  const r=REWARDS.find(x=>x.id===id); if(!r||S.money<r.price) return;
+  if(!confirm(`${r.price.toLocaleString()}원을 '${r.name}' 쿠폰으로 바꿀까요?\n(바꾸면 저금통에서 ${r.price.toLocaleString()}원이 빠져요)`)) return;
+  const before=S.money; S.money-=r.price; S.couponNo=(S.couponNo||0)+1; if(!S.coupons) S.coupons=[];
+  const c={no:S.couponNo,id,t:new Date().toISOString(),used:null}; S.coupons.push(c); save(); registerSound();
+  showBank();
+  $('pop').innerHTML=`<h2>🎉 쿠폰을 받았어요!</h2><div class="bigticket"><div class="ic">${r.icon}</div><div style="font-size:26px">${r.name}</div>
+    <div class="d">${r.desc}</div><div class="meta" style="margin-top:6px;color:#8a6d1f">쿠폰 번호 #${c.no} · ${fmtDate(c.t)}</div></div>
+    <div class="d">${before.toLocaleString()}원 - ${r.price.toLocaleString()}원 = <b>${S.money.toLocaleString()}원</b> 남았어요.<br>엄마·아빠에게 보여 주세요!</div>
+    <button class="btn blue big" style="margin-top:12px" onclick="$('ov').classList.remove('on')">좋아요!</button>`;
+  $('ov').classList.add('on');
+  speak(`${r.name} 쿠폰을 받았어요! ${before}원에서 ${r.price}원을 빼면 ${S.money}원이 남아요. 엄마 아빠에게 보여 주세요!`);
+}
+function useCoupon(no){
+  const c=(S.coupons||[]).find(x=>x.no===no); if(!c||c.used) return;
+  const a=R(12,19),b=R(3,9), ans=prompt(`👩 어른 확인\n${a} × ${b} = ?\n(보상을 실제로 준 뒤 입력해 주세요)`);
+  if(ans===null) return;
+  if(Number(ans)!==a*b){ sNo(); alert('어른 확인에 실패했어요. 엄마·아빠에게 부탁해요!'); return; }
+  c.used=new Date().toISOString(); save(); coinSound(3); renderRewards();
+}
 function showBank(){
   $('ov').classList.remove('on'); ac();
   $('bankName').textContent=name(); $('bankTotal').textContent=S.money.toLocaleString();
@@ -767,6 +830,7 @@ function showBank(){
   $('shop').innerHTML=SHOP.map(it=>{ const own=S.items.includes(it.id);
     return `<div class="item ${own?'own':''}"><div class="ic">${it.icon}</div><div>${it.name}</div><div class="pr">${it.price.toLocaleString()}원</div>
       ${own?'<div>✅ 샀어요</div>':`<button class="btn small ${S.money>=it.price?'easy':''}" onclick="buy('${it.id}')">사기</button>`}</div>`; }).join('');
+  renderRewards();
   show('s-bank');
 }
 function buy(id){
