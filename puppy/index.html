@@ -176,6 +176,7 @@ h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shad
     <button class="btn small" onclick="goHome()">🏠 처음으로</button>
     <span class="pill" id="mapLv"></span>
     <span class="pill">🐷 <span id="mapMoney">0</span>원</span>
+    <span class="pill" id="mapToday" style="font-size:16px"></span>
   </div>
   <div class="hq">
     <div id="hqPup"></div>
@@ -268,6 +269,11 @@ h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shad
       <li><b>아이폰·아이패드(사파리)</b>: 아래쪽 공유 버튼(□↑) → '홈 화면에 추가'</li>
       <li>한 번 열어 두면 인터넷이 없어도 실행돼요. 기록과 저금통은 설치한 앱 안에 따로 저장돼요.</li>
     </ul>
+    <h3>🐷 하루 벌이 한도</h3>
+    <p style="margin:2px 0">하루에 게임 돈을 얼마까지 모을 수 있는지 정해요. 한도를 채워도 문제는 계속 풀 수 있고, 돈만 더 쌓이지 않아요. 바꿀 때 어른 확인이 필요해요.</p>
+    <p style="margin:4px 0"><select id="capSel" onchange="setCap()" style="font-size:17px;padding:4px 8px;border-radius:8px">
+      <option value="500">500원</option><option value="1000">1,000원 (기본)</option><option value="2000">2,000원</option><option value="3000">3,000원</option><option value="0">제한 없음</option>
+    </select> · <span id="capToday"></span></p>
     <h3>🎁 진짜 보상 쿠폰</h3>
     <ul>
       <li>500원 현금 교환(500원) · 1000원 현금 교환(1000원) · 엄마랑 다이소 가기 1000원어치(1000원) · 엄마랑 카페 가기(5000원)</li>
@@ -667,7 +673,7 @@ function renderReport(){
     <tr style="background:#eef5ff"><th>단계</th><th>유형</th><th>푼 수</th><th>한 번에</th><th>최근</th></tr>${rows}</table></div>`
     :'<p style="color:#888">아직 기록이 없어요. 한 판 하고 오면 여기에 쌓여요.</p>';
 }
-function show(id){ if(id==='s-guide') renderReport(); document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id)); window.scrollTo(0,0); }
+function show(id){ if(id==='s-guide'){ renderReport(); renderCap(); } document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id)); window.scrollTo(0,0); }
 function goHome(){ try{speechSynthesis.cancel();}catch(e){} $('ov').classList.remove('on'); $('nameIn').value=S.name||''; show('s-start'); }
 $('nameIn').addEventListener('input',e=>{S.name=e.target.value.trim();save();});
 
@@ -680,7 +686,7 @@ function startRound(lv){
 }
 function renderMap(){
   $('mapLv').textContent=G.lv==='easy'?'🙂 쉬움':'🧠 도전';
-  $('mapMoney').textContent=S.money.toLocaleString();
+  $('mapMoney').textContent=S.money.toLocaleString(); $('mapToday').textContent=todayLabel();
   const left=G.scenes.filter(s=>!s.done).length;
   $('hqMsg').textContent=left?`${name()} 대원, 도움이 필요한 친구가 ${left}명 있어요! 눌러서 출동!`:'모두 구했어요!';
   $('hqPup').innerHTML=pupSVG('chase',64);
@@ -740,8 +746,28 @@ function check(){
   if(s.tries===1){ $('hintBox').innerHTML='앗, 아까워요! 다시 생각해 봐요.<br>💡 '+q.hint; $('hintBox').classList.add('on'); speak('아까워요! 힌트를 보고 다시 해 봐요.'); }
   else if(s.tries>=2){ $('expBox').innerHTML=`📘 이렇게 풀어요<br>${q.exp}<br><br>정답: <b>${q.a}${q.unit}</b> — 정답을 직접 눌러서 친구를 구해요!`; $('expBox').classList.add('on'); speak('이렇게 풀어요. 정답을 직접 눌러서 친구를 구해요!'); }
 }
-function rescue(pay){
-  const s=G.scenes[G.cur]; s.done=true; S.money+=pay; S.rescued++; G.earned+=pay; save();
+/* ================== 하루 벌이 한도 ================== */
+function todayKey(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; } // 폰의 현지 날짜
+function capOf(){ return S.dailyCap===undefined?1000:S.dailyCap; } // 0 = 제한 없음
+function todayEarned(){ return S.day&&S.day.d===todayKey()?S.day.earned:0; }
+function todayLabel(){ const c=capOf(); return c?`오늘 ${todayEarned().toLocaleString()} / ${c.toLocaleString()}원`:`오늘 ${todayEarned().toLocaleString()}원`; }
+function capPay(pay){ const c=capOf(); return c?Math.max(0,Math.min(pay,c-todayEarned())):pay; }
+function addToday(v){ S.day={d:todayKey(),earned:todayEarned()+v}; }
+function parentOK(msg){
+  const a=R(12,19),b=R(3,9), ans=prompt(`👩 어른 확인\n${a} × ${b} = ?${msg?'\n('+msg+')':''}`);
+  if(ans===null) return false;
+  if(Number(ans)!==a*b){ sNo(); alert('어른 확인에 실패했어요. 엄마·아빠에게 부탁해요!'); return false; }
+  return true;
+}
+function setCap(){
+  const v=Number($('capSel').value); if(v===capOf()) return;
+  if(!parentOK('하루 한도를 바꿔요')){ $('capSel').value=String(capOf()); return; }
+  S.dailyCap=v; save(); renderCap();
+}
+function renderCap(){ if(!$('capSel')) return; $('capSel').value=String(capOf()); $('capToday').textContent=todayLabel(); }
+function rescue(full){
+  const pay=capPay(full), capped=pay<full;
+  const s=G.scenes[G.cur]; s.done=true; S.money+=pay; addToday(pay); S.rescued++; G.earned+=pay; save();
   try{speechSynthesis.cancel();}catch(e){}
   const coins=breakdown(pay);
   $('pop').innerHTML=`<div class="stage"><div class="victim" id="vic">${s.icon}</div><div class="runner">${pupSVG(s.pup,96)}</div></div>
@@ -752,8 +778,10 @@ function rescue(pay){
   speak('구조 성공! '+s.msg);
   setTimeout(()=>{ $('vic').textContent='😄'; $('vic').style.transform='scale(1.2)'; },1100);
   if($('fartOn').checked){ setTimeout(()=>{ fart(s.bigFart?'big':pick(['short','long','squeak','wet','triple'])); const r=$('pop').getBoundingClientRect(); puff(r.left+r.width*.3,r.top+60); },1250); }
-  setTimeout(()=>{ $('earn').innerHTML=coins.map((v,i)=>`<span class="coin-drop" style="animation-delay:${i*.15}s">${moneyHTML(v)}</span>`).join('')+`<span>+${pay}원</span>`;
-    coinSound(pay>=500?6:pay>=100?4:2); coins.forEach((_,i)=>bankDrop(.5+i*.15)); },1900);
+  setTimeout(()=>{ $('earn').innerHTML=(pay?coins.map((v,i)=>`<span class="coin-drop" style="animation-delay:${i*.15}s">${moneyHTML(v)}</span>`).join('')+`<span>+${pay}원</span>`:'')
+      +(capped?`<div style="font-size:17px;color:#b45309;width:100%">🐷 오늘은 저금통이 꽉 찼어요! 내일 또 모아요.<br><small>(구조는 계속할 수 있어요)</small></div>`:'');
+    $('earn').style.flexWrap='wrap';
+    if(pay){ coinSound(pay>=500?6:pay>=100?4:2); coins.forEach((_,i)=>bankDrop(.5+i*.15)); } },1900);
 }
 function afterRescue(){
   $('ov').classList.remove('on');
@@ -815,9 +843,7 @@ function buyReward(id){
 }
 function useCoupon(no){
   const c=(S.coupons||[]).find(x=>x.no===no); if(!c||c.used) return;
-  const a=R(12,19),b=R(3,9), ans=prompt(`👩 어른 확인\n${a} × ${b} = ?\n(보상을 실제로 준 뒤 입력해 주세요)`);
-  if(ans===null) return;
-  if(Number(ans)!==a*b){ sNo(); alert('어른 확인에 실패했어요. 엄마·아빠에게 부탁해요!'); return; }
+  if(!parentOK('보상을 실제로 준 뒤 입력해 주세요')) return;
   c.used=new Date().toISOString(); save(); coinSound(3); renderRewards();
 }
 function showBank(){
