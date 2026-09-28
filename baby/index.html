@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>아기 돌보기 수학</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff7eb6">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="아기 돌보기">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#ffe3f0; --bg2:#fff8e1; --ink:#3a2b3a; --pink:#ff7eb6; --deep:#e0457b; --blue:#4a90e2;
+  --green:#3fae5a; --orange:#ff8a3d; --shadow:0 6px 0 rgba(0,0,0,.13);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{margin:0;height:100%;background:var(--bg2)}
+body{margin:0;min-height:100vh;font-family:'Jua','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:var(--ink);
+  background:linear-gradient(180deg,var(--bg1),var(--bg2));overflow-x:hidden;user-select:none;-webkit-user-select:none}
+button{font-family:inherit;cursor:pointer;border:none}
+.screen{display:none;max-width:760px;margin:0 auto;padding:12px 16px 90px;min-height:100vh}
+.screen.on{display:block}
+h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--deep);text-shadow:2px 2px 0 #fff,4px 4px 0 rgba(0,0,0,.1);line-height:1.2}
+h2{font-size:24px;margin:10px 0;color:var(--deep);text-align:center}
+.sub{text-align:center;font-size:18px;margin:0 0 14px;color:#6a5a6a}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.btn{font-size:22px;padding:14px 20px;border-radius:18px;background:#fff;color:var(--ink);box-shadow:var(--shadow);transition:transform .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.13)}
+.btn.big{font-size:26px;padding:18px 22px;flex:1;min-width:220px}
+.btn.easy{background:#7ed957;color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.25)}
+.btn.hard{background:var(--orange);color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.25)}
+.btn.pink{background:var(--pink);color:#fff}
+.btn.small{font-size:17px;padding:9px 14px;border-radius:14px}
+.card{background:rgba(255,255,255,.8);border-radius:20px;padding:12px;margin:10px 0}
+.card p{margin:6px 0 0;font-size:15px;color:#6a5a6a;text-align:center}
+.namebox{display:flex;gap:8px;align-items:center;justify-content:center;margin:8px 0;font-size:20px;flex-wrap:wrap}
+.namebox input{font-family:inherit;font-size:22px;padding:8px 12px;border-radius:12px;border:3px solid #ffb3d1;width:130px;text-align:center}
+.babywrap{display:flex;justify-content:center;margin:4px 0}
+.babywrap svg{filter:drop-shadow(0 5px 3px rgba(0,0,0,.15));transition:transform .3s}
+.stage{text-align:center;font-size:18px;color:#7a4a6a}
+.lovebar{height:18px;background:#fff;border-radius:10px;overflow:hidden;margin:6px auto;max-width:360px;border:2px solid #ffc1db}
+.lovebar i{display:block;height:100%;background:linear-gradient(90deg,#ff9ccc,#ff4f95);transition:width .6s}
+/* 상단바 */
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.pill{background:#fff;border-radius:999px;padding:6px 14px;font-size:18px;box-shadow:0 3px 0 rgba(0,0,0,.1)}
+/* 아기 방 */
+.room{position:relative;background:linear-gradient(180deg,#fff4fa 0%,#fff4fa 70%,#f3d9b5 70%,#e8c89c 100%);border-radius:24px;padding:10px 6px 14px;box-shadow:inset 0 0 0 4px #ffd1e6;overflow:hidden}
+.bubble{position:relative;background:#fff;border-radius:18px;padding:10px 14px;font-size:20px;text-align:center;margin:0 auto 6px;max-width:420px;box-shadow:0 3px 0 rgba(0,0,0,.08)}
+.bubble:after{content:'';position:absolute;left:50%;bottom:-12px;margin-left:-10px;border:10px solid transparent;border-top-color:#fff;border-bottom:0}
+.needs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px}
+.need{background:#fff;border-radius:16px;padding:8px 2px;font-size:15px;box-shadow:var(--shadow);position:relative;color:var(--ink)}
+.need .ic{display:block;font-size:34px;line-height:1.2}
+.need.want{animation:want 1s infinite;background:#fff0f6;outline:3px solid var(--pink)}
+.need.done{opacity:.55;box-shadow:none;background:#eafbe9}
+.need.done:after{content:'✅';position:absolute;top:-6px;right:-4px;font-size:20px}
+@keyframes want{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.float{position:fixed;pointer-events:none;font-size:44px;z-index:60;animation:floatUp 1.4s ease-out forwards}
+@keyframes floatUp{0%{opacity:0;transform:translateY(20px) scale(.6)}20%{opacity:1}100%{opacity:0;transform:translateY(-140px) scale(1.2)}}
+.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.wiggle svg{animation:wig .5s 3}
+@keyframes wig{0%,100%{transform:rotate(0)}25%{transform:rotate(-5deg)}75%{transform:rotate(5deg)}}
+/* 문제 */
+.qhead{display:flex;align-items:center;gap:10px;background:#fff;border-radius:18px;padding:8px 12px;margin-bottom:8px}
+.qhead .t{flex:1;font-size:19px;line-height:1.35}
+.tag{display:inline-block;font-size:14px;padding:3px 10px;border-radius:999px;color:#fff}
+.qtext{background:#fff;border-radius:18px;padding:14px;font-size:23px;line-height:1.55;word-break:keep-all}
+.qtext b{color:var(--deep)}
+.vis{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;background:#fff;border-radius:18px;padding:10px;margin-top:8px}
+.tens{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.ten{display:grid;grid-template-columns:repeat(5,1fr);border:2px dashed #e98fb5;border-radius:10px;padding:2px;font-size:15px;background:#fff5fa}
+.ones{display:flex;flex-wrap:wrap;gap:1px;max-width:110px;font-size:18px;align-items:center}
+.slots{font-size:26px;letter-spacing:2px;text-align:center}
+.plus{font-size:30px;color:#999;margin:0 4px}
+.seq{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.seq span{min-width:52px;padding:8px;border-radius:12px;background:#fff0f6;font-size:24px;text-align:center;border:2px solid #ffc1db}
+.seq .q{background:#fff7c2;border-color:#ffc400}
+.cards{display:flex;gap:10px}
+.cards span{width:54px;height:72px;border-radius:10px;background:#fff;border:3px solid var(--pink);font-size:38px;display:flex;align-items:center;justify-content:center}
+.coin{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe9a8,#d9a441);border:2px solid #a8791f;font-size:14px;color:#6a4a10;font-family:Arial,sans-serif;font-weight:bold}
+.coin.c50{width:46px;height:46px;background:radial-gradient(circle at 35% 30%,#f4f4f4,#a9a9a9);border-color:#777;color:#444}
+.ansrow{display:flex;align-items:center;justify-content:center;gap:10px;margin:12px 0 8px;font-size:26px}
+.ans{min-width:120px;height:62px;border-radius:16px;background:#fff;border:4px solid #ffc1db;font-size:40px;display:flex;align-items:center;justify-content:center}
+.ans.good{border-color:var(--green);background:#eaffea}
+.ans.shake{border-color:#e53935;animation:shake .4s}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:420px;margin:0 auto}
+.pad button{font-size:30px;padding:12px 0;border-radius:16px;background:#fff;box-shadow:var(--shadow);color:var(--ink)}
+.pad button:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.13)}
+.pad .go{background:var(--green);color:#fff;font-size:24px}
+.pad .del{background:#ffe0e0}
+.msg{display:none;border-radius:16px;padding:10px 14px;font-size:19px;line-height:1.5;margin-top:8px}
+.msg.on{display:block}
+.msg.hint{background:#fff7c2}
+.msg.exp{background:#e3f2ff}
+.tools{display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+label.chk{font-size:16px;display:flex;align-items:center;gap:4px;background:#fff;border-radius:12px;padding:6px 10px}
+/* 겹화면 */
+.ov{position:fixed;inset:0;background:rgba(60,20,50,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.ov.on{display:flex}
+.ovbox{background:#fff;border-radius:26px;padding:18px;max-width:440px;width:100%;text-align:center;animation:pop .35s}
+.ovbox h2{margin:4px 0}
+.ovbox .big{font-size:24px;margin:6px 0;line-height:1.4}
+@keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+/* 옷장 */
+.shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+.item{background:#fff;border-radius:16px;padding:8px 4px;font-size:15px;box-shadow:var(--shadow);color:var(--ink)}
+.item .ic{font-size:30px;display:block}
+.item.on{outline:4px solid var(--green)}
+.item.lock{opacity:.5;box-shadow:none}
+table{width:100%;border-collapse:collapse;font-size:15px;background:#fff;border-radius:12px;overflow:hidden}
+th,td{padding:6px;border-bottom:1px solid #f1e3ea;text-align:center}
+.weak{color:#c2410c}
+.milestones{list-style:none;padding:0;margin:0;font-size:17px}
+.milestones li{padding:5px 8px;border-radius:10px;margin:3px 0;background:#fff}
+.milestones li.got{background:#ffe6f1}
+@media (max-width:420px){
+  .need{font-size:13px}.need .ic{font-size:28px}
+  .qtext{font-size:21px}
+}
+</style>
+</head>
+<body>
+
+<!-- 시작 화면 -->
+<section class="screen on" id="s-start">
+  <h1>👶 아기 돌보기 수학</h1>
+  <p class="sub">문제를 맞히면 아기를 돌봐 줄 수 있어요!</p>
+  <div class="babywrap" id="startBaby"></div>
+  <div class="stage" id="startStage"></div>
+  <div class="lovebar"><i id="startBar"></i></div>
+  <div class="card">
+    <div class="namebox">내 이름 <input id="nameIn" maxlength="6" placeholder="하리"></div>
+    <div class="namebox">아기 이름 <input id="babyIn" maxlength="6" placeholder="콩이"></div>
+  </div>
+  <div class="row">
+    <button class="btn big easy" onclick="startDay('easy')">🙂 쉬움<br><small style="font-size:16px">100까지의 수 · 덧셈 뺄셈 · 시계</small></button>
+    <button class="btn big hard" onclick="startDay('hard')">🧠 도전<br><small style="font-size:16px">거꾸로 생각 · 줄 서기 · 여러 단계</small></button>
+  </div>
+  <div class="row" style="margin-top:14px">
+    <button class="btn small" onclick="showCloset()">👗 옷장</button>
+    <button class="btn small" onclick="showGrow()">📖 성장 일기</button>
+    <button class="btn small" onclick="show('s-report')">👩 부모님 기록판</button>
+    <button class="btn small" id="installBtn" style="display:none" onclick="installApp()">📲 앱으로 설치</button>
+  </div>
+</section>
+
+<!-- 아기 방 -->
+<section class="screen" id="s-room">
+  <div class="top">
+    <button class="btn small" onclick="goHome()">🏠 처음</button>
+    <span class="pill" id="roomLv"></span>
+    <span class="pill">❤️ <span id="roomLove">0</span></span>
+  </div>
+  <div class="room">
+    <div class="bubble" id="roomMsg"></div>
+    <div class="babywrap" id="roomBaby"></div>
+    <div class="stage" id="roomStage"></div>
+  </div>
+  <div class="needs" id="needs"></div>
+  <p class="sub" style="margin-top:12px;font-size:16px">반짝이는 걸 먼저 해 주면 아기가 더 좋아해요. 순서는 마음대로 해도 돼요!</p>
+</section>
+
+<!-- 문제 -->
+<section class="screen" id="s-q">
+  <div class="top">
+    <button class="btn small" onclick="backToRoom()">⬅ 아기 방</button>
+    <span class="tag" id="qLv"></span>
+  </div>
+  <div class="qhead"><span style="font-size:44px" id="qIc"></span><div class="t" id="qTitle"></div></div>
+  <div class="qtext" id="qText"></div>
+  <div class="vis" id="qVis"></div>
+  <div class="ansrow"><div class="ans" id="ansBox"></div><span id="qUnit"></span></div>
+  <div class="pad" id="pad"></div>
+  <div class="msg hint" id="hintBox"></div>
+  <div class="msg exp" id="expBox"></div>
+  <div class="tools">
+    <button class="btn small" onclick="readQ()">🔊 읽어 줘</button>
+    <button class="btn small" onclick="showHint()">💡 힌트</button>
+    <label class="chk"><input type="checkbox" id="autoRead" checked> 자동 읽기</label>
+  </div>
+</section>
+
+<!-- 옷장 -->
+<section class="screen" id="s-closet">
+  <div class="top"><button class="btn small" onclick="goHome()">🏠 처음</button><span class="pill">❤️ <span id="closetLove">0</span></span></div>
+  <h2>👗 아기 옷장</h2>
+  <div class="babywrap" id="closetBaby"></div>
+  <p class="sub">사랑 ❤️이 모이면 새 옷과 모자가 열려요. 눌러서 입혀 봐요!</p>
+  <h2 style="font-size:20px">모자</h2><div class="shelf" id="shelfHat"></div>
+  <h2 style="font-size:20px">옷</h2><div class="shelf" id="shelfSuit"></div>
+  <h2 style="font-size:20px">소품</h2><div class="shelf" id="shelfToy"></div>
+</section>
+
+<!-- 성장 일기 -->
+<section class="screen" id="s-grow">
+  <div class="top"><button class="btn small" onclick="goHome()">🏠 처음</button><span class="pill">❤️ <span id="growLove">0</span></span></div>
+  <h2>📖 성장 일기</h2>
+  <p class="sub" id="growSub"></p>
+  <ul class="milestones" id="growList"></ul>
+</section>
+
+<!-- 부모님 기록판 -->
+<section class="screen" id="s-report">
+  <div class="top"><button class="btn small" onclick="goHome()">🏠 처음</button></div>
+  <h2>👩 부모님 기록판</h2>
+  <div class="card" style="text-align:left;font-size:16px;line-height:1.6">
+    · 문제 범위: <b>초등 1학년 2학기 수학</b>(100까지의 수, 덧셈과 뺄셈, 모양과 시각, 규칙 찾기)을 기준으로 만들었어요.<br>
+    · <b>한 번에</b> = 처음 입력한 답이 맞은 횟수예요. 최근 10문제 중 절반 이상 틀린 유형은 <span class="weak">주황색</span>으로 표시되고, 게임에서 더 자주 나와요.<br>
+    · 처음에 맞히면 ❤️2, 다시 풀어서 맞히면 ❤️1을 받아요.
+  </div>
+  <div id="report"></div>
+  <div class="row" style="margin-top:12px">
+    <button class="btn small" onclick="resetStats()">기록만 지우기</button>
+    <button class="btn small" onclick="resetAll()">처음부터 다시 키우기</button>
+  </div>
+</section>
+
+<!-- 겹화면(돌봄 완료, 하루 끝, 성장) -->
+<div class="ov" id="ov"><div class="ovbox" id="ovBox"></div></div>
+
+<script>
+/* ================== 저장 ================== */
+const SAVE_KEY='baby-care-math-v1', RECENT=10;
+let S={name:'',baby:'',love:0,days:0,hat:'none',suit:'pink',toy:'none',stats:{}};
+try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); if(s) S=Object.assign(S,s);}catch(e){}
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}}
+
+/* ================== 도우미 ================== */
+const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const $=id=>document.getElementById(id);
+function bat(w){const c=w.charCodeAt(w.length-1);if(c>=0xAC00&&c<=0xD7A3)return (c-0xAC00)%28!==0;return false;}
+const 이가=w=>w+(bat(w)?'이':'가');
+const 은는=w=>w+(bat(w)?'은':'는');
+const 을를=w=>w+(bat(w)?'을':'를');
+const 아야=w=>w+(bat(w)?'아':'야');
+function me(){ return (S.name||'하리').trim()||'하리'; }
+function bb(){ return (S.baby||'콩이').trim()||'콩이'; }
+
+/* ================== 약점 기록 ================== */
+function stat(key){ if(!S.stats) S.stats={}; return S.stats[key]||(S.stats[key]={n:0,ok:0,r:[]}); }
+function logResult(key,firstTry){ const t=stat(key); t.n++; if(firstTry) t.ok++; t.r.push(firstTry?1:0); if(t.r.length>RECENT) t.r.shift(); save(); }
+function missRate(key){ const t=S.stats&&S.stats[key]; if(!t||!t.r.length) return null; return t.r.filter(x=>!x).length/t.r.length; }
+function weight(key){ const m=missRate(key); return m===null?1.5:1+4*m; } // 처음 보는 유형 1.5배, 많이 틀릴수록 최대 5배
+function isWeak(key){ const m=missRate(key); return m!==null&&m>=.5; }
+function weightedOne(keys){ const ws=keys.map(weight),sum=ws.reduce((a,b)=>a+b,0); let x=Math.random()*sum;
+  for(let i=0;i<keys.length;i++){ if((x-=ws[i])<=0) return keys[i]; } return keys[keys.length-1]; }
+
+/* ================== 소리 ================== */
+let AC=null;
+function ac(){ if(!AC){ const C=window.AudioContext||window.webkitAudioContext; if(!C) return null; AC=new C(); } if(AC.state==='suspended') AC.resume(); return AC; }
+function tones(list,type){ const c=ac(); if(!c) return; let t=c.currentTime;
+  for(const [f,d] of list){ if(f){ const o=c.createOscillator(),g=c.createGain(); o.type=type||'triangle'; o.frequency.value=f;
+      g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.22,t+.02); g.gain.exponentialRampToValueAtTime(.0001,t+d);
+      o.connect(g).connect(c.destination); o.start(t); o.stop(t+d+.05); } t+=d; } }
+function slide(f0,f1,d,type,vol,delay){ const c=ac(); if(!c) return; const t=c.currentTime+(delay||0),o=c.createOscillator(),g=c.createGain();
+  o.type=type||'sine'; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+d);
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol||.2,t+.04); g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(g).connect(c.destination); o.start(t); o.stop(t+d+.05); }
+const sOK=()=>tones([[660,.1],[880,.1],[1175,.2]]);
+const sNo=()=>tones([[300,.15],[220,.25]],'square');
+const sCry=()=>{ slide(520,700,.35,'sawtooth',.06); slide(700,480,.5,'sawtooth',.06,.35); }          // 응애~
+const sGiggle=()=>{ for(let i=0;i<5;i++) slide(700+i*60,1000+i*60,.09,'sine',.18,i*.12); }        // 까르르
+const sGulp=()=>{ for(let i=0;i<3;i++) slide(300,160,.12,'sine',.25,i*.28); }                       // 꿀꺽꿀꺽
+const sBubble=()=>{ for(let i=0;i<7;i++) slide(R(500,900),R(1200,1800),.08,'sine',.12,i*.1); }     // 보글보글
+const sLullaby=()=>tones([[523,.3],[523,.3],[784,.3],[784,.3],[880,.3],[880,.3],[784,.6]],'sine'); // 반짝반짝 작은 별
+const sFanfare=()=>tones([[523,.12],[659,.12],[784,.12],[1047,.35],[0,.05],[784,.12],[1047,.4]]);
+function speak(t){
+  try{ if(!('speechSynthesis' in window)) return; speechSynthesis.cancel();
+    const clean=t.replace(/<br>/g,' ').replace(/<[^>]+>/g,'').replace(/□/g,'네모');
+    const u=new SpeechSynthesisUtterance(clean); u.lang='ko-KR'; u.rate=.92; u.pitch=1.15; speechSynthesis.speak(u);
+  }catch(e){}
+}
+function floatEmo(emo,el){ const r=(el||document.body).getBoundingClientRect(); const d=document.createElement('div'); d.className='float'; d.textContent=emo;
+  d.style.left=(r.left+r.width/2-22+R(-40,40))+'px'; d.style.top=(r.top+r.height/2)+'px'; document.body.appendChild(d); setTimeout(()=>d.remove(),1500); }
+
+/* ================== 성장 단계 ================== */
+const STAGES=[
+  {at:0,  t:'꼬물꼬물 갓난아기', s:.82},
+  {at:12, t:'방긋방긋 웃어요', s:.86},
+  {at:30, t:'뒤집기 성공!', s:.9},
+  {at:55, t:'혼자 앉아요', s:.94},
+  {at:85, t:'엉금엉금 기어가요', s:.97},
+  {at:120,t:'첫걸음마를 떼요', s:1},
+  {at:160,t:'첫 말을 했어요', s:1.03, word:1},
+  {at:210,t:'돌잔치! 한 살이 되었어요', s:1.06, cake:1},
+  {at:280,t:'노래에 맞춰 춤춰요', s:1.08},
+  {at:360,t:'"사랑해"라고 말해요', s:1.1},
+];
+function stageIdx(l){ let i=0; STAGES.forEach((s,k)=>{ if(l>=s.at) i=k; }); return i; }
+function stageText(i){ const s=STAGES[i]; return s.word?`첫 말: "${me()}!" 하고 불렀어요`:s.t; }
+function nextInfo(){ const i=stageIdx(S.love), n=STAGES[i+1]; if(!n) return {pct:100,txt:'다 컸어요! 그래도 계속 사랑을 모아요 💕'};
+  const p=STAGES[i].at; return {pct:Math.round((S.love-p)/(n.at-p)*100),txt:`다음 성장까지 ❤️ ${n.at-S.love}`}; }
+
+/* ================== 옷장 ================== */
+const HATS=[{id:'none',n:'없음',ic:'🚫',at:0},{id:'ribbon',n:'리본',ic:'🎀',at:0},{id:'bear',n:'곰돌이 모자',ic:'🐻',at:15},
+  {id:'bunny',n:'토끼 모자',ic:'🐰',at:45},{id:'crown',n:'왕관',ic:'👑',at:100},{id:'chef',n:'요리사 모자',ic:'🧑‍🍳',at:170},{id:'party',n:'고깔모자',ic:'🥳',at:210}];
+const SUITS=[{id:'pink',n:'분홍 옷',c:'#ffb3d1',at:0},{id:'blue',n:'하늘 옷',c:'#9fd3ff',at:0},{id:'yellow',n:'병아리 옷',c:'#ffe066',at:20},
+  {id:'green',n:'개구리 옷',c:'#9ee29a',at:40},{id:'star',n:'별무늬 옷',c:'#b9a6ff',at:75,dots:'#fff59d'},{id:'straw',n:'딸기 옷',c:'#ff6b81',at:130,dots:'#fff'},{id:'hanbok',n:'돌 한복',c:'#ff8fb1',at:210,hanbok:1}];
+const TOYS=[{id:'none',n:'없음',ic:'🚫',at:0},{id:'paci',n:'쪽쪽이',ic:'🍭',at:0},{id:'rattle',n:'딸랑이',ic:'🪇',at:25},
+  {id:'teddy',n:'곰 인형',ic:'🧸',at:60},{id:'duck',n:'오리 인형',ic:'🐤',at:95},{id:'balloon',n:'풍선',ic:'🎈',at:150}];
+function look(){ return {hat:S.hat,suit:SUITS.find(x=>x.id===S.suit)||SUITS[0],toy:S.toy}; }
+
+/* ================== 아기 그림 ================== */
+// mood: happy / cry / sleep / calm
+function babySVG(mood,size,lk){
+  lk=lk||look(); const sc=STAGES[stageIdx(S.love)].s, w=size*sc, suit=lk.suit;
+  const skin='#ffe0c7', line='#5a3b2e';
+  let h=`<svg viewBox="0 -34 200 264" width="${w}" height="${w*1.32}">`;
+  // 몸(옷)
+  h+=`<ellipse cx="100" cy="186" rx="58" ry="40" fill="${suit.c}" stroke="${line}" stroke-width="3"/>`;
+  if(suit.dots) for(const [x,y] of [[70,180],[100,205],[128,178],[85,200],[118,200]]) h+=`<circle cx="${x}" cy="${y}" r="4" fill="${suit.dots}"/>`;
+  if(suit.hanbok) h+=`<path d="M70 160 L100 200 L130 160" fill="none" stroke="#fff" stroke-width="7"/><path d="M50 185 h100" stroke="#7ed4ff" stroke-width="6"/><path d="M50 196 h100" stroke="#ffe066" stroke-width="6"/>`;
+  // 손, 발
+  h+=`<circle cx="44" cy="178" r="15" fill="${skin}" stroke="${line}" stroke-width="3"/><circle cx="156" cy="178" r="15" fill="${skin}" stroke="${line}" stroke-width="3"/>`;
+  h+=`<ellipse cx="74" cy="222" rx="16" ry="8" fill="${skin}" stroke="${line}" stroke-width="3"/><ellipse cx="126" cy="222" rx="16" ry="8" fill="${skin}" stroke="${line}" stroke-width="3"/>`;
+  // 얼굴
+  h+=`<circle cx="100" cy="95" r="64" fill="${skin}" stroke="${line}" stroke-width="3"/>`;
+  h+=`<circle cx="36" cy="100" r="11" fill="${skin}" stroke="${line}" stroke-width="3"/><circle cx="164" cy="100" r="11" fill="${skin}" stroke="${line}" stroke-width="3"/>`;
+  h+=`<path d="M92 34 q8 -16 18 -6 q-10 -2 -8 10" fill="none" stroke="${line}" stroke-width="3" stroke-linecap="round"/>`;
+  // 볼
+  const blush=mood==='cry'?'#ff7a8a':'#ffadc0';
+  h+=`<ellipse cx="60" cy="118" rx="13" ry="9" fill="${blush}" opacity=".8"/><ellipse cx="140" cy="118" rx="13" ry="9" fill="${blush}" opacity=".8"/>`;
+  // 눈
+  if(mood==='happy') h+=`<path d="M62 98 q12 -14 24 0" fill="none" stroke="${line}" stroke-width="5" stroke-linecap="round"/><path d="M114 98 q12 -14 24 0" fill="none" stroke="${line}" stroke-width="5" stroke-linecap="round"/>`;
+  else if(mood==='sleep') h+=`<path d="M62 96 q12 10 24 0" fill="none" stroke="${line}" stroke-width="5" stroke-linecap="round"/><path d="M114 96 q12 10 24 0" fill="none" stroke="${line}" stroke-width="5" stroke-linecap="round"/>`;
+  else if(mood==='cry') h+=`<path d="M62 92 l20 6 l-20 6" fill="none" stroke="${line}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M138 92 l-20 6 l20 6" fill="none" stroke="${line}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M70 108 q-6 14 0 18 q6 -4 0 -18" fill="#7cc7ff"/><path d="M130 108 q-6 14 0 18 q6 -4 0 -18" fill="#7cc7ff"/>`;
+  else h+=`<circle cx="74" cy="96" r="9" fill="${line}"/><circle cx="126" cy="96" r="9" fill="${line}"/><circle cx="77" cy="92" r="3" fill="#fff"/><circle cx="129" cy="92" r="3" fill="#fff"/>`;
+  // 입
+  if(lk.toy==='paci'&&mood!=='cry') h+=`<circle cx="100" cy="128" r="13" fill="#7ed4ff" stroke="${line}" stroke-width="3"/><circle cx="100" cy="128" r="5" fill="#fff"/>`;
+  else if(mood==='happy') h+=`<path d="M84 120 q16 22 32 0 z" fill="#ff6b81" stroke="${line}" stroke-width="3" stroke-linejoin="round"/>`;
+  else if(mood==='cry') h+=`<ellipse cx="100" cy="130" rx="14" ry="12" fill="#c0392b" stroke="${line}" stroke-width="3"/>`;
+  else if(mood==='sleep') h+=`<circle cx="100" cy="126" r="5" fill="none" stroke="${line}" stroke-width="3"/>`;
+  else h+=`<path d="M90 124 q10 8 20 0" fill="none" stroke="${line}" stroke-width="4" stroke-linecap="round"/>`;
+  // 모자
+  const hat=lk.hat;
+  if(hat==='ribbon') h+=`<path d="M100 40 l-26 -14 v28 z M100 40 l26 -14 v28 z" fill="#ff4f95" stroke="${line}" stroke-width="3" stroke-linejoin="round"/><circle cx="100" cy="40" r="7" fill="#ff7eb6" stroke="${line}" stroke-width="3"/>`;
+  if(hat==='bear'||hat==='bunny'){ const c=hat==='bear'?'#b07b4f':'#ffffff';
+    if(hat==='bear') h+=`<circle cx="52" cy="40" r="17" fill="${c}" stroke="${line}" stroke-width="3"/><circle cx="148" cy="40" r="17" fill="${c}" stroke="${line}" stroke-width="3"/><circle cx="52" cy="40" r="8" fill="#e8b98f"/><circle cx="148" cy="40" r="8" fill="#e8b98f"/>`;
+    else h+=`<ellipse cx="72" cy="6" rx="13" ry="34" fill="${c}" stroke="${line}" stroke-width="3"/><ellipse cx="128" cy="6" rx="13" ry="34" fill="${c}" stroke="${line}" stroke-width="3"/><ellipse cx="72" cy="8" rx="6" ry="24" fill="#ffc1db"/><ellipse cx="128" cy="8" rx="6" ry="24" fill="#ffc1db"/>`;
+    h+=`<path d="M38 80 a62 58 0 0 1 124 0 q-62 -20 -124 0 z" fill="${c}" stroke="${line}" stroke-width="3"/>`; }
+  if(hat==='crown') h+=`<path d="M62 44 l8 -30 l16 18 l14 -24 l14 24 l16 -18 l8 30 z" fill="#ffd54f" stroke="${line}" stroke-width="3" stroke-linejoin="round"/><circle cx="100" cy="36" r="5" fill="#ff4f95"/>`;
+  if(hat==='chef') h+=`<path d="M64 44 v-12 q-18 -14 0 -26 q12 -14 36 -6 q24 -8 36 6 q18 12 0 26 v12 z" fill="#fff" stroke="${line}" stroke-width="3" stroke-linejoin="round"/>`;
+  if(hat==='party') h+=`<path d="M76 42 l24 -44 l24 44 z" fill="#7ed4ff" stroke="${line}" stroke-width="3" stroke-linejoin="round"/><circle cx="100" cy="-2" r="7" fill="#ffe066" stroke="${line}" stroke-width="2"/><path d="M84 30 l8 -6 M96 20 l8 -6 M108 32 l8 -6" stroke="#ff4f95" stroke-width="4"/>`;
+  // 소품
+  if(lk.toy==='rattle') h+=`<line x1="160" y1="178" x2="178" y2="140" stroke="#ff8a3d" stroke-width="6" stroke-linecap="round"/><circle cx="182" cy="132" r="13" fill="#ffe066" stroke="${line}" stroke-width="3"/>`;
+  if(lk.toy==='teddy') h+=`<g transform="translate(150 150)"><circle cx="-6" cy="-10" r="7" fill="#b07b4f" stroke="${line}" stroke-width="2"/><circle cx="18" cy="-10" r="7" fill="#b07b4f" stroke="${line}" stroke-width="2"/><circle cx="6" cy="4" r="16" fill="#b07b4f" stroke="${line}" stroke-width="2"/><circle cx="1" cy="1" r="2" fill="${line}"/><circle cx="11" cy="1" r="2" fill="${line}"/><ellipse cx="6" cy="9" rx="5" ry="3.5" fill="#e8b98f"/></g>`;
+  if(lk.toy==='duck') h+=`<g transform="translate(22 150)"><ellipse cx="10" cy="14" rx="18" ry="12" fill="#ffe066" stroke="${line}" stroke-width="2"/><circle cx="18" cy="-2" r="10" fill="#ffe066" stroke="${line}" stroke-width="2"/><path d="M26 -2 l10 3 l-10 3 z" fill="#ff8a3d"/><circle cx="20" cy="-4" r="2" fill="${line}"/></g>`;
+  if(lk.toy==='balloon') h+=`<line x1="156" y1="170" x2="176" y2="60" stroke="#888" stroke-width="2"/><ellipse cx="178" cy="40" rx="18" ry="22" fill="#ff6b81" stroke="${line}" stroke-width="2"/>`;
+  if(mood==='sleep') h+=`<text x="160" y="46" font-size="26" fill="#6a7fd8" font-family="Arial" font-weight="bold">Z</text><text x="178" y="24" font-size="18" fill="#6a7fd8" font-family="Arial" font-weight="bold">z</text>`;
+  if(STAGES[stageIdx(S.love)].cake&&mood==='happy') h+=`<text x="4" y="40" font-size="30">🎂</text>`;
+  return h+'</svg>';
+}
+
+/* ================== 그림 도우미 ================== */
+function tensVis(t,u,emo){
+  let h='<div class="tens">';
+  for(let i=0;i<t;i++) h+='<div class="ten">'+('<span>'+emo+'</span>').repeat(10)+'</div>';
+  if(u) h+='<div class="ones">'+('<span>'+emo+'</span>').repeat(u)+'</div>';
+  return h+'</div>';
+}
+function coinsVis(list){ return '<div class="row" style="gap:4px">'+list.map(v=>`<span class="coin ${v===50?'c50':''}">${v}</span>`).join('')+'</div>'; }
+function clockSVG(h,m){
+  let nums=''; for(let i=1;i<=12;i++){ const a=i*Math.PI/6; nums+=`<text x="${50+36*Math.sin(a)}" y="${54+36*-Math.cos(a)}" font-size="10" text-anchor="middle" font-family="Arial" font-weight="bold">${i}</text>`; }
+  let ticks=''; for(let i=0;i<60;i++){ const a=i*Math.PI/30, r1=i%5?44:41; ticks+=`<line x1="${50+r1*Math.sin(a)}" y1="${50-r1*Math.cos(a)}" x2="${50+46*Math.sin(a)}" y2="${50-46*Math.cos(a)}" stroke="#555" stroke-width="${i%5?.6:1.4}"/>`; }
+  const ha=((h%12)+m/60)*30, ma=m*6;
+  return `<svg viewBox="0 0 100 100" width="170" height="170" aria-label="시계">
+  <circle cx="50" cy="50" r="49" fill="#ffc1db"/><circle cx="50" cy="50" r="46" fill="#fff" stroke="#333" stroke-width="1.5"/>${ticks}${nums}
+  <line x1="50" y1="50" x2="50" y2="27" stroke="#d62828" stroke-width="4" stroke-linecap="round" transform="rotate(${ha} 50 50)"/>
+  <line x1="50" y1="50" x2="50" y2="12" stroke="#1f5fbf" stroke-width="2.6" stroke-linecap="round" transform="rotate(${ma} 50 50)"/>
+  <circle cx="50" cy="50" r="3" fill="#333"/></svg>`;
+}
+function shapesVis(list){
+  const cols=['#ff7eb6','#7ed4ff','#ffe066','#9ee29a','#b9a6ff'];
+  const rows=Math.ceil(list.length/6);
+  let h=`<svg viewBox="0 0 300 ${rows*58+8}" width="100%" style="max-width:420px">`;
+  list.forEach((s,i)=>{ const x=10+(i%6)*48, y=8+Math.floor(i/6)*58, c=pick(cols), sz=R(34,40);
+    if(s==='sq') h+=`<rect x="${x+(40-sz)/2}" y="${y+(40-sz)/2}" width="${sz}" height="${sz}" rx="3" fill="${c}" stroke="#333" stroke-width="2"/>`;
+    if(s==='tri') h+=`<polygon points="${x+20},${y+2} ${x+40},${y+40} ${x},${y+40}" fill="${c}" stroke="#333" stroke-width="2"/>`;
+    if(s==='ci') h+=`<circle cx="${x+20}" cy="${y+21}" r="${sz/2}" fill="${c}" stroke="#333" stroke-width="2"/>`;
+  });
+  return h+'</svg>';
+}
+
+/* ================== 문제 만들기 ================== */
+// c = {N:내 이름, B:아기 이름}
+const Q={
+  // ---- 쉬움 ----
+  tens(c){ const t=R(2,9),u=R(1,9),a=t*10+u;
+    return {topic:'100까지의 수',q:`떡뻥 과자가 10개씩 든 봉지가 <b>${t}봉지</b>, 낱개가 <b>${u}개</b> 있어요. 떡뻥은 모두 몇 개일까요?`,a,unit:'개',
+      vis:tensVis(t,u,'🍘'),hint:`10개씩 ${t}봉지는 ${t*10}개예요. 거기에 낱개 ${u}개를 붙여요.`,exp:`10개씩 묶음 ${t}개 → <b>${t*10}</b><br>낱개 ${u}개 → ${t*10}과 ${u}을 합치면 <b>${a}</b>`}; },
+  make10(c){ const a=R(1,9);
+    return {topic:'10 만들기',q:`${이가(c.B)} 우유를 <b>10모금</b> 먹으면 배가 불러요. 지금까지 <b>${a}모금</b> 먹었어요. 몇 모금 더 먹어야 할까요?`,a:10-a,unit:'모금',
+      vis:`<div class="slots">${'🍼'.repeat(a)}${'⚪'.repeat(10-a)}</div>`,hint:`빈 동그라미 ⚪를 세어 봐요.`,exp:`${a}와 더해서 10이 되는 수는 <b>${10-a}</b><br>${a} + ${10-a} = 10`}; },
+  add(c){ const t=R(1,8),u=R(0,7),a=t*10+u,b=R(1,9-u),s=a+b;
+    const v=pick([[`${이가(c.B)} 딸랑이를 <b>${a}번</b> 흔들었어요. 신이 나서 <b>${b}번</b>을 더 흔들었어요. 모두 몇 번 흔들었을까요?`,'번'],
+                  [`떡뻥이 <b>${a}개</b> 있었어요. 엄마가 <b>${b}개</b>를 더 사 오셨어요. 떡뻥은 모두 몇 개일까요?`,'개']]);
+    return {topic:'덧셈',q:v[0],a:s,unit:v[1],hint:`낱개끼리 먼저 더해요. ${u} + ${b} = ${u+b}`,exp:`${a} + ${b}<br>10개씩 묶음 ${t}개는 그대로, 낱개는 ${u} + ${b} = ${u+b}<br>그래서 <b>${s}</b>`}; },
+  sub(c){ const t=R(2,9),u=R(1,9),a=t*10+u,b=R(1,u),d=a-b;
+    const v=pick([[`기저귀가 <b>${a}장</b> 있었어요. 이번 주에 <b>${b}장</b>을 썼어요. 남은 기저귀는 몇 장일까요?`,'장'],
+                  [`물티슈가 <b>${a}장</b> 있었어요. ${이가(c.N)} ${c.B} 엉덩이를 닦느라 <b>${b}장</b>을 썼어요. 남은 물티슈는 몇 장일까요?`,'장']]);
+    return {topic:'뺄셈',q:v[0],a:d,unit:v[1],hint:`낱개끼리 먼저 빼요. ${u} - ${b} = ${u-b}`,exp:`${a} - ${b}<br>10개씩 묶음 ${t}개는 그대로, 낱개는 ${u} - ${b} = ${u-b}<br>그래서 <b>${d}</b>`}; },
+  carry(c){ const a=R(3,9),b=R(Math.max(2,11-a),9),s=a+b,k=10-a;
+    return {topic:'받아올림 있는 덧셈',q:`${이가(c.N)} ${c.B} 기저귀를 <b>${a}번</b> 갈아 줬어요. 아빠는 <b>${b}번</b> 갈아 줬어요. 기저귀를 모두 몇 번 갈았을까요?`,a:s,unit:'번',
+      hint:`${b}를 ${k}와 ${b-k}로 가르면 ${a} + ${k} = 10을 만들 수 있어요!`,exp:`${b}를 ${k}와 ${b-k}로 갈라요.<br>${a} + ${k} = 10<br>10 + ${b-k} = <b>${s}</b>`}; },
+  borrow(c){ const a=R(11,18),b=R(Math.max(2,a-9),9),d=a-b,k=a-10;
+    return {topic:'받아내림 있는 뺄셈',q:`기저귀 가방에 기저귀가 <b>${a}장</b> 있었어요. 할머니 댁에서 <b>${b}장</b>을 썼어요. 남은 기저귀는 몇 장일까요?`,a:d,unit:'장',
+      vis:tensVis(1,k,'🧷'),hint:`10개 묶음에서 먼저 ${b}장을 빼 봐요. 10 - ${b} = ${10-b}`,exp:`10 - ${b} = ${10-b}<br>남은 낱개 ${k}장을 더하면 ${10-b} + ${k} = <b>${d}</b>`}; },
+  clock(c){ const h=R(1,12),m=pick([0,30]);
+    return {topic:'시각 읽기',q:`${이가(c.B)} 잠든 시각이에요. 시계는 몇 시${m?' 30분':''}일까요?<br>□시${m?' 30분':''} ← □에 들어갈 수를 써요.`,a:h,unit:m?'시 30분':'시',
+      vis:clockSVG(h,m),hint:m?`짧은바늘(빨강)이 두 숫자 사이에 있으면, 앞의 숫자를 읽어요. 긴바늘이 6이면 30분!`:`긴바늘(파랑)이 12에 있으면 '몇 시 정각'이에요. 짧은바늘(빨강)이 가리키는 숫자를 읽어요.`,
+      exp:`짧은바늘이 ${m?h+'과 '+(h%12+1)+' 사이':h}, 긴바늘이 ${m?6:12}${m?'을':'를'} 가리켜요.<br>그래서 <b>${h}시${m?' 30분':''}</b>`}; },
+  order(c){ const n=R(20,98); const v=pick([['바로 뒤의 수',n+1],['바로 앞의 수',n-1],['1만큼 더 큰 수',n+1],['1만큼 더 작은 수',n-1]]);
+    return {topic:'수의 순서',q:`${이가(c.N)} 자장가 책에서 <b>${n}쪽</b>을 펼쳤어요. ${n}의 <b>${v[0]}</b>는 몇일까요?`,a:v[1],unit:'',
+      hint:v[1]>n?`수를 셀 때 ${n} 다음에 오는 수예요.`:`수를 셀 때 ${n} 바로 전에 오는 수예요.`,exp:`${v[1]>n?n+', '+v[1]:v[1]+', '+n}<br>${n}의 ${v[0]}는 <b>${v[1]}</b>`}; },
+  pattern(c){ const step=pick([1,2,5,10]); let st;
+    if(step===10) st=10*R(1,5); else if(step===5) st=5*R(1,10); else if(step===2) st=R(2,60); else st=R(10,90);
+    const arr=[0,1,2,3,4].map(i=>st+i*step), hide=R(2,4);
+    return {topic:'규칙 찾기',q:`천장에 붙인 별 스티커 번호에 규칙이 있어요! 빈칸에 알맞은 수는 무엇일까요?`,a:arr[hide],unit:'',
+      vis:`<div class="seq">${arr.map((v,i)=>i===hide?'<span class="q">?</span>':`<span>${v}</span>`).join('')}</div>`,
+      hint:`${arr[0]} 다음에 ${arr[1]}이에요. 얼마씩 커지나요?`,exp:`${step}씩 커지는 규칙이에요.<br>${arr.join(', ')} → 빈칸은 <b>${arr[hide]}</b>`}; },
+  three(c){ const a=R(1,6),b=R(1,6),d=R(1,6),s=a+b+d;
+    return {topic:'세 수의 덧셈',q:`욕조에 오리 인형 <b>${a}개</b>, 물고기 인형 <b>${b}개</b>, 배 인형 <b>${d}개</b>를 띄웠어요. 목욕 장난감은 모두 몇 개일까요?`,a:s,unit:'개',
+      vis:`<div class="slots">${'🐤'.repeat(a)}</div><span class="plus">+</span><div class="slots">${'🐟'.repeat(b)}</div><span class="plus">+</span><div class="slots">${'⛵'.repeat(d)}</div>`,
+      hint:`앞의 두 수를 먼저 더해요. ${a} + ${b} = ?`,exp:`${a} + ${b} = ${a+b}<br>${a+b} + ${d} = <b>${s}</b>`}; },
+  compare(c){ let a=R(21,98),b=R(21,98); while(a===b) b=R(21,98);
+    return {topic:'수의 크기 비교',q:`목욕하면서 비눗방울을 불었어요. ${은는(c.N)} <b>${a}개</b>, 아빠는 <b>${b}개</b>를 만들었어요. 더 많이 만든 사람은 몇 개를 만들었을까요?`,a:Math.max(a,b),unit:'개',
+      hint:`10개씩 묶음의 수(앞자리)부터 비교해요. 같으면 낱개를 비교해요.`,exp:`${a}와 ${b} 중 더 큰 수는 <b>${Math.max(a,b)}</b>`}; },
+  shapes(c){ const cnt={sq:R(2,5),tri:R(2,5),ci:R(2,5)}; let list=[]; for(const k in cnt) for(let i=0;i<cnt[k];i++) list.push(k); list=shuffle(list);
+    const tgt=pick(['sq','tri','ci']), nm={sq:'■ 네모',tri:'▲ 세모',ci:'● 동그라미'}[tgt];
+    return {topic:'모양 찾기',q:`${이가(c.N)} ${c.B}에게 블록 놀이를 보여 줘요. <b>${nm}</b> 모양은 몇 개일까요?`,a:cnt[tgt],unit:'개',vis:shapesVis(list),
+      hint:`${nm} 모양을 하나씩 손가락으로 짚으면서 세어 봐요.`,exp:`${nm} 모양은 <b>${cnt[tgt]}개</b>예요.`}; },
+  money(c){ if(Math.random()<.5){ const x=R(1,8),y=R(1,9-x);
+      return {topic:'(몇십)+(몇십)',q:`${은는(c.N)} ${c.B} 장난감을 사려고 <b>${x*10}원</b>을 모았어요. 할머니가 <b>${y*10}원</b>을 더 주셨어요. 모두 얼마일까요?`,a:(x+y)*10,unit:'원',
+        vis:coinsVis(Array(x).fill(10))+'<span class="plus">+</span>'+coinsVis(Array(y).fill(10)),hint:`10원짜리 동전이 모두 몇 개인지 세어 봐요.`,exp:`10원짜리 ${x}개 + ${y}개 = ${x+y}개<br>10원짜리 ${x+y}개는 <b>${(x+y)*10}원</b>`}; }
+    const x=R(3,9),y=R(1,x-1);
+    return {topic:'(몇십)-(몇십)',q:`${은는(c.N)} <b>${x*10}원</b>이 있었어요. ${c.B}에게 줄 공을 <b>${y*10}원</b>에 샀어요. 남은 돈은 얼마일까요?`,a:(x-y)*10,unit:'원',
+      vis:coinsVis(Array(x).fill(10)),hint:`동전 ${x}개 중에서 ${y}개를 손가락으로 가려 봐요.`,exp:`10원짜리 ${x}개 - ${y}개 = ${x-y}개<br>그래서 <b>${(x-y)*10}원</b>`}; },
+
+  // ---- 도전 ----
+  unknown(c){ const x=R(3,9),a=R(3,9);
+    if(Math.random()<.5) return {topic:'어떤 수 구하기',q:`${이가(c.B)} 아침에 우유를 몇 모금 먹었어요. 낮잠 자고 <b>${a}모금</b>을 더 먹었더니 모두 <b>${x+a}모금</b>이 되었어요. 아침에 먹은 우유는 몇 모금일까요?`,a:x,unit:'모금',
+      hint:`□ + ${a} = ${x+a}예요. 거꾸로 ${x+a} - ${a}를 해 봐요.`,exp:`□ + ${a} = ${x+a}<br>□ = ${x+a} - ${a} = <b>${x}</b>`};
+    return {topic:'어떤 수 구하기',q:`떡뻥이 몇 개 있었어요. ${이가(c.B)} <b>${a}개</b>를 먹었더니 <b>${x}개</b>가 남았어요. 처음에 떡뻥은 몇 개였을까요?`,a:x+a,unit:'개',
+      hint:`□ - ${a} = ${x}예요. 먹은 떡뻥을 다시 돌려놓으면? ${x} + ${a}`,exp:`□ - ${a} = ${x}<br>□ = ${x} + ${a} = <b>${x+a}</b>`}; },
+  steps(c){ const a=R(9,16),b=R(2,a-4),d=R(2,7),ans=a-b+d;
+    return {topic:'여러 단계 계산',q:`우유병이 <b>${a}개</b> 있었어요. ${c.B} 우유를 타느라 <b>${b}개</b>를 썼는데, 엄마가 깨끗이 씻은 병 <b>${d}개</b>를 더 가져왔어요. 지금 우유병은 몇 개일까요?`,a:ans,unit:'개',
+      hint:`먼저 쓴 병을 빼고, 그다음 가져온 병을 더해요.`,exp:`${a} - ${b} = ${a-b}<br>${a-b} + ${d} = <b>${ans}</b>`}; },
+  reverse(c){ const t=R(3,9),u=R(2,9),a=t*10+u,xt=R(1,t-1),xu=R(0,u),x=xt*10+xu,l=a-x;
+    return {topic:'거꾸로 생각하기',q:`기저귀 상자에 기저귀가 <b>${a}장</b> 있었어요. 몇 장을 썼더니 <b>${l}장</b>이 남았어요. 쓴 기저귀는 몇 장일까요?`,a:x,unit:'장',
+      hint:`${a} - □ = ${l}이에요. 처음 장수에서 남은 장수를 빼 봐요.`,exp:`${a} - □ = ${l}<br>□ = ${a} - ${l} = <b>${x}</b>`}; },
+  bundle(c){ const t=R(2,6),u=R(11,19),a=t*10+u;
+    return {topic:'묶음과 낱개',q:`기저귀가 10장씩 묶음 <b>${t}개</b>와 낱개 <b>${u}장</b> 있어요. 기저귀는 모두 몇 장일까요?`,a,unit:'장',
+      hint:`낱개 ${u}장 안에 10장 묶음이 하나 숨어 있어요!`,exp:`낱개 ${u}장 = 10장씩 묶음 1개 + 낱개 ${u-10}장<br>10장씩 묶음 ${t}+1 = ${t+1}개, 낱개 ${u-10}장<br>그래서 <b>${a}</b>`}; },
+  clockThink(c){ const h=R(1,11),v=R(0,2); const w=x=>((x-1)%12)+1;
+    if(v===0) return {topic:'시곗바늘',q:`${이가(c.B)} <b>${h}시</b>에 낮잠을 자기 시작했어요. 긴바늘이 <b>한 바퀴</b> 돌았을 때 깼어요. 몇 시에 깼을까요?`,a:w(h+1),unit:'시',vis:clockSVG(h,0),hint:`긴바늘이 한 바퀴 돌면 짧은바늘은 숫자 한 칸을 움직여요.`,exp:`긴바늘 한 바퀴 = 1시간<br>${h}시 → <b>${w(h+1)}시</b>`};
+    if(v===1) return {topic:'시곗바늘',q:`${이가(c.B)} <b>${h}시</b>에 잠들었어요. 긴바늘이 <b>두 바퀴</b> 도는 동안 푹 잤어요. 몇 시에 깼을까요?`,a:w(h+2),unit:'시',vis:clockSVG(h,0),hint:`한 바퀴에 1시간! 두 바퀴면?`,exp:`${h}시 → ${w(h+1)}시 → <b>${w(h+2)}시</b>`};
+    return {topic:'시곗바늘',q:`지금은 <b>${h}시 30분</b>이에요. 긴바늘이 <b>반 바퀴</b> 더 돌면 ${c.B} 우유 먹을 시간이에요. 몇 시일까요?`,a:w(h+1),unit:'시',vis:clockSVG(h,30),hint:`긴바늘이 6에서 반 바퀴 돌면 12로 가요.`,exp:`긴바늘이 12에 오면 정각!<br>짧은바늘은 ${w(h+1)}을(를) 가리켜서 <b>${w(h+1)}시</b>`}; },
+  nth(c){ const st=R(1,5),step=pick([2,3,5]),k=R(5,7),ans=st+(k-1)*step, ORD=['첫째','둘째','셋째','넷째','다섯째','여섯째','일곱째'];
+    return {topic:'규칙의 ○번째',q:`${이가(c.N)} 자장가를 불러 줘요. 첫째 밤 <b>${st}곡</b>, 둘째 밤 <b>${st+step}곡</b>, 셋째 밤 <b>${st+2*step}곡</b>… 이렇게 늘어나면 <b>${ORD[k-1]} 밤</b>에는 몇 곡을 부를까요?`,a:ans,unit:'곡',
+      hint:`밤마다 ${step}곡씩 늘어나요. 넷째 밤, 다섯째 밤… 차례로 써 봐요.`,exp:`${Array.from({length:k},(_,i)=>st+i*step).join(' → ')}<br>${ORD[k-1]} 밤은 <b>${ans}곡</b>`}; },
+  chain(c){ const x=R(2,6),d1=R(1,4),d2=R(1,4),ans=x+d1+d2;
+    return {topic:'비교 연결하기',q:`욕조에서 물장구를 쳤어요. ${은는(c.B)} <b>${x}번</b>, ${은는(c.N)} ${c.B}보다 <b>${d1}번 더</b>, 아빠는 ${c.N}보다 <b>${d2}번 더</b> 쳤어요. 아빠는 몇 번 쳤을까요?`,a:ans,unit:'번',
+      hint:`먼저 ${이가(c.N)} 몇 번 쳤는지 구해요.`,exp:`${c.N}: ${x} + ${d1} = ${x+d1}<br>아빠: ${x+d1} + ${d2} = <b>${ans}</b>`}; },
+  oddeven(c){ const a=R(20,80),b=a+R(7,11),ev=Math.random()<.5; const list=[]; for(let i=a+1;i<b;i++) if((i%2===0)===ev) list.push(i);
+    return {topic:'짝수와 홀수',q:`목욕 장난감에 번호가 붙어 있어요. <b>${a}</b>보다 크고 <b>${b}</b>보다 작은 번호 중에서 <b>${ev?'짝수':'홀수'}</b>는 몇 개일까요?<br><small>(${ev?'짝수: 둘씩 짝을 지으면 남는 게 없는 수':'홀수: 둘씩 짝을 지으면 하나가 남는 수'})</small>`,a:list.length,unit:'개',
+      hint:`${a+1}부터 ${b-1}까지 모두 써 보고, 낱개 자리가 ${ev?'0, 2, 4, 6, 8':'1, 3, 5, 7, 9'}인 수를 찾아요.`,exp:`${list.join(', ')}<br>모두 <b>${list.length}개</b>`}; },
+  sumdiff(c){ const big=R(5,12),small=R(1,big-1),s=big+small,d=big-small;
+    return {topic:'합과 차',q:`${이가(c.N)} 씻긴 오리 인형과 ${이가(c.B)} 씻긴 오리 인형을 더하면 <b>${s}개</b>예요. ${이가(c.N)} <b>${d}개</b> 더 많이 씻겼어요. ${이가(c.N)} 씻긴 오리 인형은 몇 개일까요?`,a:big,unit:'개',
+      hint:`더해서 ${s}가 되는 두 수를 차례로 써 보고, 그중 차이가 ${d}인 짝을 찾아요.`,exp:`${big} + ${small} = ${s}, ${big} - ${small} = ${d}<br>${c.N}: <b>${big}개</b>`}; },
+  line(c){ const m=R(2,7),n=R(2,7),s=m+n-1, pic='○'.repeat(m-1)+'●'+'○'.repeat(n-1);
+    return {topic:'줄 서기',q:`${이가(c.B)} 인형들을 한 줄로 세웠어요. 곰 인형은 앞에서 <b>${m}번째</b>, 뒤에서 <b>${n}번째</b>예요. 인형은 모두 몇 개일까요?`,a:s,unit:'개',
+      hint:`○로 그림을 그려 봐요. 곰 인형을 두 번 세지 않게 조심!`,exp:`${pic}<br>● 앞에 ${m-1}개, ● 뒤에 ${n-1}개, 그리고 곰 인형 1개<br>${m-1} + ${n-1} + 1 = <b>${s}</b>`}; },
+  cards(c){ const zero=Math.random()<.35; let ds=shuffle([1,2,3,4,5,6,7,8,9]).slice(0,zero?2:3); if(zero) ds.push(0); ds=shuffle(ds);
+    const big=Math.random()<.5; const s=ds.slice().sort((x,y)=>x-y); let ans,why;
+    if(big){ ans=s[2]*10+s[1]; why=`가장 큰 ${s[2]}을(를) 10개씩 묶음 자리에, 다음 큰 ${s[1]}을(를) 낱개 자리에!`; }
+    else if(zero){ ans=s[1]*10; why=`0은 맨 앞에 올 수 없어요. 0 다음 작은 ${s[1]}을(를) 앞에, 0을 뒤에!`; }
+    else { ans=s[0]*10+s[1]; why=`가장 작은 ${s[0]}을(를) 앞에, 다음 작은 ${s[1]}을(를) 뒤에!`; }
+    return {topic:'수 카드',q:`${이가(c.B)} 숫자 카드 3장을 가지고 놀아요. 2장을 골라 두 자리 수를 만들 때, 만들 수 있는 <b>가장 ${big?'큰':'작은'} 수</b>는 무엇일까요?`,a:ans,unit:'',
+      vis:`<div class="cards">${ds.map(d=>`<span>${d}</span>`).join('')}</div>`,hint:big?`가장 큰 카드를 앞(10개씩 묶음 자리)에 놓아요.`:`가장 작은 카드를 앞에 놓아요.${zero?' 그런데 0이 맨 앞에 오면 두 자리 수가 아니에요!':''}`,
+      exp:`${why}<br>답: <b>${ans}</b>`}; },
+  between(c){ const a=R(21,85),k=R(3,8),b=a+k+1;
+    return {topic:'사이에 있는 수',q:`그림책 <b>${a}쪽</b>과 <b>${b}쪽</b> <b>사이</b>에 있는 쪽을 ${이가(c.B)} 침으로 적셨어요! 사이에 있는 쪽은 몇 쪽일까요?<br><small>(몇 장이 아니라 몇 쪽인지 세어요)</small>`,a:k,unit:'쪽',
+      hint:`${a+1}부터 세어 봐요. ${a}쪽과 ${b}쪽은 빼요!`,exp:`${Array.from({length:k},(_,i)=>a+1+i).join(', ')}<br>모두 <b>${k}쪽</b>`}; },
+};
+
+/* ================== 돌봄 종류 ================== */
+const NEEDS={
+  feed:  {ic:'🍼',n:'우유',ask:'배고파요~ 우유 주세요!',easy:['make10','tens','add'],hard:['unknown','steps'],
+          done:'꿀꺽꿀꺽! 배가 빵빵해졌어요.',emo:'🍼',snd:()=>sGulp()},
+  diaper:{ic:'🧷',n:'기저귀',ask:'엉덩이가 축축해요~',easy:['sub','borrow','carry'],hard:['reverse','bundle'],
+          done:'뽀송뽀송! 기분이 좋아졌어요.',emo:'✨',snd:()=>sGiggle()},
+  sleep: {ic:'🌙',n:'재우기',ask:'졸려요… 하아암~',easy:['clock','order','pattern'],hard:['clockThink','nth'],
+          done:'자장자장~ 스르르 잠들었다가 개운하게 깼어요.',emo:'💤',snd:()=>sLullaby()},
+  bath:  {ic:'🛁',n:'목욕',ask:'몸이 끈적끈적해요~',easy:['three','compare'],hard:['chain','oddeven','sumdiff'],
+          done:'보글보글! 깨끗해졌어요.',emo:'🫧',snd:()=>sBubble()},
+  play:  {ic:'🧸',n:'놀이',ask:'심심해요~ 놀아 주세요!',easy:['shapes','money','add'],hard:['line','cards','between'],
+          done:'까르르! 너무 재미있대요.',emo:'😆',snd:()=>sGiggle()},
+};
+const NEED_ORDER=['feed','diaper','sleep','bath','play'];
+
+/* ================== 진행 ================== */
+let G=null; // {lv, needs:{key:{done,q,gen,tries,logged}}, want, cur, input}
+function show(id){ if(id!=='s-room') $('ov').classList.remove('on'); if(id==='s-report') renderReport(); document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id)); window.scrollTo(0,0); }
+function renderStart(){
+  $('nameIn').value=S.name||''; $('babyIn').value=S.baby||'';
+  $('startBaby').innerHTML=babySVG('happy',190);
+  const i=stageIdx(S.love), n=nextInfo();
+  $('startStage').textContent=`${bb()} · ${stageText(i)} · ❤️ ${S.love} (${n.txt})`;
+  $('startBar').style.width=n.pct+'%';
+}
+function goHome(){ try{speechSynthesis.cancel();}catch(e){} $('ov').classList.remove('on'); renderStart(); show('s-start'); }
+$('nameIn').addEventListener('input',e=>{S.name=e.target.value.trim();save();renderStart();});
+$('babyIn').addEventListener('input',e=>{S.baby=e.target.value.trim();save();renderStart();});
+
+function tkey(g){ return (G.lv==='easy'?'e:':'h:')+g; }
+function genFor(need){ const n=NEEDS[need];
+  if(G.lv==='easy') return weightedOne(n.easy.map(k=>'e:'+k)).slice(2);
+  // 도전: 도전 유형 70%, 쉬운 유형 30% 섞기
+  return Math.random()<.7?weightedOne(n.hard.map(k=>'h:'+k)).slice(2):pick(n.easy); }
+function startDay(lv){
+  ac(); S.name=$('nameIn').value.trim(); S.baby=$('babyIn').value.trim(); save();
+  G={lv,needs:{},want:null,input:''};
+  NEED_ORDER.forEach(k=>G.needs[k]={done:false});
+  G.want=pick(NEED_ORDER); sCry();
+  renderRoom(); show('s-room');
+}
+function renderRoom(msg,mood){
+  $('roomLv').textContent=G.lv==='easy'?'🙂 쉬움':'🧠 도전';
+  $('roomLove').textContent=S.love;
+  const left=NEED_ORDER.filter(k=>!G.needs[k].done);
+  mood=mood||(left.length?'cry':'sleep');
+  $('roomBaby').innerHTML=babySVG(mood,210);
+  $('roomStage').textContent=`${bb()} · ${stageText(stageIdx(S.love))}`;
+  $('roomMsg').innerHTML=msg||(G.want?`${bb()}: "${NEEDS[G.want].ask}"`:`${아야(me())}, 고마워! 💕`);
+  $('needs').innerHTML=NEED_ORDER.map(k=>{ const n=NEEDS[k],d=G.needs[k].done;
+    return `<button class="need ${d?'done':''} ${k===G.want?'want':''}" onclick="openQ('${k}')" ${d?'disabled':''}><span class="ic">${n.ic}</span>${n.n}</button>`; }).join('');
+}
+function openQ(k){
+  const st=G.needs[k]; if(st.done) return; ac();
+  G.cur=k; st.tries=st.tries||0; G.input=''; G.locked=false;
+  if(!st.q){ st.gen=genFor(k); st.q=Q[st.gen]({N:me(),B:bb()}); }
+  const q=st.q, n=NEEDS[k];
+  $('qIc').textContent=n.ic;
+  $('qTitle').innerHTML=`${n.n} 시간! <small style="color:#888">· ${q.topic}</small>${isWeak(tkey(st.gen))?'<br><small class="weak">🔁 다시 도전 유형</small>':''}`;
+  $('qLv').textContent=G.lv==='easy'?'쉬움':'도전';
+  $('qLv').style.background=G.lv==='easy'?'#7ed957':'#ff8a3d';
+  $('qText').innerHTML=q.q; $('qVis').innerHTML=q.vis||''; $('qVis').style.display=q.vis?'flex':'none';
+  $('qUnit').textContent=q.unit;
+  $('hintBox').className='msg hint'; $('expBox').className='msg exp';
+  if(st.tries>=1){ $('hintBox').innerHTML='💡 '+q.hint; $('hintBox').classList.add('on'); }
+  if(st.tries>=2){ showExp(q); }
+  drawAns(); buildPad(); show('s-q');
+  if($('autoRead').checked) setTimeout(readQ,300);
+}
+function curQ(){ return G&&G.cur&&G.needs[G.cur].q; }
+function readQ(){ const q=curQ(); if(q) speak(q.q.replace(/<small>.*?<\/small>/,'')); }
+function showHint(){ const q=curQ(); if(!q) return; $('hintBox').innerHTML='💡 '+q.hint; $('hintBox').classList.add('on'); speak(q.hint); }
+function showExp(q){ $('expBox').innerHTML=`📘 이렇게 풀어요<br>${q.exp}<br><br>정답: <b>${q.a}${q.unit}</b> — 정답을 직접 눌러서 ${을를(bb())} 돌봐 줘요!`; $('expBox').classList.add('on'); }
+function backToRoom(){ try{speechSynthesis.cancel();}catch(e){} renderRoom(); show('s-room'); }
+function buildPad(){
+  const keys=['1','2','3','4','5','6','7','8','9','⌫','0','확인'];
+  $('pad').innerHTML=keys.map(k=>`<button class="${k==='확인'?'go':k==='⌫'?'del':''}" data-k="${k}">${k}</button>`).join('');
+  $('pad').querySelectorAll('button').forEach(b=>b.onclick=()=>key(b.dataset.k));
+}
+function drawAns(cls){ const b=$('ansBox'); b.textContent=G.input||''; b.className='ans'+(cls?' '+cls:''); }
+function key(k){
+  if(G.locked) return;
+  if(k==='⌫') G.input=G.input.slice(0,-1);
+  else if(k==='확인') return check();
+  else if(G.input.length<3){ G.input=(G.input==='0'?'':G.input)+k; tones([[600+Number(k)*40,.06]],'sine'); }
+  drawAns();
+}
+document.addEventListener('keydown',e=>{
+  if(!$('s-q').classList.contains('on')||$('ov').classList.contains('on')) return;
+  if(/^[0-9]$/.test(e.key)) key(e.key); else if(e.key==='Backspace') key('⌫'); else if(e.key==='Enter') key('확인');
+});
+function check(){
+  const st=G.needs[G.cur], q=st.q; if(G.input==='') return;
+  if(Number(G.input)===q.a){
+    if(!st.logged){ st.logged=true; logResult(tkey(st.gen),true); }
+    drawAns('good'); sOK(); G.locked=true;
+    setTimeout(()=>{ G.locked=false; careDone(st.tries===0?2:1); },600);
+    return;
+  }
+  if(!st.logged){ st.logged=true; logResult(tkey(st.gen),false); }
+  st.tries++; sNo(); drawAns('shake'); setTimeout(()=>{G.input='';drawAns();},450);
+  if(st.tries===1){ $('hintBox').innerHTML='앗, 아까워요! 다시 생각해 봐요.<br>💡 '+q.hint; $('hintBox').classList.add('on'); speak('아까워요! 힌트를 보고 다시 해 봐요.'); }
+  else { showExp(q); speak('이렇게 풀어요. 정답을 직접 눌러 봐요!'); }
+}
+function careDone(love){
+  try{speechSynthesis.cancel();}catch(e){}
+  const k=G.cur, n=NEEDS[k], before=stageIdx(S.love), bonus=(k===G.want)?1:0;
+  G.needs[k].done=true; S.love+=love+bonus; save();
+  const left=NEED_ORDER.filter(x=>!G.needs[x].done);
+  G.want=left.length?pick(left):null;
+  show('s-room'); renderRoom(`${n.done}`,'happy');
+  $('roomBaby').classList.add('wiggle'); setTimeout(()=>$('roomBaby').classList.remove('wiggle'),1600);
+  n.snd(); for(let i=0;i<3;i++) setTimeout(()=>floatEmo(i?'❤️':n.emo,$('roomBaby')),i*250);
+  speak(`${bb()} ${n.done} 사랑 ${love+bonus}개!`);
+  $('roomLove').textContent=S.love;
+  const after=stageIdx(S.love);
+  setTimeout(()=>{
+    if(after>before) return grewUp(after,()=>left.length?renderRoom():dayEnd());
+    if(!left.length) return dayEnd();
+    renderRoom(); sCry();
+  },2400);
+}
+function grewUp(i,next){
+  sFanfare();
+  $('ovBox').innerHTML=`<h2>🎉 ${이가(bb())} 자랐어요!</h2><div>${babySVG('happy',170)}</div>
+    <div class="big">${stageText(i)}</div><button class="btn pink" style="margin-top:10px" id="ovGo">좋아요!</button>`;
+  $('ov').classList.add('on'); speak(`${이가(bb())} 자랐어요! ${stageText(i)}`);
+  $('ovGo').onclick=()=>{ $('ov').classList.remove('on'); next(); };
+}
+function dayEnd(){
+  S.days=(S.days||0)+1; save(); sLullaby();
+  const n=nextInfo();
+  $('ovBox').innerHTML=`<h2>🌙 오늘 돌보기 끝!</h2><div>${babySVG('sleep',170)}</div>
+    <div class="big">${이가(bb())} 쌔근쌔근 잠들었어요.<br>${아야(me())} 오늘도 고마워!</div>
+    <div style="font-size:18px;color:#7a4a6a">❤️ ${S.love} · 돌본 날 ${S.days}일<br>${n.txt}</div>
+    <div class="row" style="margin-top:12px"><button class="btn pink" onclick="startDay(G.lv)">한 번 더 🍼</button><button class="btn" onclick="goHome()">🏠 처음</button></div>`;
+  $('ov').classList.add('on'); speak(`${이가(bb())} 쌔근쌔근 잠들었어요. 오늘도 고마워!`);
+}
+
+/* ================== 옷장 ================== */
+function showCloset(){ renderCloset(); show('s-closet'); }
+function renderCloset(){
+  $('closetLove').textContent=S.love; $('closetBaby').innerHTML=babySVG('happy',170);
+  const cell=(x,cur,kind,ic)=>{ const lock=S.love<x.at;
+    return `<button class="item ${cur===x.id?'on':''} ${lock?'lock':''}" onclick="wear('${kind}','${x.id}')">${ic}<br>${lock?'🔒 ❤️'+x.at:x.n}</button>`; };
+  $('shelfHat').innerHTML=HATS.map(x=>cell(x,S.hat,'hat',`<span class="ic">${x.ic}</span>`)).join('');
+  $('shelfSuit').innerHTML=SUITS.map(x=>cell(x,S.suit,'suit',`<span class="ic"><span style="display:inline-block;width:34px;height:34px;border-radius:50%;background:${x.c};border:3px solid #5a3b2e"></span></span>`)).join('');
+  $('shelfToy').innerHTML=TOYS.map(x=>cell(x,S.toy,'toy',`<span class="ic">${x.ic}</span>`)).join('');
+}
+function wear(kind,id){ const list={hat:HATS,suit:SUITS,toy:TOYS}[kind], x=list.find(v=>v.id===id); ac();
+  if(S.love<x.at){ sNo(); speak(`사랑이 ${x.at-S.love}개 더 있으면 열려요!`); return; }
+  S[kind]=id; save(); sGiggle(); renderCloset(); }
+
+/* ================== 성장 일기 ================== */
+function showGrow(){
+  $('growLove').textContent=S.love;
+  $('growSub').textContent=`${은는(bb())} 지금 "${stageText(stageIdx(S.love))}" 단계예요. 돌본 날: ${S.days||0}일`;
+  $('growList').innerHTML=STAGES.map((s,i)=>`<li class="${S.love>=s.at?'got':''}">${S.love>=s.at?'💖':'🤍'} ❤️${s.at} — ${S.love>=s.at?stageText(i):'???'}</li>`).join('');
+  show('s-grow');
+}
+
+/* ================== 부모님 기록판 ================== */
+function renderReport(){
+  const names={}; for(const k in Q){ try{ names[k]=Q[k]({N:'하리',B:'콩이'}).topic; }catch(e){ names[k]=k; } }
+  const keys=Object.keys(S.stats||{}).sort();
+  const rows=keys.map(k=>{ const t=S.stats[k], lv=k[0]==='e'?'쉬움':'도전', nm=names[k.slice(2)]||k, w=isWeak(k);
+    return `<tr class="${w?'weak':''}"><td>${lv}</td><td>${nm}${w?' 🔁':''}</td><td>${t.n}</td><td>${t.ok}</td><td>${t.r.map(x=>x?'⭕':'❌').join('')}</td></tr>`; }).join('');
+  $('report').innerHTML=rows?`<div style="overflow-x:auto"><table><tr style="background:#fff0f6"><th>단계</th><th>유형</th><th>푼 수</th><th>한 번에</th><th>최근</th></tr>${rows}</table></div>`
+    :'<p style="color:#888;text-align:center">아직 기록이 없어요. 하루 돌보고 오면 여기에 쌓여요.</p>';
+}
+function parentOK(){
+  const a=R(12,19),b=R(3,9), ans=prompt(`👩 어른 확인\n${a} × ${b} = ?`);
+  if(ans===null) return false;
+  if(Number(ans)!==a*b){ alert('어른 확인에 실패했어요. 엄마·아빠에게 부탁해요!'); return false; }
+  return true;
+}
+function resetStats(){ if(!parentOK()) return; S.stats={}; save(); renderReport(); }
+function resetAll(){ if(!parentOK()) return; if(!confirm('사랑, 성장, 옷장, 기록이 모두 처음으로 돌아가요. 정말 할까요?')) return;
+  S.love=0; S.days=0; S.hat='none'; S.suit='pink'; S.toy='none'; S.stats={}; save(); goHome(); }
+
+/* ================== 앱 설치 ================== */
+let installEvt=null;
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEvt=e; $('installBtn').style.display=''; });
+function installApp(){ if(!installEvt) return; installEvt.prompt(); installEvt.userChoice.finally(()=>{ installEvt=null; $('installBtn').style.display='none'; }); }
+if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+renderStart();
+</script>
+</body>
+</html>
