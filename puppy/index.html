@@ -132,6 +132,28 @@ h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shad
 .ticket .stamp{position:absolute;right:14px;top:50%;transform:translateY(-50%) rotate(-14deg);border:3px solid #d62828;color:#d62828;border-radius:10px;padding:2px 8px;font-size:18px;background:#fff}
 .bigticket{border:4px dashed #e0a100;border-radius:20px;background:#fffdf5;padding:16px;margin:12px 0}
 .bigticket .ic{font-size:70px}
+.world{position:relative;width:100%;aspect-ratio:4/5;max-height:72vh;border-radius:22px;overflow:hidden;box-shadow:var(--shadow);
+  background:linear-gradient(#8fd3ff 0%,#cdefff 48%,#7ed957 48%,#5fbf45 100%);touch-action:manipulation}
+.world.editing{outline:4px dashed #ff7a2f;outline-offset:-4px;touch-action:none}
+.world .road{position:absolute;left:0;right:0;top:78%;height:9%;background:#6b7280}
+.world .road:after{content:'';position:absolute;left:0;right:0;top:45%;height:8%;background:repeating-linear-gradient(90deg,#fff 0 22px,transparent 22px 44px)}
+.world .sun{position:absolute;right:7%;top:5%;font-size:44px}
+.world .cloud1{position:absolute;left:8%;top:9%;font-size:40px;opacity:.9}
+.world .tower{position:absolute;left:50%;top:14%;transform:translateX(-50%);z-index:1}
+.thing{position:absolute;transform:translate(-50%,-100%);user-select:none;-webkit-user-select:none;cursor:pointer;touch-action:none}
+.thing .inner{display:block;filter:drop-shadow(0 4px 2px rgba(0,0,0,.25))}
+.thing.sel .inner{filter:drop-shadow(0 0 6px #ff7a2f) drop-shadow(0 0 3px #ff7a2f)}
+.thing.hop{animation:hop .6s}
+.thing.fly{animation:fly 2.2s ease-in-out}
+.thing.fly .rotor{animation:spin .12s linear 18}
+@keyframes hop{0%,100%{transform:translate(-50%,-100%)}30%{transform:translate(-50%,-125%)}60%{transform:translate(-50%,-95%)}}
+@keyframes fly{0%,100%{transform:translate(-50%,-100%)}50%{transform:translate(-50%,-190%)}}
+@keyframes spin{from{transform:scaleX(1)}50%{transform:scaleX(-.2)}to{transform:scaleX(1)}}
+.tray{background:#fff;border-radius:18px;padding:10px;margin-top:10px;box-shadow:var(--shadow)}
+.traylist{display:flex;gap:8px;overflow-x:auto;padding:6px 2px}
+.trayitem{background:#f5fbff;border:2px solid #9cc9ff;border-radius:14px;padding:6px 8px;display:flex;flex-direction:column;align-items:center;min-width:84px;font-family:inherit}
+.trayitem small{font-size:13px;white-space:nowrap}
+.selbar{display:none;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}
 .guide{background:#fff;border-radius:18px;padding:14px 16px;font-size:16px;line-height:1.6;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;box-shadow:var(--shadow)}
 .guide h3{margin:10px 0 4px;font-family:'Jua',sans-serif;font-size:20px}
 .guide ul{margin:4px 0;padding-left:20px}
@@ -161,6 +183,7 @@ h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shad
   </div>
   <div class="row" style="margin-top:12px">
     <button class="btn" onclick="showBank()">🐷 저금통 · 가게</button>
+    <button class="btn" onclick="showBaseScreen()">🏡 구조대 기지</button>
     <button class="btn" onclick="show('s-guide')">📖 어른용 안내</button>
   </div>
   <div class="row" style="margin-top:12px"><button class="btn blue" id="installBtn" style="display:none" onclick="installApp()">📲 홈 화면에 설치</button></div>
@@ -226,8 +249,45 @@ h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shad
     <div style="font-size:22px">🎟️ 내 쿠폰함</div>
     <div id="coupons"></div>
   </div>
+  <p style="text-align:center;margin-top:14px"><button class="btn blue" onclick="showBaseScreen()">🏡 구조대 기지 · 🚨 차량 가게</button></p>
   <h2 style="text-align:center;margin:18px 0 0">🏪 퍼피 가게</h2>
   <div class="shop" id="shop"></div>
+</section>
+
+<!-- 구조대 기지 -->
+<section id="s-base" class="screen">
+  <div class="top">
+    <button class="btn small" onclick="goHome()">🏠 처음으로</button>
+    <span class="pill">🐷 <span id="baseMoney">0</span>원</span>
+    <button class="btn small hard" id="editBtn" onclick="toggleEdit()">✏️ 꾸미기</button>
+  </div>
+  <div class="world" id="world">
+    <div class="sun">☀️</div><div class="cloud1">☁️</div>
+    <svg class="tower" viewBox="0 0 120 200" width="34%" aria-label="구조대 타워">
+      <rect x="44" y="70" width="32" height="120" fill="#e5e7eb" stroke="#9aa3a8" stroke-width="3"/>
+      <rect x="20" y="182" width="80" height="18" rx="4" fill="#c7cdd4"/>
+      <path d="M8 70 Q60 -6 112 70Z" fill="#dc2626"/><rect x="8" y="62" width="104" height="18" rx="6" fill="#1f5fbf"/>
+      <ellipse cx="60" cy="48" rx="34" ry="14" fill="#cfefff" stroke="#1f5fbf" stroke-width="3"/>
+      <circle cx="60" cy="130" r="18" fill="#1f5fbf"/><text x="60" y="137" font-size="20" text-anchor="middle">🐾</text>
+      <rect x="57" y="-2" width="6" height="18" fill="#9aa3a8"/><circle cx="60" cy="-2" r="5" fill="#ffc400"/>
+    </svg>
+    <div class="road"></div>
+    <div id="things"></div>
+  </div>
+  <p id="baseHint" style="text-align:center;font-size:17px;margin:8px 0 0;color:#555"></p>
+  <div class="selbar" id="selBar">
+    <button class="btn small" onclick="selAct('small')">➖ 작게</button>
+    <button class="btn small" onclick="selAct('big')">➕ 크게</button>
+    <button class="btn small" onclick="selAct('flip')">↔️ 뒤집기</button>
+    <button class="btn small" onclick="selAct('store')">📦 보관함에 넣기</button>
+  </div>
+  <div class="tray" id="tray"><div style="font-size:17px">📦 보관함 <small style="color:#888">(누르면 기지에 나와요)</small></div><div class="traylist" id="trayList"></div></div>
+  <h2 style="text-align:center;margin:18px 0 0">🚨 구조대 차량</h2>
+  <p style="text-align:center;margin:4px 0 0;color:#666">비싸요! 열심히 구조해서 모아요.</p>
+  <div class="shop" id="vehShop"></div>
+  <h2 style="text-align:center;margin:18px 0 0">🌳 기지 꾸미기</h2>
+  <div class="shop" id="decoShop"></div>
+  <p style="text-align:center;margin-top:12px"><button class="btn small" onclick="showBank()">🐷 저금통 · 쿠폰 · 가게</button></p>
 </section>
 
 <!-- 어른용 안내 -->
@@ -281,6 +341,12 @@ h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shad
       <li>'사용'은 곱셈 문제(어른 확인)를 맞혀야 눌러져요. 실제로 주고 나서 눌러 주세요.</li>
       <li>'저금통 초기화'를 하면 쿠폰함도 같이 지워져요.</li>
     </ul>
+    <h3>🏡 구조대 기지</h3>
+    <ul>
+      <li>구조대 차량 6대(2,000~3,000원)와 꾸미기 소품(20~300원)을 사서 기지에 놓아요. 가게에서 산 물건도 놓을 수 있어요.</li>
+      <li>'✏️ 꾸미기'에서 끌어서 옮기기·크기·뒤집기, 평소에는 차를 누르면 소리가 나요.</li>
+      <li>'저금통 초기화'를 하면 차량과 기지도 함께 지워져요.</li>
+    </ul>
     <h3>🔊 소리</h3>
     방귀·동전 소리는 녹음 파일이 아니라 브라우저가 직접 합성해요. 휴대폰 무음 모드를 끄고 볼륨을 올려 주세요. '문제 읽어주기'는 기기의 한국어 음성을 씁니다.
     <p style="margin-top:10px">
@@ -299,10 +365,10 @@ h1{font-size:34px;text-align:center;margin:8px 0 4px;color:var(--blue);text-shad
 'use strict';
 /* ================== 저장 ================== */
 const SAVE_KEY='pupmath_v1';
-let S={name:'',money:0,items:[],rescued:0,stats:{},coupons:[],couponNo:0};
+let S={name:'',money:0,items:[],rescued:0,stats:{},coupons:[],couponNo:0,veh:[],deco:{},base:[],uid:0};
 try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); if(s) S=Object.assign(S,s);}catch(e){}
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}}
-function resetSave(){S.money=0;S.items=[];S.rescued=0;S.coupons=[];S.couponNo=0;save();goHome();}
+function resetSave(){S.money=0;S.items=[];S.rescued=0;S.coupons=[];S.couponNo=0;S.veh=[];S.deco={};S.base=[];save();goHome();}
 function resetStats(){S.stats={};save();renderReport();}
 /* ================== 약한 유형 기록 ================== */
 const RECENT=6; // 최근 몇 번까지 보고 판단할지
@@ -863,7 +929,7 @@ function showBank(){
 function buy(id){
   const it=SHOP.find(x=>x.id===id);
   if(S.money<it.price){ sNo(); const need=it.price-S.money; alert(`${need.toLocaleString()}원이 더 필요해요! 구조를 더 해서 모아 볼까요?`); return; }
-  const before=S.money; S.money-=it.price; S.items.push(id); save(); registerSound();
+  const before=S.money; S.money-=it.price; S.items.push(id); placeItem('s:'+id); save(); registerSound();
   if(id==='whoopee'||id==='poocushion') setTimeout(()=>fart(id==='whoopee'?'big':'wet'),900);
   speak(`${it.name}을 샀어요! ${before}원에서 ${it.price}원을 빼면 ${S.money}원이 남아요.`);
   showBank();
@@ -875,6 +941,146 @@ window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEv
 window.addEventListener('appinstalled',()=>{ $('installBtn').style.display='none'; });
 function installApp(){ if(!installEvt) return; installEvt.prompt(); installEvt.userChoice.finally(()=>{ installEvt=null; $('installBtn').style.display='none'; }); }
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+
+/* ================== 구조대 차량 · 기지 ================== */
+const VEH={
+  police: {name:'체이스 경찰차',     pup:'chase',   price:2000,snd:'police'},
+  digger: {name:'러블 굴착기',       pup:'rubble',  price:2000,snd:'engine'},
+  recycle:{name:'로키 재활용 트럭',  pup:'rocky',   price:2000,snd:'horn'},
+  fire:   {name:'마셜 소방차',       pup:'marshall',price:2500,snd:'fire'},
+  hover:  {name:'주마 호버크래프트', pup:'zuma',    price:2500,snd:'hover'},
+  heli:   {name:'스카이 헬리콥터',   pup:'skye',    price:3000,snd:'heli'},
+};
+const DECO=[
+  {id:'flower',icon:'🌷',name:'꽃',price:20},{id:'balloon',icon:'🎈',name:'풍선',price:20},{id:'tree',icon:'🌳',name:'나무',price:30},
+  {id:'light',icon:'🚦',name:'신호등',price:50},{id:'poo',icon:'💩',name:'똥 조형물',price:50},{id:'cat',icon:'🐱',name:'고양이 친구',price:100},
+  {id:'house',icon:'🏠',name:'집',price:150},{id:'fountain',icon:'⛲',name:'분수',price:200},{id:'rainbow',icon:'🌈',name:'무지개',price:300},
+];
+const wheel=(x,y)=>`<circle cx="${x}" cy="${y||84}" r="13" fill="#222"/><circle cx="${x}" cy="${y||84}" r="6" fill="#c9ced6"/>`;
+const pupAt=(id,x,y,s)=>`<g transform="translate(${x},${y})">${pupSVG(id,s)}</g>`;
+function vehicleSVG(id,w){
+  const h=w*100/160; let b='';
+  if(id==='police') b=`<path d="M38 46 L54 20 H108 L124 46Z" fill="#1f5fbf"/><path d="M48 45 L60 25 H103 L114 45Z" fill="#cfefff"/>${pupAt('chase',60,4,44)}
+    <rect x="72" y="12" width="10" height="8" rx="2" fill="#e11d48"/><rect x="82" y="12" width="10" height="8" rx="2" fill="#3b82f6"/>
+    <rect x="8" y="44" width="144" height="38" rx="12" fill="#1f5fbf"/><rect x="40" y="52" width="76" height="17" rx="4" fill="#fff"/><text x="78" y="66" font-size="13" text-anchor="middle">⭐</text>
+    <circle cx="148" cy="57" r="4" fill="#ffe066"/><rect x="4" y="60" width="8" height="10" rx="2" fill="#e11d48"/>${wheel(38)}${wheel(122)}`;
+  if(id==='fire') b=`<path d="M108 42 L116 16 H152 V42Z" fill="#d62828"/><path d="M116 40 L121 21 H147 V40Z" fill="#cfefff"/>${pupAt('marshall',113,2,38)}
+    <rect x="4" y="40" width="152" height="42" rx="8" fill="#d62828"/><rect x="4" y="58" width="152" height="6" fill="#fff"/>
+    <g stroke="#9aa3a8" stroke-width="3"><line x1="10" y1="30" x2="104" y2="30"/><line x1="10" y1="40" x2="104" y2="40"/>${[18,32,46,60,74,88,100].map(x=>`<line x1="${x}" y1="30" x2="${x}" y2="40"/>`).join('')}</g>
+    <text x="60" y="78" font-size="13" text-anchor="middle">🔥</text><circle cx="152" cy="50" r="4" fill="#ffe066"/>${wheel(32)}${wheel(78)}${wheel(128)}`;
+  if(id==='digger') b=`<rect x="54" y="10" width="46" height="34" rx="6" fill="#f2c200"/><rect x="60" y="15" width="34" height="24" rx="4" fill="#cfefff"/>${pupAt('rubble',57,6,40)}
+    <rect x="36" y="40" width="84" height="30" rx="8" fill="#f2c200"/><text x="78" y="61" font-size="13" text-anchor="middle">🔧</text>
+    <path d="M118 48 L146 22 L152 28 L128 56Z" fill="#e0a800"/><path d="M142 26 L158 56 L136 66 L132 50Z" fill="#555"/>
+    <rect x="26" y="68" width="104" height="24" rx="12" fill="#333"/>${[40,58,76,94,112].map(x=>`<circle cx="${x}" cy="80" r="7" fill="#777"/>`).join('')}`;
+  if(id==='recycle') b=`<rect x="6" y="22" width="98" height="56" rx="6" fill="#23813f"/><text x="55" y="60" font-size="22" text-anchor="middle">♻️</text>
+    <path d="M106 78 V36 H136 L154 56 V78Z" fill="#2e9e4f"/><path d="M112 54 V41 H133 L146 54Z" fill="#cfefff"/>${pupAt('rocky',108,12,40)}
+    <path d="M106 78 V56 H154 V78Z" fill="#2e9e4f"/><circle cx="151" cy="64" r="4" fill="#ffe066"/>${wheel(32)}${wheel(80)}${wheel(130)}`;
+  if(id==='hover') b=`<circle cx="22" cy="40" r="18" fill="#e5e7eb" stroke="#555" stroke-width="3"/><path d="M22 24 V56 M6 40 H38" stroke="#555" stroke-width="3"/>
+    <path d="M52 52 Q62 18 96 20 Q122 22 128 52Z" fill="#bfe6ff" stroke="#ff8a00" stroke-width="4"/>${pupAt('zuma',66,10,42)}
+    <ellipse cx="82" cy="62" rx="74" ry="16" fill="#ff8a00"/><text x="82" y="68" font-size="13" text-anchor="middle">⚓</text><ellipse cx="82" cy="80" rx="70" ry="9" fill="#333"/>`;
+  if(id==='heli') b=`<g class="rotor" style="transform-origin:72px 16px"><rect x="10" y="13" width="124" height="6" rx="3" fill="#444"/></g><rect x="68" y="16" width="8" height="14" fill="#666"/>
+    <path d="M104 50 L152 42 L152 56 L104 62Z" fill="#ff5fa2"/><circle cx="150" cy="44" r="9" fill="none" stroke="#444" stroke-width="3"/>
+    <ellipse cx="72" cy="56" rx="42" ry="28" fill="#ff5fa2"/><path d="M36 50 Q40 30 66 30 L66 60 L38 62Z" fill="#cfefff"/>${pupAt('skye',30,20,40)}
+    <text x="88" y="64" font-size="13" text-anchor="middle">🪽</text>
+    <g stroke="#555" stroke-width="4" stroke-linecap="round"><line x1="50" y1="82" x2="46" y2="92"/><line x1="94" y1="82" x2="98" y2="92"/><line x1="30" y1="93" x2="116" y2="93"/></g>`;
+  return `<svg viewBox="0 0 160 100" width="${w}" height="${h}" aria-label="${VEH[id].name}">${b}</svg>`;
+}
+function vehSound(kind){
+  const c=ac(); if(!c) return; const t=c.currentTime, out=master(c);
+  const osc=(type,f)=>{ const o=c.createOscillator(); o.type=type; o.frequency.value=f; return o; };
+  const env=(g,a,dur)=>{ g.gain.setValueAtTime(.0001,t); g.gain.linearRampToValueAtTime(a,t+.05); g.gain.setValueAtTime(a,t+dur-.15); g.gain.exponentialRampToValueAtTime(.0001,t+dur); };
+  if(kind==='police'){ const o=osc('square',750),lp=c.createBiquadFilter(),g=c.createGain(); lp.type='lowpass'; lp.frequency.value=2200;
+    for(let i=0;i<4;i++){ o.frequency.setValueAtTime(i%2?600:900,t+i*.42); } env(g,.18,1.7); o.connect(lp).connect(g).connect(out); o.start(t); o.stop(t+1.7); }
+  if(kind==='fire'){ const o=osc('sawtooth',500),lp=c.createBiquadFilter(),g=c.createGain(); lp.type='lowpass'; lp.frequency.value=1800;
+    o.frequency.setValueAtTime(450,t); o.frequency.linearRampToValueAtTime(1250,t+.9); o.frequency.linearRampToValueAtTime(450,t+2); env(g,.2,2.1); o.connect(lp).connect(g).connect(out); o.start(t); o.stop(t+2.1); }
+  if(kind==='engine'){ const o=osc('sawtooth',42),lf=osc('sine',9),lg=c.createGain(),g=c.createGain(),lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=380;
+    o.frequency.linearRampToValueAtTime(70,t+.6); o.frequency.linearRampToValueAtTime(48,t+1.6); lg.gain.value=.25; lf.connect(lg).connect(g.gain); env(g,.45,1.7);
+    o.connect(lp).connect(g).connect(out); o.start(t); lf.start(t); o.stop(t+1.7); lf.stop(t+1.7); }
+  if(kind==='horn'){ [0,.45].forEach(d=>[311,392].forEach(f=>{ const o=osc('sawtooth',f),lp=c.createBiquadFilter(),g=c.createGain(); lp.type='lowpass'; lp.frequency.value=1500;
+    g.gain.setValueAtTime(.0001,t+d); g.gain.linearRampToValueAtTime(.13,t+d+.02); g.gain.setValueAtTime(.13,t+d+.28); g.gain.exponentialRampToValueAtTime(.0001,t+d+.34);
+    o.connect(lp).connect(g).connect(out); o.start(t+d); o.stop(t+d+.36); })); }
+  if(kind==='hover'||kind==='heli'){ const dur=kind==='heli'?2.2:1.8, n=c.createBufferSource(); n.buffer=noiseBuf(c,dur);
+    const f=c.createBiquadFilter(), g=c.createGain();
+    if(kind==='heli'){ f.type='lowpass'; f.frequency.value=700; const lf=osc('square',13),lg=c.createGain(); lg.gain.value=.3; lf.connect(lg).connect(g.gain); lf.start(t); lf.stop(t+dur); env(g,.4,dur); }
+    else { f.type='bandpass'; f.Q.value=1.5; f.frequency.setValueAtTime(300,t); f.frequency.linearRampToValueAtTime(1200,t+.9); f.frequency.linearRampToValueAtTime(500,t+dur); env(g,.5,dur); }
+    n.connect(f).connect(g).connect(out); n.start(t); }
+}
+function ensureBase(){ S.veh=S.veh||[]; S.deco=S.deco||{}; S.base=S.base||[]; S.uid=S.uid||0; }
+function kindInfo(k){ const [t,id]=k.split(':');
+  if(t==='v') return {name:VEH[id].name,html:s=>vehicleSVG(id,Math.round(130*s)),veh:id};
+  if(t==='d'){ const d=DECO.find(x=>x.id===id); return {name:d.name,html:s=>`<span style="font-size:${Math.round(52*s)}px;line-height:1">${d.icon}</span>`,emo:d.icon}; }
+  const it=SHOP.find(x=>x.id===id)||{icon:'❓',name:'?'}; return {name:it.name,html:s=>`<span style="font-size:${Math.round(52*s)}px;line-height:1">${it.icon}</span>`,emo:it.icon};
+}
+function ownedCount(k){ const [t,id]=k.split(':'); if(t==='v') return S.veh.includes(id)?1:0; if(t==='d') return S.deco[id]||0; return S.items.includes(id)?1:0; }
+function placedCount(k){ return S.base.filter(b=>b.k===k).length; }
+function allKinds(){ return [...Object.keys(VEH).map(i=>'v:'+i),...DECO.map(d=>'d:'+d.id),...SHOP.map(x=>'s:'+x.id)]; }
+function placeItem(k,x,y){ ensureBase(); const b={u:++S.uid,k,x:x!==undefined?x:R(15,85),y:y!==undefined?y:R(70,95),s:1,f:false};
+  if(y===undefined){ if(k==='v:heli') b.y=R(28,40); else if(k[0]==='v') b.y=R(86,90); else b.y=R(56,76); }
+  S.base.push(b); save(); return b; }
+let baseEdit=false, baseSel=null, drag=null;
+function showBaseScreen(){ ensureBase(); $('ov').classList.remove('on'); ac(); baseSel=null; renderBase(); renderBaseShop(); show('s-base'); }
+function toggleEdit(){ baseEdit=!baseEdit; baseSel=null; renderBase(); }
+function renderBase(){
+  ensureBase();
+  $('baseMoney').textContent=S.money.toLocaleString();
+  $('editBtn').textContent=baseEdit?'✅ 다 꾸몄어요':'✏️ 꾸미기';
+  $('world').classList.toggle('editing',baseEdit);
+  const items=S.base.slice().sort((a,b)=>a.y-b.y);
+  $('things').innerHTML=items.map(b=>{ const ki=kindInfo(b.k);
+    return `<div class="thing ${baseSel===b.u?'sel':''}" data-u="${b.u}" style="left:${b.x}%;top:${b.y}%;z-index:${Math.round(b.y)+10}">
+      <div class="inner" style="transform:scaleX(${b.f?-1:1})">${ki.html(b.s)}</div></div>`; }).join('');
+  $('things').querySelectorAll('.thing').forEach(el=>el.addEventListener('pointerdown',thingDown));
+  const tray=allKinds().filter(k=>ownedCount(k)>placedCount(k));
+  $('tray').style.display=baseEdit?'block':'none';
+  $('trayList').innerHTML=tray.length?tray.map(k=>{ const ki=kindInfo(k), left=ownedCount(k)-placedCount(k);
+    return `<button class="trayitem" onclick="placeItem('${k}');renderBase()">${ki.veh?vehicleSVG(ki.veh,70):`<span style="font-size:34px">${ki.emo}</span>`}<small>${ki.name}${left>1?' ×'+left:''}</small></button>`; }).join('')
+    :'<span style="color:#888">보관함이 비었어요. 아래 가게에서 사 오세요!</span>';
+  const sel=S.base.find(b=>b.u===baseSel);
+  $('selBar').style.display=baseEdit&&sel?'flex':'none';
+  $('baseHint').textContent=baseEdit?(sel?'손가락으로 끌어서 옮겨요. 아래 버튼으로 크기·방향을 바꿔요.':'물건을 누르면 고를 수 있어요. 보관함에서 눌러 꺼내요.'):(S.base.length?'차를 눌러 보세요! 소리가 나요.':'아직 텅 비었어요. 가게에서 사고 ✏️ 꾸미기를 눌러요!');
+}
+function thingDown(e){
+  const u=Number(e.currentTarget.dataset.u), b=S.base.find(x=>x.u===u); if(!b) return;
+  if(!baseEdit){ playThing(b,e.currentTarget); return; }
+  e.preventDefault(); baseSel=u; const r=$('world').getBoundingClientRect();
+  drag={b,r,moved:false}; e.currentTarget.setPointerCapture&&e.currentTarget.setPointerCapture(e.pointerId);
+  $('things').querySelectorAll('.thing').forEach(el=>el.classList.toggle('sel',Number(el.dataset.u)===u));
+  $('selBar').style.display='flex';
+  $('baseHint').textContent='손가락으로 끌어서 옮겨요. 아래 버튼으로 크기·방향을 바꿔요.';
+}
+window.addEventListener('pointermove',e=>{ if(!drag) return; const {b,r}=drag;
+  b.x=Math.max(3,Math.min(97,(e.clientX-r.left)/r.width*100)); b.y=Math.max(8,Math.min(100,(e.clientY-r.top)/r.height*100)); drag.moved=true;
+  const el=$('things').querySelector(`[data-u="${b.u}"]`); if(el){ el.style.left=b.x+'%'; el.style.top=b.y+'%'; el.style.zIndex=Math.round(b.y)+10; } });
+window.addEventListener('pointerup',()=>{ if(!drag) return; drag=null; save(); renderBase(); });
+function selAct(a){ const b=S.base.find(x=>x.u===baseSel); if(!b) return;
+  if(a==='big') b.s=Math.min(1.8,+(b.s+.2).toFixed(1)); if(a==='small') b.s=Math.max(.6,+(b.s-.2).toFixed(1));
+  if(a==='flip') b.f=!b.f; if(a==='store'){ S.base=S.base.filter(x=>x!==b); baseSel=null; }
+  save(); renderBase(); }
+function playThing(b,el){
+  const ki=kindInfo(b.k), inner=el.querySelector('.inner');
+  el.classList.remove('hop'); void el.offsetWidth; el.classList.add(ki.veh==='heli'?'fly':'hop');
+  if(ki.veh) vehSound(VEH[ki.veh].snd);
+  else if(ki.emo==='💩'||ki.emo==='🎈') fart(); else tones([[880,.08],[1175,.12]],'sine');
+}
+function renderBaseShop(){
+  ensureBase();
+  $('vehShop').innerHTML=Object.keys(VEH).map(id=>{ const v=VEH[id], own=S.veh.includes(id);
+    return `<div class="item ${own?'own':''}"><div>${vehicleSVG(id,140)}</div><div>${v.name}</div><div class="pr">${v.price.toLocaleString()}원</div>
+      ${own?'<div>✅ 내 차</div>':S.money>=v.price?`<button class="btn small easy" onclick="buyBase('v:${id}')">사기</button>`:`<div style="font-size:15px;color:#999">${(v.price-S.money).toLocaleString()}원 더 모아요</div>`}</div>`; }).join('');
+  $('decoShop').innerHTML=DECO.map(d=>{ const n=S.deco[d.id]||0;
+    return `<div class="item"><div class="ic">${d.icon}</div><div>${d.name}${n?` <small>(${n}개)</small>`:''}</div><div class="pr">${d.price}원</div>
+      <button class="btn small ${S.money>=d.price?'easy':''}" onclick="buyBase('d:${d.id}')">사기</button></div>`; }).join('');
+}
+function buyBase(k){
+  ensureBase(); const [t,id]=k.split(':'); const price=t==='v'?VEH[id].price:DECO.find(x=>x.id===id).price, name=kindInfo(k).name;
+  if(S.money<price){ sNo(); alert(`${(price-S.money).toLocaleString()}원이 더 필요해요! 구조를 더 해서 모아 볼까요?`); return; }
+  if(t==='v'&&!confirm(`${name}를 ${price.toLocaleString()}원에 살까요?\n${S.money.toLocaleString()}원 - ${price.toLocaleString()}원 = ${(S.money-price).toLocaleString()}원이 남아요.`)) return;
+  const before=S.money; S.money-=price; if(t==='v') S.veh.push(id); else S.deco[id]=(S.deco[id]||0)+1;
+  placeItem(k); save(); registerSound();
+  if(t==='v') setTimeout(()=>vehSound(VEH[id].snd),700);
+  speak(`${name}${t==='v'?'를':''} 샀어요! ${before}원에서 ${price}원을 빼면 ${S.money}원이 남아요. 기지에 놓았어요!`);
+  renderBase(); renderBaseShop(); window.scrollTo({top:0,behavior:'smooth'});
+}
 
 /* 시작 화면 그리기 */
 $('startPups').innerHTML=Object.keys(PUPS).map(k=>pupSVG(k,72)).join('');

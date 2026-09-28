@@ -1,5 +1,5 @@
 // 퍼피 구조대 수학 — 오프라인 실행용 Service Worker (범위: /gagyebu/puppy/)
-const CACHE_NAME = 'puppy-math-v3';  // 게임을 고치면 숫자를 올려 주세요
+const CACHE_NAME = 'puppy-math-v4';  // 게임을 고치면 숫자를 올려 주세요
 const FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-180.png'];
 
 self.addEventListener('install', (e) => {
