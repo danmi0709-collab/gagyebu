@@ -213,6 +213,20 @@
   .result .gearwrap { width: 60%; max-width: 220px; }
   .preview { width: 45%; max-width: 180px; align-self: center; }
   .star-btn { background: var(--yellow); }
+  .shop-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .closet { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .closet-card { background: var(--c, #fff); border: 3px solid var(--ink); border-radius: 16px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .closet-card h3 { margin: 0; text-align: center; }
+  .closet-art { width: 88%; align-self: center; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chips .hint { font-size: 13px; }
+  .chip { font-family: var(--body); font-size: 13px; color: var(--ink); background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 3px 8px; cursor: pointer; }
+  .chip.on { background: var(--good); color: #fff; }
+  .closet-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+  .closet-row .mini { flex: 1; font-size: 14px; padding: 6px 4px; }
+  .mini.rec { background: var(--yellow); }
+  .mini:disabled { opacity: .45; cursor: not-allowed; }
+  @media (max-width: 360px) { .closet { grid-template-columns: 1fr; } }
   .bank { margin: 0; font-size: 20px; }
   .bank b { font-family: var(--display); font-size: 30px; color: #C98A00; }
   .items { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
@@ -420,11 +434,21 @@
   <!-- 3. 결과 -->
   <section id="result" class="panel result" hidden></section>
 
+  <!-- 5. 옷장 -->
+  <section id="closet" class="wrap" style="padding:0" hidden>
+    <div class="panel">
+      <div class="shop-top"><h2>옷장</h2><button type="button" class="mini" id="toShopBtn">⭐ 상점으로</button></div>
+      <p class="hint">산 아이템을 눌러서 입히거나 벗겨요. 추천 코디를 누르면 가진 것 중에 제일 멋진 걸로 한 번에 입혀줘요.</p>
+      <div class="closet" id="closetGrid"></div>
+    </div>
+  </section>
+
   <!-- 4. 별 상점 -->
   <section id="shop" class="wrap" style="padding:0" hidden>
     <div class="panel">
       <h2>별 상점</h2>
-      <p class="bank">쓸 수 있는 별 <b id="shopStars">0</b>개</p>
+      <div class="shop-top"><p class="bank">쓸 수 있는 별 <b id="shopStars">0</b>개</p>
+        <button type="button" class="mini" id="closetBtn">👗 옷장 보기</button></div>
       <div class="jar" id="goalJar"></div>
       <p class="hint">누구를 꾸밀까요? 산 아이템은 배틀에서도 보여요.</p>
       <div class="picks small" id="dressPicks"></div>
@@ -734,6 +758,8 @@ if (SAVE.v < 2) {
   SAVE.v = 2;
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (e) {}
 }
+// 예전 "doudou" 칸 → "main" 칸
+Object.values(SAVE.wear || {}).forEach(w => { if (w && w.doudou) { w.main = w.doudou; delete w.doudou; } });
 // v3: 예시 쿠폰 3개가 손대지 않은 그대로면 새 쿠폰 목록으로 바꿈
 if (SAVE.v < 3) {
   const old = SAVE.coupons.map(c => c.text + ":" + c.cost).join("|");
@@ -887,7 +913,7 @@ const ITEMS = [
   { id: "c-bag", only: "chupi", icon: "🎒", name: "가방", price: 40, slot: "back",
     back: `<rect x="38" y="124" width="124" height="62" rx="18" fill="#FFB020" stroke="#2B2240" stroke-width="3.5"/>`,
     front: `<path d="M70 132 L64 176 M130 132 L136 176" stroke="#C77800" stroke-width="7" stroke-linecap="round"/>` },
-  { id: "c-doudou", only: "chupi", icon: "🧸", name: "두두", price: 300, slot: "doudou",
+  { id: "c-doudou", only: "chupi", icon: "🧸", name: "두두", price: 300, slot: "main",
     front: `<g stroke="#2B2240" stroke-width="3">
             <ellipse cx="44" cy="170" rx="17" ry="19" fill="#C8905A"/>
             <circle cx="33" cy="134" r="6" fill="#C8905A"/><circle cx="55" cy="134" r="6" fill="#C8905A"/>
@@ -897,7 +923,34 @@ const ITEMS = [
             <circle cx="44" cy="148.5" r="1.8" fill="#2B2240"/>
             <ellipse cx="44" cy="172" rx="8" ry="9" fill="#F3DCC2"/>
             <path d="M40 168 C 38 164, 42 163, 44 166 C 46 163, 50 164, 48 168 L44 172 Z" fill="#FF6FAE"/>
-            <path d="M58 158 Q 66 164 60 176" fill="none" stroke="#26386B" stroke-width="7" stroke-linecap="round"/>` }
+            <path d="M58 158 Q 66 164 60 176" fill="none" stroke="#26386B" stroke-width="7" stroke-linecap="round"/>` },
+  { id: "p-unicorn", only: "ping", icon: "🦄", name: "하트 유니콘", price: 300, slot: "main",
+    front: `<g stroke="#2B2240" stroke-width="3" stroke-linejoin="round">
+            <ellipse cx="34" cy="178" rx="22" ry="14" fill="#fff"/>
+            <path d="M18 186 v10 M28 188 v9 M40 188 v9 M50 186 v10" stroke-width="5" stroke-linecap="round"/>
+            <circle cx="46" cy="156" r="13" fill="#fff"/>
+            <path d="M49 144 L56 124 L57 146 Z" fill="#FFD23F"/>
+            <path d="M36 150 C 28 152, 22 162, 16 172 C 24 170, 30 166, 34 160 Z" fill="#FF9CC6"/>
+            <path d="M12 176 C 4 182, 6 192, 10 196" fill="none" stroke="#B57BFF" stroke-width="5" stroke-linecap="round"/></g>
+            <circle cx="50" cy="155" r="2.2" fill="#2B2240"/>
+            <path d="M31 176 C 29 172, 33 171, 35 174 C 37 171, 41 172, 39 176 L35 180 Z" fill="#FF3D8B"/>` },
+  { id: "k-ball", only: "pika", icon: "🔴", name: "몬스터볼", price: 300, slot: "main",
+    front: `<g stroke="#2B2240" stroke-width="3">
+            <path d="M152 178 A 17 17 0 0 1 186 178 Z" fill="#E23B3B"/>
+            <path d="M152 178 A 17 17 0 0 0 186 178 Z" fill="#fff"/>
+            <line x1="152" y1="178" x2="186" y2="178" stroke-width="4"/>
+            <circle cx="169" cy="178" r="5.5" fill="#fff"/></g>
+            <path d="M158 170 q3 -5 8 -6" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>` },
+  { id: "d-brown", only: "det", icon: "🐶", name: "조수 브라운", price: 300, slot: "main",
+    front: `<g stroke="#2B2240" stroke-width="3" stroke-linejoin="round">
+            <ellipse cx="30" cy="186" rx="18" ry="12" fill="#A0672F"/>
+            <circle cx="30" cy="162" r="15" fill="#A0672F"/>
+            <path d="M17 152 C 8 156, 8 172, 14 176 C 18 168, 18 160, 20 156 Z" fill="#6B4020"/>
+            <path d="M43 152 C 52 156, 52 172, 46 176 C 42 168, 42 160, 40 156 Z" fill="#6B4020"/>
+            <ellipse cx="30" cy="168" rx="8" ry="6" fill="#E8C49A"/></g>
+            <circle cx="25" cy="159" r="2.2" fill="#2B2240"/><circle cx="35" cy="159" r="2.2" fill="#2B2240"/>
+            <ellipse cx="30" cy="166" rx="3" ry="2.2" fill="#2B2240"/>
+            <path d="M22 177 h16" stroke="#E23B3B" stroke-width="4" stroke-linecap="round"/>` }
 ];
 const HEAD_POS = { pika: [50, 20], ping: [50, 16], det: [50, 17], chupi: [50, 11] };
 function gearHTML(id) {
@@ -928,6 +981,57 @@ function setPending(key) {
   pending = key; clearTimeout(pendingTimer);
   if (key) pendingTimer = setTimeout(() => { pending = null; renderShop(); }, 4000);
 }
+/* ---------- 옷장 ---------- */
+const SLOT_NAMES = { head: "머리", face: "얼굴", hand: "손", neck: "목", back: "등", main: "메인" };
+const wearable = id => ITEMS.filter(it => SAVE.owned.includes(it.id) && (!it.only || it.only === id));
+// 칸마다 전용 아이템 먼저, 그다음 비싼 것
+function recommend(id) {
+  const w = {};
+  Object.keys(SLOT_NAMES).forEach(slot => {
+    const best = wearable(id).filter(it => it.slot === slot)
+      .sort((a, b) => ((b.only ? 1000 : 0) + b.price) - ((a.only ? 1000 : 0) + a.price))[0];
+    if (best) w[slot] = best.id;
+  });
+  return w;
+}
+function openCloset() { SFX.tap(); setPending(null); show("closet"); renderCloset(); }
+function renderCloset() {
+  const grid = $("closetGrid"); grid.innerHTML = "";
+  ORDER.forEach(id => {
+    const f = FIGHTERS[id], w = SAVE.wear[id] || {}, mine = wearable(id);
+    const card = document.createElement("div");
+    card.className = "closet-card"; card.style.setProperty("--c", f.soft);
+    card.innerHTML = `<h3>${f.name}</h3><div class="closet-art">${artWithGear(id)}</div>`;
+    const chips = document.createElement("div"); chips.className = "chips";
+    if (!mine.length) chips.innerHTML = `<p class="hint">아직 입을 아이템이 없어요.</p>`;
+    mine.forEach(it => {
+      const on = w[it.slot] === it.id, b = document.createElement("button");
+      b.type = "button"; b.className = "chip" + (on ? " on" : ""); b.id = `closet-${id}-${it.id}`;
+      b.setAttribute("aria-pressed", String(on));
+      b.textContent = `${it.icon} ${it.name}`;
+      b.title = SLOT_NAMES[it.slot];
+      b.addEventListener("click", () => {
+        SAVE.wear[id] = { ...(SAVE.wear[id] || {}), [it.slot]: on ? null : it.id };
+        SFX.tap(); persist(); renderCloset();
+      });
+      chips.appendChild(b);
+    });
+    card.appendChild(chips);
+    const row = document.createElement("div"); row.className = "closet-row";
+    const rec = document.createElement("button");
+    rec.type = "button"; rec.className = "mini rec"; rec.id = "closet-rec-" + id; rec.textContent = "✨ 추천 코디";
+    rec.disabled = !mine.length;
+    rec.addEventListener("click", () => { SAVE.wear[id] = recommend(id); persist(); SFX.love(); renderCloset(); celebrate(`${f.name} 추천 코디 완성!`, false); });
+    const off = document.createElement("button");
+    off.type = "button"; off.className = "mini"; off.id = "closet-off-" + id; off.textContent = "모두 벗기";
+    off.disabled = !Object.values(w).some(Boolean);
+    off.addEventListener("click", () => { SAVE.wear[id] = {}; persist(); SFX.tap(); renderCloset(); });
+    row.append(rec, off);
+    card.appendChild(row);
+    grid.appendChild(card);
+  });
+}
+
 function openShop() { SFX.tap(); dressTarget = dressTarget || myPick; setPending(null); show("shop"); renderShop(); }
 function renderShop() {
   $("shopStars").textContent = SAVE.stars;
@@ -1158,14 +1262,17 @@ $("soundBtn").addEventListener("click", () => {
 $("homeBtn").addEventListener("click", goHome);
 $("startBtn").addEventListener("click", startBattle);
 $("starBtn").addEventListener("click", openShop);
+$("closetBtn").addEventListener("click", openCloset);
+$("toShopBtn").addEventListener("click", openShop);
 
 function show(which) {
   $("setup").hidden = which !== "setup";
   $("battle").hidden = which !== "battle";
   $("result").hidden = which !== "result";
   $("shop").hidden = which !== "shop";
+  $("closet").hidden = which !== "closet";
   $("homeBtn").hidden = which === "setup";
-  $("starBtn").hidden = which === "battle" || which === "shop";
+  $("starBtn").hidden = which === "battle" || which === "shop" || which === "closet";
   window.scrollTo(0, 0);
 }
 function goHome() { busy = false; closeQuiz(); show("setup"); renderPicks(); }
