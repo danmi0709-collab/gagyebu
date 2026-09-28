@@ -225,9 +225,14 @@
   .item-icon { font-size: 34px; line-height: 1.1; }
   .item.own { background: var(--yellow-soft); }
   .item.on { box-shadow: 0 0 0 4px var(--good); }
-  .item:disabled, .coupon:disabled { opacity: .5; cursor: not-allowed; }
+  .item:disabled { opacity: .5; cursor: not-allowed; }
+  .coupon:disabled { cursor: not-allowed; }
   .coupons { display: flex; flex-direction: column; gap: 8px; }
-  .coupon { flex-direction: row; justify-content: space-between; text-align: left; background: var(--pink-soft); padding: 10px 12px; }
+  .coupon { align-items: stretch; text-align: left; background: var(--pink-soft); padding: 10px 12px; gap: 6px; }
+  .cp-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .cp-top small { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .cp-bar { display: block; height: 10px; border-radius: 999px; background: #fff; border: 2px solid var(--ink); overflow: hidden; }
+  .cp-bar span { display: block; height: 100%; background: var(--yellow); }
   .got { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: #fff; border: 2px dashed var(--ink); border-radius: 12px; padding: 8px 10px; }
   .got small { color: var(--muted); }
   .got.used { opacity: .5; text-decoration: line-through; }
@@ -696,11 +701,11 @@ const SAVE_KEY = "battle-save-v1";
 const DEFAULT_SAVE = () => ({
   stars: 0, owned: [], wear: {},
   coupons: [   // 예시 쿠폰: 부모 설정에서 고치거나 지울 수 있음
-    { text: "아이스크림 1개", cost: 50 },
-    { text: "놀이터 30분 더", cost: 20 },
-    { text: "원하는 책 1권", cost: 60 }
+    { text: "베스킨라빈스 아이스크림", cost: 1000 },
+    { text: "놀이터 20분 더", cost: 100 },
+    { text: "현금 1,000원", cost: 100 }
   ],
-  got: [], stats: {}, v: 2
+  got: [], stats: {}, v: 3
 });
 let SAVE = DEFAULT_SAVE();
 try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); if (s) SAVE = Object.assign(DEFAULT_SAVE(), s, { v: s.v || 1 }); } catch (e) {}
@@ -708,6 +713,13 @@ try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); if (s) SAV
 if (SAVE.v < 2) {
   SAVE.coupons.forEach(c => { if (c.text === "아이스크림 1개" && c.cost === 30) c.cost = 50; });
   SAVE.v = 2;
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (e) {}
+}
+// v3: 예시 쿠폰 3개가 손대지 않은 그대로면 새 쿠폰 목록으로 바꿈
+if (SAVE.v < 3) {
+  const old = SAVE.coupons.map(c => c.text + ":" + c.cost).join("|");
+  if (old === "아이스크림 1개:50|놀이터 30분 더:20|원하는 책 1권:60") SAVE.coupons = DEFAULT_SAVE().coupons;
+  SAVE.v = 3;
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (e) {}
 }
 function persist() {
@@ -821,7 +833,9 @@ function renderShop() {
     const b = document.createElement("button");
     b.type = "button"; b.className = "coupon"; b.id = "coupon-" + i;
     const pend = pending === "cp-" + i;
-    b.innerHTML = `<span>🎁 ${esc(c.text)}</span><small>${pend ? "정말 바꿀까? 한 번 더!" : SAVE.stars >= c.cost ? `⭐ ${c.cost}로 바꾸기` : `⭐ ${c.cost} 필요 (지금 ${SAVE.stars})`}</small>`;
+    const pct = Math.min(100, Math.floor(SAVE.stars / c.cost * 100));
+    b.innerHTML = `<span class="cp-top"><span>🎁 ${esc(c.text)}</span><small>${pend ? "정말 바꿀까? 한 번 더!" : SAVE.stars >= c.cost ? `⭐ ${c.cost}로 바꾸기` : `⭐ ${SAVE.stars} / ${c.cost}`}</small></span>
+      <span class="cp-bar" aria-hidden="true"><span style="width:${pct}%"></span></span>`;
     b.disabled = SAVE.stars < c.cost;
     b.addEventListener("click", () => {
       if (pend) {
