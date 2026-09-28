@@ -224,6 +224,7 @@
   .item small, .coupon small { font-family: var(--body); font-size: 13px; color: var(--muted); }
   .item-icon { font-size: 34px; line-height: 1.1; }
   .item.own { background: var(--yellow-soft); }
+  .item small.only { color: #B0306E; font-family: var(--display); }
   .item.on { box-shadow: 0 0 0 4px var(--good); }
   .item:disabled { opacity: .5; cursor: not-allowed; }
   .coupon:disabled { cursor: not-allowed; }
@@ -237,6 +238,15 @@
   .jar b { font-family: var(--display); font-weight: 400; font-size: 18px; }
   .jar small { color: var(--muted); font-size: 13px; }
   .jar-bar { height: 16px; }
+  .btn.deposit { font-size: 18px; padding: 10px; background: var(--good); box-shadow: 0 4px 0 var(--ink); }
+  .btn.deposit:disabled { background: #D9D2E3; color: var(--muted); cursor: not-allowed; }
+  .toast {
+    position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 14px); z-index: 60; pointer-events: none;
+    background: var(--paper); color: var(--ink); border: 3px solid var(--ink); border-radius: 16px;
+    padding: 10px 16px; font-family: var(--display); font-size: 18px; box-shadow: 0 5px 0 var(--ink);
+    box-sizing: border-box; width: max-content; max-width: calc(100% - 32px); text-align: center; text-wrap: balance;
+  }
+  .toast.big { font-size: 24px; background: var(--yellow); padding: 14px 20px; }
   .jar-bar span { background: linear-gradient(90deg, #FF9CC6, #B57BFF, #6FB8FF); }
   .cp-row select { font: inherit; font-size: 16px; padding: 6px 8px; border: 2px solid var(--ink); border-radius: 10px; background: #fff; color: var(--ink); min-width: 0; flex: 1; }
   .stars-line small { font-size: 16px; }
@@ -752,6 +762,43 @@ function addStars(n) {
   g.stars += toGoal; SAVE.stars += n - toGoal;
   roundStars += n; roundGoal += toGoal;
   persist();
+  checkMilestones();
+}
+// 하리가 직접 저금: 쓸 수 있는 별 10개 → 저금통 +10, 참은 상으로 보너스 +1
+const DEPOSIT = 10;
+function depositStars() {
+  const g = SAVE.goal, gc = goalCoupon();
+  if (!gc || SAVE.stars < DEPOSIT || g.stars >= gc.cost) return;
+  const put = Math.min(DEPOSIT, gc.cost - g.stars), bonus = g.stars + put < gc.cost ? 1 : 0;
+  SAVE.stars -= put; g.stars += put + bonus;
+  persist(); SFX.love();
+  celebrate(`저금 쏙! ⭐ ${put}개${bonus ? " + 참은 상 보너스 1개" : ""}`, false);
+  checkMilestones();
+}
+// 저금통 10%·20%·50%·100%를 넘을 때 한 번씩 축하 (쿠폰으로 바꾸면 다시 처음부터)
+const MILESTONES = [[0.1, "좋은 출발이야!"], [0.2, "벌써 5분의 1!"], [0.5, "반 왔어! 조금만 더!"], [1, "꽉 찼다! 쿠폰으로 바꿀 수 있어!"]];
+function checkMilestones() {
+  const g = SAVE.goal, gc = goalCoupon(); if (!gc) return;
+  g.hit = g.hit || [];
+  const newly = MILESTONES.filter(([f]) => g.stars >= Math.ceil(gc.cost * f) && !g.hit.includes(f));
+  if (!newly.length) return;
+  newly.forEach(([f]) => g.hit.push(f));
+  const [f, msg] = newly[newly.length - 1];
+  persist();
+  setTimeout(() => { celebrate(`🍦 저금통 ${Math.ceil(gc.cost * f)}개! ${msg}`, true); SFX.win(); }, 300);
+}
+function celebrate(msg, big) {
+  const t = document.createElement("div");
+  t.className = "toast" + (big ? " big" : "");
+  t.textContent = msg;
+  const stacked = document.querySelectorAll(".toast").length;          // 이미 떠 있으면 아래로
+  if (stacked) t.style.marginTop = stacked * 72 + "px";
+  document.body.appendChild(t);
+  t.animate([{ transform: "translate(-50%, -30px)", opacity: 0 }, { transform: "translate(-50%, 0)", opacity: 1, offset: 0.12 },
+             { transform: "translate(-50%, 0)", opacity: 1, offset: 0.85 }, { transform: "translate(-50%, -10px)", opacity: 0 }],
+    { duration: big ? 3200 : 2000, easing: "ease-out" }).onfinish = () => t.remove();
+  if (big) confetti();
+  if ($("shop") && !$("shop").hidden) renderShop();
 }
 function renderStarBtn() {
   const b = $("starBtn"); if (!b) return;
@@ -788,13 +835,76 @@ const ITEMS = [
   { id: "tophat", icon: "🎩", name: "신사 모자", price: 20, slot: "head" },
   { id: "crown",  icon: "👑", name: "왕관", price: 25, slot: "head" },
   { id: "star",   icon: "🌟", name: "별 머리핀", price: 30, slot: "head" },
-  { id: "grad",   icon: "🎓", name: "공부왕 모자", price: 40, slot: "head" }
+  { id: "grad",   icon: "🎓", name: "공부왕 모자", price: 40, slot: "head" },
+  // ---- 캐릭터 전용 (그림 안에 직접 그림: back = 몸 뒤, front = 몸 앞) ----
+  { id: "p-tiara", only: "ping", icon: "👑", name: "하트 티아라", price: 40, slot: "head",
+    front: `<path d="M70 52 L74 36 L87 46 L100 28 L113 46 L126 36 L130 52 Z" fill="#FFD23F" stroke="#2B2240" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M100 50 C 94 44, 96 38, 100 42 C 104 38, 106 44, 100 50 Z" fill="#FF3D8B"/>` },
+  { id: "p-wand", only: "ping", icon: "🪄", name: "하트 요술봉", price: 30, slot: "hand",
+    front: `<line x1="140" y1="170" x2="170" y2="122" stroke="#FFD23F" stroke-width="6" stroke-linecap="round"/>
+            <line x1="140" y1="170" x2="170" y2="122" stroke="#2B2240" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
+            <path d="M174 126 C 160 114, 164 98, 174 106 C 184 98, 188 114, 174 126 Z" fill="#FF3D8B" stroke="#2B2240" stroke-width="3"/>
+            <circle cx="186" cy="98" r="3" fill="#FFD23F"/><circle cx="160" cy="100" r="2.5" fill="#FFD23F"/>` },
+  { id: "p-wings", only: "ping", icon: "🌈", name: "무지개 날개", price: 50, slot: "back",
+    back: `<g stroke="#2B2240" stroke-width="3">
+            <ellipse cx="40" cy="112" rx="40" ry="26" transform="rotate(-28 40 112)" fill="#FF9CC6"/>
+            <ellipse cx="44" cy="116" rx="28" ry="17" transform="rotate(-28 44 116)" fill="#FFD23F" stroke-width="0"/>
+            <ellipse cx="48" cy="119" rx="16" ry="9" transform="rotate(-28 48 119)" fill="#6FB8FF" stroke-width="0"/>
+            <ellipse cx="160" cy="112" rx="40" ry="26" transform="rotate(28 160 112)" fill="#FF9CC6"/>
+            <ellipse cx="156" cy="116" rx="28" ry="17" transform="rotate(28 156 116)" fill="#FFD23F" stroke-width="0"/>
+            <ellipse cx="152" cy="119" rx="16" ry="9" transform="rotate(28 152 119)" fill="#6FB8FF" stroke-width="0"/></g>` },
+  { id: "k-medal", only: "pika", icon: "🏅", name: "금메달", price: 30, slot: "neck",
+    front: `<path d="M86 132 L100 154 L114 132" fill="none" stroke="#2F6FD6" stroke-width="7" stroke-linejoin="round"/>
+            <circle cx="100" cy="160" r="11" fill="#FFC21A" stroke="#2B2240" stroke-width="3"/>
+            <path d="M100 153 L102 158 L107 158 L103 161 L104.5 166 L100 163 L95.5 166 L97 161 L93 158 L98 158 Z" fill="#fff"/>` },
+  { id: "k-ketchup", only: "pika", icon: "🥫", name: "케첩", price: 20, slot: "hand",
+    front: `<rect x="22" y="130" width="22" height="36" rx="7" fill="#E23B3B" stroke="#2B2240" stroke-width="3"/>
+            <rect x="27" y="119" width="12" height="12" rx="3" fill="#fff" stroke="#2B2240" stroke-width="3"/>
+            <rect x="26" y="142" width="14" height="10" rx="2" fill="#fff"/>
+            <path d="M29 147 h8" stroke="#E23B3B" stroke-width="2"/>` },
+  { id: "k-cape", only: "pika", icon: "🦸", name: "빨간 망토", price: 50, slot: "back",
+    back: `<path d="M58 118 Q 100 104 142 118 L 166 196 Q 100 204 34 196 Z" fill="#E23B3B" stroke="#2B2240" stroke-width="3.5" stroke-linejoin="round"/>
+           <path d="M40 176 L50 168 L46 180 L56 174" fill="none" stroke="#FFD23F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>` },
+  { id: "d-hat", only: "det", icon: "🎩", name: "탐정 모자", price: 40, slot: "head",
+    front: `<ellipse cx="100" cy="50" rx="56" ry="9" fill="#6B4A2E" stroke="#2B2240" stroke-width="3"/>
+            <path d="M62 50 Q 64 14 100 12 Q 136 14 138 50 Z" fill="#8A5A3B" stroke="#2B2240" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M64 40 Q 100 34 136 40 L137 48 Q 100 42 63 48 Z" fill="#2B2240"/>` },
+  { id: "d-monocle", only: "det", icon: "🧐", name: "외알 안경", price: 30, slot: "face",
+    front: `<circle cx="122" cy="95" r="14" fill="#CDEBFF" fill-opacity=".45" stroke="#C9A227" stroke-width="4"/>
+            <path d="M135 101 Q 146 118 138 138" fill="none" stroke="#C9A227" stroke-width="2.5" stroke-dasharray="3 3"/>` },
+  { id: "d-potato", only: "det", icon: "🍠", name: "고구마", price: 20, slot: "hand",
+    front: `<ellipse cx="38" cy="168" rx="20" ry="11" transform="rotate(-30 38 168)" fill="#9B4F96" stroke="#2B2240" stroke-width="3"/>
+            <ellipse cx="25" cy="176" rx="6" ry="5" transform="rotate(-30 25 176)" fill="#FFD23F"/>
+            <path d="M40 160 q4 4 2 10" fill="none" stroke="#6E2F6A" stroke-width="2" stroke-linecap="round"/>` },
+  { id: "c-scarf", only: "chupi", icon: "🧣", name: "목도리", price: 20, slot: "neck",
+    front: `<rect x="56" y="128" width="88" height="17" rx="8.5" fill="#3CC46B" stroke="#2B2240" stroke-width="3"/>
+            <rect x="116" y="138" width="16" height="34" rx="5" fill="#3CC46B" stroke="#2B2240" stroke-width="3"/>
+            <path d="M72 129 v15 M90 129 v15 M108 129 v15 M117 152 h14 M117 162 h14" stroke="#fff" stroke-width="3"/>` },
+  { id: "c-ball", only: "chupi", icon: "⚽", name: "축구공", price: 30, slot: "hand",
+    front: `<circle cx="164" cy="176" r="16" fill="#fff" stroke="#2B2240" stroke-width="3"/>
+            <path d="M164 169 L170 173 L168 180 L160 180 L158 173 Z" fill="#2B2240"/>
+            <path d="M164 169 v-9 M170 173 l9 -3 M168 180 l5 8 M160 180 l-5 8 M158 173 l-9 -3" stroke="#2B2240" stroke-width="2"/>` },
+  { id: "c-bag", only: "chupi", icon: "🎒", name: "가방", price: 40, slot: "back",
+    back: `<rect x="38" y="124" width="124" height="62" rx="18" fill="#FFB020" stroke="#2B2240" stroke-width="3.5"/>`,
+    front: `<path d="M70 132 L64 176 M130 132 L136 176" stroke="#C77800" stroke-width="7" stroke-linecap="round"/>` },
+  { id: "c-doudou", only: "chupi", icon: "🧸", name: "두두", price: 300, slot: "doudou",
+    front: `<g stroke="#2B2240" stroke-width="3">
+            <ellipse cx="44" cy="170" rx="17" ry="19" fill="#C8905A"/>
+            <circle cx="33" cy="134" r="6" fill="#C8905A"/><circle cx="55" cy="134" r="6" fill="#C8905A"/>
+            <circle cx="44" cy="145" r="15" fill="#C8905A"/>
+            <ellipse cx="44" cy="150" rx="7" ry="5" fill="#F3DCC2" stroke-width="2"/></g>
+            <circle cx="38" cy="142" r="2.2" fill="#2B2240"/><circle cx="50" cy="142" r="2.2" fill="#2B2240"/>
+            <circle cx="44" cy="148.5" r="1.8" fill="#2B2240"/>
+            <ellipse cx="44" cy="172" rx="8" ry="9" fill="#F3DCC2"/>
+            <path d="M40 168 C 38 164, 42 163, 44 166 C 46 163, 50 164, 48 168 L44 172 Z" fill="#FF6FAE"/>
+            <path d="M58 158 Q 66 164 60 176" fill="none" stroke="#26386B" stroke-width="7" stroke-linecap="round"/>` }
 ];
 const HEAD_POS = { pika: [50, 20], ping: [50, 16], det: [50, 17], chupi: [50, 11] };
 function gearHTML(id) {
   const w = SAVE.wear[id] || {};
   let s = "";
-  const h = ITEMS.find(x => x.id === w.head), f = ITEMS.find(x => x.id === w.face);
+  const emoji = slot => { const it = ITEMS.find(x => x.id === w[slot]); return it && !it.front && !it.back ? it : null; };
+  const h = emoji("head"), f = emoji("face");
   if (h) s += `<span class="gear g-head" style="left:${HEAD_POS[id][0]}%;top:${HEAD_POS[id][1]}%">${h.icon}</span>`;
   if (f) {
     const e = EYES[id].eyes;
@@ -802,7 +912,15 @@ function gearHTML(id) {
   }
   return s;
 }
-const artWithGear = id => `<span class="gearwrap">${ART[id]}${gearHTML(id)}</span>`;
+// 전용 아이템은 캐릭터 그림(svg) 안에 직접 넣음: 등 아이템은 맨 뒤, 나머지는 맨 앞
+const FLIP_OPEN = '<g class="flip" style="transform-origin:100px 100px">';
+function artWithGear(id) {
+  const w = SAVE.wear[id] || {};
+  const worn = Object.values(w).map(v => ITEMS.find(x => x.id === v)).filter(it => it && it.only === id);
+  const back = worn.map(it => it.back || "").join(""), front = worn.map(it => it.front || "").join("");
+  const art = ART[id].replace(FLIP_OPEN, FLIP_OPEN + back).replace("</g></g></svg>", front + "</g></g></svg>");
+  return `<span class="gearwrap">${art}${gearHTML(id)}</span>`;
+}
 
 /* ---------- 상점 화면 ---------- */
 let dressTarget = null, pending = null, pendingTimer = null, parentOpen = false, gate = null;
@@ -819,7 +937,10 @@ function renderShop() {
     const full = SAVE.goal.stars >= gc.cost;
     jar.innerHTML = `<div class="cp-top"><b>🍦 ${esc(gc.text)} 저금통</b><small>⭐ ${SAVE.goal.stars} / ${gc.cost}</small></div>
       <span class="cp-bar jar-bar" aria-hidden="true"><span style="width:${Math.min(100, Math.floor(SAVE.goal.stars / gc.cost * 100))}%"></span></span>
-      <small>${full ? "저금통이 꽉 찼어요! 아래 쿠폰에서 바꿀 수 있어요." : `별을 받으면 ${SAVE.goal.rate}%가 여기로 쏙! 이 별은 꺼내 쓸 수 없어요.`}</small>`;
+      <small>${full ? "저금통이 꽉 찼어요! 아래 쿠폰에서 바꿀 수 있어요." : `별을 받으면 ${SAVE.goal.rate}%가 여기로 쏙! 이 별은 꺼내 쓸 수 없어요.`}</small>
+      ${full ? "" : `<button type="button" class="btn deposit" id="depositBtn"${SAVE.stars < DEPOSIT ? " disabled" : ""}>
+        ${SAVE.stars < DEPOSIT ? `별 ${DEPOSIT}개가 모이면 저금할 수 있어요` : `내 별 ${DEPOSIT}개 저금하기 (+1 보너스)`}</button>`}`;
+    const db = $("depositBtn"); if (db) db.addEventListener("click", depositStars);
   }
   // 누구를 꾸밀까
   const dp = $("dressPicks"); dp.innerHTML = "";
@@ -836,7 +957,7 @@ function renderShop() {
   // 아이템
   const box = $("items"); box.innerHTML = "";
   const wear = SAVE.wear[dressTarget] || {};
-  ITEMS.forEach(it => {
+  ITEMS.filter(it => !it.only || it.only === dressTarget).forEach(it => {
     const own = SAVE.owned.includes(it.id), on = wear[it.slot] === it.id;
     const b = document.createElement("button");
     b.type = "button"; b.className = "item" + (own ? " own" : "") + (on ? " on" : ""); b.id = "item-" + it.id;
@@ -844,7 +965,7 @@ function renderShop() {
     if (own) action = on ? "벗기기" : "입히기";
     else if (pending === "buy-" + it.id) action = "정말 살까? 한 번 더!";
     else action = SAVE.stars >= it.price ? `⭐ ${it.price} 사기` : `⭐ ${it.price} (별 부족)`;
-    b.innerHTML = `<span class="item-icon">${it.icon}</span><span>${it.name}</span><small>${action}</small>`;
+    b.innerHTML = `<span class="item-icon">${it.icon}</span><span>${it.name}</span>${it.only ? `<small class="only">${FIGHTERS[it.only].name} 전용</small>` : ""}<small>${action}</small>`;
     b.disabled = !own && SAVE.stars < it.price;
     b.addEventListener("click", () => {
       if (own) {
@@ -878,6 +999,7 @@ function renderShop() {
       if (pend) {
         const fromGoal = isGoal ? Math.min(SAVE.goal.stars, c.cost) : 0;
         SAVE.goal.stars -= fromGoal;
+        if (isGoal) SAVE.goal.hit = [];
         SAVE.stars -= c.cost - fromGoal;
         SAVE.got.unshift({ text: c.text, cost: c.cost, date: new Date().toLocaleDateString("ko-KR"), used: false });
         SAVE.got = SAVE.got.slice(0, 30);
@@ -961,6 +1083,7 @@ function renderParent() {
     const list = readEdits(); list.splice(Number(b.dataset.del), 1); SAVE.coupons = list; persist(); renderParent();
   }));
   $("goalSave").addEventListener("click", () => {
+    if (SAVE.goal.text !== $("goalSel").value) SAVE.goal.hit = [];
     SAVE.goal.text = $("goalSel").value; SAVE.goal.rate = Number($("goalRate").value);
     persist(); renderShop(); $("goalMsg").textContent = "저장했어요!";
   });
@@ -977,7 +1100,7 @@ function renderParent() {
     renderParent();
   });
   $("resetAll").addEventListener("click", () => {
-    if (pending === "ra") { SAVE.stars = 0; SAVE.owned = []; SAVE.wear = {}; SAVE.goal.stars = 0; SAVE.goal.carry = 0; setPending(null); persist(); renderShop(); } else { setPending("ra"); renderParent(); }
+    if (pending === "ra") { SAVE.stars = 0; SAVE.owned = []; SAVE.wear = {}; SAVE.goal.stars = 0; SAVE.goal.carry = 0; SAVE.goal.hit = []; setPending(null); persist(); renderShop(); } else { setPending("ra"); renderParent(); }
   });
   $("parentClose").addEventListener("click", () => { parentOpen = false; gate = null; renderParent(); });
 }
