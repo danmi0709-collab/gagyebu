@@ -1,6 +1,6 @@
 // 오프라인 도우미: 한 번 열면 인터넷 없이도 게임이 켜지게 저장해 둠.
 // 인터넷이 되면 항상 새 버전을 먼저 받아옴(네트워크 우선).
-const CACHE = "battle-v2";
+const CACHE = "battle-v3";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
