@@ -93,7 +93,7 @@
   .picks.small .pick { font-size: 15px; padding: 6px 4px 8px; border-radius: 14px; line-height: 1.15; text-align: center; }
   .picks.small .pick small { display: none; }
   .picks.small .pick[aria-pressed="true"]::after { content: none; }
-  .pick svg { width: 100%; max-width: 150px; height: auto; }
+  .pick svg { width: 100%; height: auto; }
   .pick small { font-family: var(--body); font-size: 14px; color: var(--muted); }
   .pick[aria-pressed="true"] { transform: translateY(-4px); box-shadow: 0 0 0 5px var(--good); }
   .pick[aria-pressed="true"]::after { content: "선택!"; font-size: 16px; color: #1E8C47; }
@@ -203,6 +203,45 @@
   }
   .fly { position: absolute; z-index: 5; pointer-events: none; font-size: clamp(16px, 5vw, 24px); line-height: 1; }
   .wash { position: absolute; z-index: 6; pointer-events: none; font-size: clamp(18px, 6vw, 30px); line-height: 1; }
+  /* 꾸미기 */
+  .gearwrap { position: relative; display: block; width: 100%; container-type: inline-size; }
+  .gearwrap > svg { display: block; width: 100%; height: auto; max-width: none; }
+  .gear { position: absolute; transform: translate(-50%, -50%); line-height: 1; pointer-events: none; font-size: 30px; }
+  .gear.g-head { font-size: 30cqw; }
+  .gear.g-face { font-size: 27cqw; }
+  .pick .gearwrap { max-width: 150px; margin: 0 auto; }
+  .result .gearwrap { width: 60%; max-width: 220px; }
+  .preview { width: 45%; max-width: 180px; align-self: center; }
+  .star-btn { background: var(--yellow); }
+  .bank { margin: 0; font-size: 20px; }
+  .bank b { font-family: var(--display); font-size: 30px; color: #C98A00; }
+  .items { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .item, .coupon {
+    font-family: var(--display); font-size: 17px; color: var(--ink); cursor: pointer;
+    background: #fff; border: 3px solid var(--ink); border-radius: 14px; padding: 8px 6px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center;
+  }
+  .item small, .coupon small { font-family: var(--body); font-size: 13px; color: var(--muted); }
+  .item-icon { font-size: 34px; line-height: 1.1; }
+  .item.own { background: var(--yellow-soft); }
+  .item.on { box-shadow: 0 0 0 4px var(--good); }
+  .item:disabled, .coupon:disabled { opacity: .5; cursor: not-allowed; }
+  .coupons { display: flex; flex-direction: column; gap: 8px; }
+  .coupon { flex-direction: row; justify-content: space-between; text-align: left; background: var(--pink-soft); padding: 10px 12px; }
+  .got { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: #fff; border: 2px dashed var(--ink); border-radius: 12px; padding: 8px 10px; }
+  .got small { color: var(--muted); }
+  .got.used { opacity: .5; text-decoration: line-through; }
+  .mini { font-family: var(--display); font-size: 15px; color: var(--ink); background: #fff; border: 2px solid var(--ink); border-radius: 10px; padding: 6px 10px; cursor: pointer; white-space: nowrap; }
+  .panel h3 { margin: 6px 0 0; font-family: var(--display); font-weight: 400; font-size: 20px; }
+  .gate-row, .cp-row { display: flex; gap: 6px; align-items: center; }
+  .gate-row input, .cp-row input { font: inherit; font-size: 17px; padding: 6px 8px; border: 2px solid var(--ink); border-radius: 10px; min-width: 0; background: #fff; color: var(--ink); }
+  .cp-row input[type="text"] { flex: 1; }
+  .cp-row input[type="number"], .gate-row input { width: 5em; }
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; }
+  th, td { border-bottom: 1px solid #E3DAEC; padding: 6px 4px; text-align: left; }
+  td:nth-child(n+2), th:nth-child(n+2) { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .stars-line { font-family: var(--display); font-size: 22px !important; color: #C98A00; }
   .seg.three { grid-template-columns: 1fr 1fr 1fr; }
 
   /* 수학 파워 문제 */
@@ -257,7 +296,7 @@
   /* 끝 화면 */
   .result { text-align: center; align-items: center; }
   .result h2 { font-size: clamp(30px, 9vw, 42px); }
-  .result svg { width: 60%; max-width: 220px; height: auto; }
+  .result svg { width: 100%; height: auto; }
   .result p { margin: 0; font-size: 18px; }
   .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
   .btn.sub-btn { background: #fff; color: var(--ink); font-size: 20px; }
@@ -280,7 +319,7 @@
 <div class="wrap">
   <div class="top">
     <button class="icon-btn" id="homeBtn" type="button" hidden>처음으로</button>
-    <span></span>
+    <button class="icon-btn star-btn" id="starBtn" type="button">⭐ 0 상점</button>
     <button class="icon-btn" id="soundBtn" type="button" aria-pressed="true">소리 켜짐</button>
   </div>
 
@@ -358,6 +397,30 @@
 
   <!-- 3. 결과 -->
   <section id="result" class="panel result" hidden></section>
+
+  <!-- 4. 별 상점 -->
+  <section id="shop" class="wrap" style="padding:0" hidden>
+    <div class="panel">
+      <h2>별 상점</h2>
+      <p class="bank">별 <b id="shopStars">0</b>개</p>
+      <p class="hint">누구를 꾸밀까요? 산 아이템은 배틀에서도 보여요.</p>
+      <div class="picks small" id="dressPicks"></div>
+      <div class="preview" id="dressPreview"></div>
+      <div class="items" id="items"></div>
+    </div>
+    <div class="panel">
+      <h2>실물 쿠폰</h2>
+      <p class="hint">별을 모아서 진짜 선물로 바꿔요. 바꾼 쿠폰은 엄마·아빠에게 보여주세요!</p>
+      <div class="coupons" id="couponList"></div>
+      <h3>받은 쿠폰</h3>
+      <div class="coupons" id="gotList"></div>
+    </div>
+    <div class="panel">
+      <h2>부모 설정</h2>
+      <div id="parentGate"></div>
+      <div id="parentArea" hidden></div>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -628,6 +691,221 @@ function grossSound(kind) {
   return v.label;
 }
 
+/* ---------- 저장 (이 기기 브라우저에만) ---------- */
+const SAVE_KEY = "battle-save-v1";
+const DEFAULT_SAVE = () => ({
+  stars: 0, owned: [], wear: {},
+  coupons: [   // 예시 쿠폰: 부모 설정에서 고치거나 지울 수 있음
+    { text: "아이스크림 1개", cost: 30 },
+    { text: "놀이터 30분 더", cost: 20 },
+    { text: "원하는 책 1권", cost: 60 }
+  ],
+  got: [], stats: {}
+});
+let SAVE = DEFAULT_SAVE();
+try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); if (s) SAVE = Object.assign(DEFAULT_SAVE(), s); } catch (e) {}
+function persist() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (e) {}
+  renderStarBtn();
+}
+const esc = t => String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ---------- 별 ---------- */
+let roundStars = 0;
+function addStars(n) { SAVE.stars += n; roundStars += n; persist(); }
+function renderStarBtn() { const b = $("starBtn"); if (b) b.textContent = `⭐ ${SAVE.stars} 상점`; }
+
+/* ---------- 약한 유형 자주 내기 ---------- */
+// 많이 틀린 유형일수록, 아직 안 나온 유형일수록 자주 나옴. 바로 전 유형은 거의 안 나옴.
+let lastKey = null;
+function weightedPick(keys) {
+  const ws = keys.map(k => {
+    if (k === lastKey) return 0.2;
+    const [ok, all] = SAVE.stats[k] || [0, 0];
+    return 1 + 3 * ((all - ok) + 0.5) / (all + 2);
+  });
+  let r = Math.random() * ws.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < ws.length; i++) { r -= ws[i]; if (r <= 0) return i; }
+  return ws.length - 1;
+}
+const MATH_LABELS = ["모두 몇 개(덧셈)", "둘이 모은 수(덧셈)", "남은 수(뺄셈)", "몇 개 더 많은지(뺄셈)", "□ 구하기(덧셈)", "□ 구하기(뺄셈)", "어떤 수(덧셈)", "어떤 수(뺄셈)"];
+const CLOCK_E_LABELS = ["몇 시 읽기", "몇 시 30분 읽기", "짧은바늘 숫자", "말로 된 몇 시", "30분 긴바늘 숫자", "1시간 뒤", "30분 뒤", "몇 시간 놀았나"];
+const CLOCK_H_LABELS = ["몇 시 몇 분 읽기", "긴바늘 숫자", "○분 뒤", "몇 분 전", "○시간 → 분", "1시간 ○분 → 분", "분 → 1시간 ○분", "몇 분 걸렸나"];
+function keyLabel(k) {
+  const lv = k[1] === "h" ? "도전" : "쉬움", i = Number(k.slice(2));
+  return k[0] === "m" ? `수학 ${lv} · ${MATH_LABELS[i]}` : `시계 ${lv} · ${(k[1] === "h" ? CLOCK_H_LABELS : CLOCK_E_LABELS)[i]}`;
+}
+
+/* ---------- 꾸미기 ---------- */
+const ITEMS = [
+  { id: "ribbon", icon: "🎀", name: "리본", price: 10, slot: "head" },
+  { id: "flower", icon: "🌸", name: "꽃", price: 10, slot: "head" },
+  { id: "cap",    icon: "🧢", name: "모자", price: 15, slot: "head" },
+  { id: "shades", icon: "🕶️", name: "선글라스", price: 15, slot: "face" },
+  { id: "tophat", icon: "🎩", name: "신사 모자", price: 20, slot: "head" },
+  { id: "crown",  icon: "👑", name: "왕관", price: 25, slot: "head" },
+  { id: "star",   icon: "🌟", name: "별 머리핀", price: 30, slot: "head" },
+  { id: "grad",   icon: "🎓", name: "공부왕 모자", price: 40, slot: "head" }
+];
+const HEAD_POS = { pika: [50, 20], ping: [50, 16], det: [50, 17], chupi: [50, 11] };
+function gearHTML(id) {
+  const w = SAVE.wear[id] || {};
+  let s = "";
+  const h = ITEMS.find(x => x.id === w.head), f = ITEMS.find(x => x.id === w.face);
+  if (h) s += `<span class="gear g-head" style="left:${HEAD_POS[id][0]}%;top:${HEAD_POS[id][1]}%">${h.icon}</span>`;
+  if (f) {
+    const e = EYES[id].eyes;
+    s += `<span class="gear g-face" style="left:${(e[0][0] + e[1][0]) / 4}%;top:${(e[0][1] + e[1][1]) / 4}%">${f.icon}</span>`;
+  }
+  return s;
+}
+const artWithGear = id => `<span class="gearwrap">${ART[id]}${gearHTML(id)}</span>`;
+
+/* ---------- 상점 화면 ---------- */
+let dressTarget = null, pending = null, pendingTimer = null, parentOpen = false, gate = null;
+function setPending(key) {
+  pending = key; clearTimeout(pendingTimer);
+  if (key) pendingTimer = setTimeout(() => { pending = null; renderShop(); }, 4000);
+}
+function openShop() { SFX.tap(); dressTarget = dressTarget || myPick; setPending(null); show("shop"); renderShop(); }
+function renderShop() {
+  $("shopStars").textContent = SAVE.stars;
+  // 누구를 꾸밀까
+  const dp = $("dressPicks"); dp.innerHTML = "";
+  ORDER.forEach(id => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "pick"; b.id = "dress-" + id;
+    b.style.setProperty("--c", FIGHTERS[id].soft);
+    b.innerHTML = artWithGear(id) + FIGHTERS[id].name;
+    b.setAttribute("aria-pressed", String(dressTarget === id));
+    b.addEventListener("click", () => { dressTarget = id; setPending(null); SFX.tap(); renderShop(); });
+    dp.appendChild(b);
+  });
+  $("dressPreview").innerHTML = artWithGear(dressTarget);
+  // 아이템
+  const box = $("items"); box.innerHTML = "";
+  const wear = SAVE.wear[dressTarget] || {};
+  ITEMS.forEach(it => {
+    const own = SAVE.owned.includes(it.id), on = wear[it.slot] === it.id;
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "item" + (own ? " own" : "") + (on ? " on" : ""); b.id = "item-" + it.id;
+    let action;
+    if (own) action = on ? "벗기기" : "입히기";
+    else if (pending === "buy-" + it.id) action = "정말 살까? 한 번 더!";
+    else action = SAVE.stars >= it.price ? `⭐ ${it.price} 사기` : `⭐ ${it.price} (별 부족)`;
+    b.innerHTML = `<span class="item-icon">${it.icon}</span><span>${it.name}</span><small>${action}</small>`;
+    b.disabled = !own && SAVE.stars < it.price;
+    b.addEventListener("click", () => {
+      if (own) {
+        SAVE.wear[dressTarget] = { ...wear, [it.slot]: on ? null : it.id };
+        SFX.tap();
+      } else if (pending === "buy-" + it.id) {
+        SAVE.stars -= it.price; SAVE.owned.push(it.id);
+        SAVE.wear[dressTarget] = { ...wear, [it.slot]: it.id };
+        setPending(null); SFX.love();
+      } else { setPending("buy-" + it.id); SFX.tap(); }
+      persist(); renderShop();
+    });
+    box.appendChild(b);
+  });
+  // 쿠폰
+  const cl = $("couponList"); cl.innerHTML = "";
+  if (!SAVE.coupons.length) cl.innerHTML = `<p class="hint">아직 쿠폰이 없어요. 엄마·아빠가 부모 설정에서 만들어 줄 거예요.</p>`;
+  SAVE.coupons.forEach((c, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "coupon"; b.id = "coupon-" + i;
+    const pend = pending === "cp-" + i;
+    b.innerHTML = `<span>🎁 ${esc(c.text)}</span><small>${pend ? "정말 바꿀까? 한 번 더!" : SAVE.stars >= c.cost ? `⭐ ${c.cost}로 바꾸기` : `⭐ ${c.cost} 필요 (지금 ${SAVE.stars})`}</small>`;
+    b.disabled = SAVE.stars < c.cost;
+    b.addEventListener("click", () => {
+      if (pend) {
+        SAVE.stars -= c.cost;
+        SAVE.got.unshift({ text: c.text, cost: c.cost, date: new Date().toLocaleDateString("ko-KR"), used: false });
+        SAVE.got = SAVE.got.slice(0, 30);
+        setPending(null); SFX.win(); confetti();
+      } else { setPending("cp-" + i); SFX.tap(); }
+      persist(); renderShop();
+    });
+    cl.appendChild(b);
+  });
+  const gl = $("gotList"); gl.innerHTML = "";
+  if (!SAVE.got.length) gl.innerHTML = `<p class="hint">아직 바꾼 쿠폰이 없어요.</p>`;
+  SAVE.got.forEach((g, i) => {
+    const row = document.createElement("div");
+    row.className = "got" + (g.used ? " used" : "");
+    row.innerHTML = `<span>🎟️ ${esc(g.text)} <small>${esc(g.date)}</small></span>`;
+    if (!g.used) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "mini"; b.id = "used-" + i;
+      b.textContent = pending === "use-" + i ? "정말? 한 번 더" : "사용 완료";
+      b.addEventListener("click", () => {
+        if (pending === "use-" + i) { g.used = true; setPending(null); } else setPending("use-" + i);
+        persist(); renderShop();
+      });
+      row.appendChild(b);
+    } else row.insertAdjacentHTML("beforeend", `<small>사용함</small>`);
+    gl.appendChild(row);
+  });
+  renderParent();
+}
+
+/* ---------- 부모 설정 ---------- */
+function renderParent() {
+  const g = $("parentGate"), area = $("parentArea");
+  area.hidden = !parentOpen; g.hidden = parentOpen;
+  if (!parentOpen) {
+    if (!gate) gate = [rand(12, 19), rand(6, 9)];
+    g.innerHTML = `<p class="hint">어른 확인: <b>${gate[0]} × ${gate[1]} = ?</b></p>
+      <div class="gate-row"><input id="gateInput" type="number" inputmode="numeric" aria-label="어른 확인 답"><button type="button" class="mini" id="gateBtn">확인</button></div>
+      <p class="hint" id="gateMsg"></p>`;
+    $("gateBtn").addEventListener("click", () => {
+      if (Number($("gateInput").value) === gate[0] * gate[1]) { parentOpen = true; renderParent(); }
+      else { gate = null; $("gateMsg").textContent = "답이 달라요. 새 문제로 바뀌었어요."; setTimeout(renderParent, 1200); }
+    });
+    return;
+  }
+  const rows = Object.entries(SAVE.stats).filter(([, v]) => v[1] > 0)
+    .sort((a, b) => a[1][0] / a[1][1] - b[1][0] / b[1][1]);
+  area.innerHTML = `
+    <h3>쿠폰 정하기</h3>
+    <p class="hint">내용과 필요한 별 개수를 적고 저장을 눌러요.</p>
+    <div id="cpEdit">${SAVE.coupons.map((c, i) => `
+      <div class="cp-row"><input id="cpText${i}" type="text" value="${esc(c.text)}" aria-label="쿠폰 내용">
+      <input id="cpCost${i}" type="number" inputmode="numeric" min="1" value="${c.cost}" aria-label="필요한 별"><span>별</span>
+      <button type="button" class="mini" data-del="${i}">삭제</button></div>`).join("")}</div>
+    <div class="row"><button type="button" class="btn sub-btn" id="cpAdd">쿠폰 추가</button><button type="button" class="btn" id="cpSave">저장</button></div>
+    <p class="hint" id="cpMsg"></p>
+    <h3>유형별 기록 (1번 사람)</h3>
+    <p class="hint">정답률이 낮은 유형이 위에 있어요. 이런 유형이 게임에서 더 자주 나와요.</p>
+    ${rows.length ? `<div class="table-wrap"><table><thead><tr><th>유형</th><th>맞힘/푼 수</th><th>정답률</th></tr></thead><tbody>
+      ${rows.map(([k, [ok, all]]) => `<tr><td>${keyLabel(k)}</td><td>${ok}/${all}</td><td>${Math.round(ok / all * 100)}%</td></tr>`).join("")}
+      </tbody></table></div>` : `<p class="hint">아직 기록이 없어요. 한 판 하고 오면 여기에 쌓여요.</p>`}
+    <h3>초기화</h3>
+    <div class="row">
+      <button type="button" class="btn sub-btn" id="resetStats">${pending === "rs" ? "정말? 한 번 더" : "기록 지우기"}</button>
+      <button type="button" class="btn sub-btn" id="resetAll">${pending === "ra" ? "정말? 한 번 더" : "별·아이템 지우기"}</button>
+    </div>
+    <button type="button" class="btn sub-btn" id="parentClose">부모 설정 닫기</button>`;
+  const readEdits = () => SAVE.coupons.map((c, i) => ({ text: $("cpText" + i).value.trim(), cost: Math.round(Number($("cpCost" + i).value)) }));
+  area.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => {
+    const list = readEdits(); list.splice(Number(b.dataset.del), 1); SAVE.coupons = list; persist(); renderParent();
+  }));
+  $("cpAdd").addEventListener("click", () => { SAVE.coupons = [...readEdits(), { text: "", cost: 10 }]; renderParent(); });
+  $("cpSave").addEventListener("click", () => {
+    const list = readEdits();
+    if (list.some(c => !c.text || !(c.cost >= 1 && c.cost <= 999))) { $("cpMsg").textContent = "쿠폰 내용을 쓰고, 별은 1~999 사이로 적어 주세요."; return; }
+    SAVE.coupons = list; persist(); renderShop(); $("cpMsg").textContent = "저장했어요!";
+  });
+  $("resetStats").addEventListener("click", () => {
+    if (pending === "rs") { SAVE.stats = {}; setPending(null); persist(); } else setPending("rs");
+    renderParent();
+  });
+  $("resetAll").addEventListener("click", () => {
+    if (pending === "ra") { SAVE.stars = 0; SAVE.owned = []; SAVE.wear = {}; setPending(null); persist(); renderShop(); } else { setPending("ra"); renderParent(); }
+  });
+  $("parentClose").addEventListener("click", () => { parentOpen = false; gate = null; renderParent(); });
+}
+
 /* ---------- 고르기 화면 ---------- */
 function renderPicks() {
   if (oppPick === myPick) oppPick = ORDER.find(id => id !== myPick);
@@ -638,7 +916,7 @@ function renderPicks() {
       const f = FIGHTERS[id], b = document.createElement("button");
       b.type = "button"; b.className = "pick"; b.id = (isOpp ? "opp-" : "mine-") + id; b.dataset.id = id;
       b.style.setProperty("--c", f.soft);
-      b.innerHTML = ART[id] + f.name + "<small>" + f.tag + "</small>";
+      b.innerHTML = artWithGear(id) + f.name + "<small>" + f.tag + "</small>";
       b.setAttribute("aria-pressed", String(sel === id));
       if (isOpp && id === myPick) b.disabled = true;
       b.addEventListener("click", () => { if (isOpp) oppPick = id; else myPick = id; SFX.tap(); renderPicks(); });
@@ -680,12 +958,15 @@ $("soundBtn").addEventListener("click", () => {
 });
 $("homeBtn").addEventListener("click", goHome);
 $("startBtn").addEventListener("click", startBattle);
+$("starBtn").addEventListener("click", openShop);
 
 function show(which) {
   $("setup").hidden = which !== "setup";
   $("battle").hidden = which !== "battle";
   $("result").hidden = which !== "result";
+  $("shop").hidden = which !== "shop";
   $("homeBtn").hidden = which === "setup";
+  $("starBtn").hidden = which === "battle" || which === "shop";
   window.scrollTo(0, 0);
 }
 function goHome() { busy = false; closeQuiz(); show("setup"); renderPicks(); }
@@ -698,8 +979,9 @@ function startBattle() {
     who: mode === "1p" ? (i === 0 ? "나" : "컴퓨터") : (i === 0 ? "1번" : "2번"),
     cpu: mode === "1p" && i === 1
   }));
-  $("fNear").innerHTML = ART[players[0].id];
-  $("fFar").innerHTML = ART[players[1].id];
+  $("fNear").innerHTML = artWithGear(players[0].id);
+  $("fFar").innerHTML = artWithGear(players[1].id);
+  roundStars = 0;
   $("fNear").className = "fighter near";
   $("fFar").className = "fighter far";
   turn = Math.random() < 0.5 ? 0 : 1;
@@ -1066,7 +1348,9 @@ const MATH_FORMS = [
     return mathQ(`어떤 수에서 ${eulreul(b)} 뺐더니 ${iga(a - b)} 되었어요. 어떤 수는 얼마일까요?`, "", a, ""); }
 ];
 function makeProblem(level) {
-  return pick(MATH_FORMS)(level === "hard");
+  const hard = level === "hard", keys = MATH_FORMS.map((_, i) => `m${hard ? "h" : "e"}${i}`);
+  const i = weightedPick(keys); lastKey = keys[i];
+  return { ...MATH_FORMS[i](hard), key: keys[i], hard };
 }
 
 /* ---------- 시계 문제 (방귀·똥 공격용) ---------- */
@@ -1125,8 +1409,10 @@ const CLOCK_HARD = [
              slots: [{ unit: "분", ans: d, max: 2 }], answerText: `${d}분` }; }
 ];
 function makeClockProblem(level) {
-  const p = pick(level === "hard" ? CLOCK_HARD : CLOCK_EASY)();
-  return { kind: "clock", inline: "", ...p };
+  const hard = level === "hard", list = hard ? CLOCK_HARD : CLOCK_EASY;
+  const keys = list.map((_, i) => `c${hard ? "h" : "e"}${i}`);
+  const i = weightedPick(keys); lastKey = keys[i];
+  return { kind: "clock", inline: "", ...list[i](), key: keys[i], hard };
 }
 
 function clockSVG(h, m) {
@@ -1200,10 +1486,17 @@ async function quizKey(k) {
     quizLocked = true;
     const ok = slots.every((sl, i) => Number(quizVals[i]) === sl.ans);
     const st = stats[turn][quizProb.kind]; st[1]++; if (ok) st[0]++;
+    let got = 0;
+    if (turn === 0) {                       // 1번 사람(하리)만 기록하고 별을 받음
+      const r = SAVE.stats[quizProb.key] || (SAVE.stats[quizProb.key] = [0, 0]);
+      r[1]++; if (ok) r[0]++;
+      if (ok) got = quizProb.kind === "clock" ? (quizProb.hard ? 3 : 2) : (quizProb.hard ? 2 : 1);
+      if (got) addStars(got); else persist();
+    }
     $("quiz").classList.add(ok ? "ok" : "no");
     if (ok) {
       SFX.heal();
-      $("quizSay").innerHTML = `<span class="power">${quizProb.kind === "clock" ? "딩동댕! 특별 기술 발사!" : "딩동댕! 수학 파워 1.5배!"}</span>`;
+      $("quizSay").innerHTML = `<span class="power">${quizProb.kind === "clock" ? "딩동댕! 특별 기술 발사!" : "딩동댕! 수학 파워 1.5배!"}</span>${got ? ` <b class="power">+${got}⭐</b>` : ""}`;
     } else { SFX.miss(); $("quizSay").textContent = `아쉬워! 정답은 ${quizProb.answerText}이에요.`; }
     await sleep(ok ? 1100 : 2600);
     const d = quizDone; quizDone = null;
@@ -1244,13 +1537,15 @@ function finish(winnerIdx) {
   let head;
   if (mode === "1p") head = winnerIdx === 0 ? "이겼다! 최고야!" : "아쉬워! 다시 해볼까?";
   else head = `${w.who} 사람 승리!`;
+  addStars(winnerIdx === 0 ? 3 : 1);
   const box = $("result");
   box.innerHTML = `
     <h2>${head}</h2>
-    ${ART[w.id]}
+    ${artWithGear(w.id)}
     <p><b>${w.name}</b>: “${w.cry}”</p>
     <p>남은 체력 ${w.hp} · 상대는 ${l.name}</p>
     ${mathLine()}
+    <p class="stars-line">이번 판 별 +${roundStars}⭐ · 모은 별 ${SAVE.stars}개</p>
     <div class="row">
       <button class="btn" id="againBtn" type="button">한 번 더!</button>
       <button class="btn sub-btn" id="backBtn" type="button">캐릭터 바꾸기</button>
@@ -1277,6 +1572,7 @@ function confetti() {
 
 renderPicks();
 renderMath();
+renderStarBtn();
 [["soundsFart", FARTS, "💨"], ["soundsPoop", POOPS, "💩"]].forEach(([id, list, icon]) => {
   list.forEach((v, i) => {
     const b = document.createElement("button");
