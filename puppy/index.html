@@ -1015,7 +1015,9 @@ function ownedCount(k){ const [t,id]=k.split(':'); if(t==='v') return S.veh.incl
 function placedCount(k){ return S.base.filter(b=>b.k===k).length; }
 function allKinds(){ return [...Object.keys(VEH).map(i=>'v:'+i),...DECO.map(d=>'d:'+d.id),...SHOP.map(x=>'s:'+x.id)]; }
 function placeItem(k,x,y){ ensureBase(); const b={u:++S.uid,k,x:x!==undefined?x:R(15,85),y:y!==undefined?y:R(70,95),s:1,f:false};
-  if(y===undefined){ if(k==='v:heli') b.y=R(28,40); else if(k[0]==='v') b.y=R(86,90); else b.y=R(56,76); }
+  if(y===undefined){ if(k==='v:heli') b.y=R(28,40); else if(k[0]==='v'){ // 주차 자리: 도로 3칸 + 잔디 3칸 중 빈 곳
+      const slots=[[18,89],[50,89],[82,89],[18,70],[50,70],[82,70]], near=([sx,sy])=>S.base.filter(o=>o!==b&&o.k[0]==='v'&&o.k!=='v:heli'&&Math.abs(o.x-sx)<14&&Math.abs(o.y-sy)<8).length;
+      const best=slots.reduce((m,sl)=>near(sl)<near(m)?sl:m,slots[0]); b.x=best[0]; b.y=best[1]; } else b.y=R(56,76); }
   S.base.push(b); save(); return b; }
 let baseEdit=false, baseSel=null, drag=null;
 function showBaseScreen(){ ensureBase(); $('ov').classList.remove('on'); ac(); baseSel=null; renderBase(); renderBaseShop(); show('s-base'); }
