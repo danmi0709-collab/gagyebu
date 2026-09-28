@@ -696,14 +696,20 @@ const SAVE_KEY = "battle-save-v1";
 const DEFAULT_SAVE = () => ({
   stars: 0, owned: [], wear: {},
   coupons: [   // 예시 쿠폰: 부모 설정에서 고치거나 지울 수 있음
-    { text: "아이스크림 1개", cost: 30 },
+    { text: "아이스크림 1개", cost: 50 },
     { text: "놀이터 30분 더", cost: 20 },
     { text: "원하는 책 1권", cost: 60 }
   ],
-  got: [], stats: {}
+  got: [], stats: {}, v: 2
 });
 let SAVE = DEFAULT_SAVE();
-try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); if (s) SAVE = Object.assign(DEFAULT_SAVE(), s); } catch (e) {}
+try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); if (s) SAVE = Object.assign(DEFAULT_SAVE(), s, { v: s.v || 1 }); } catch (e) {}
+// v2: 예시 아이스크림 쿠폰 30별 → 50별 (부모가 직접 고친 쿠폰은 그대로 둠)
+if (SAVE.v < 2) {
+  SAVE.coupons.forEach(c => { if (c.text === "아이스크림 1개" && c.cost === 30) c.cost = 50; });
+  SAVE.v = 2;
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (e) {}
+}
 function persist() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (e) {}
   renderStarBtn();
