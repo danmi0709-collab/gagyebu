@@ -147,6 +147,8 @@ input,select{font-family:inherit;font-size:16px;color:var(--text);background:var
 .week:first-child{border-top:none}
 .week .w1{display:flex;justify-content:space-between;font-weight:600}
 .week .w2{color:var(--text2);font-size:13px;margin-top:2px}
+.copybtn{margin-top:8px;padding:7px 12px;font-size:13px}
+.notionlink{display:inline-block;text-decoration:none;padding:7px 12px;font-size:13px;margin-bottom:4px}
 
 /* 배당 */
 .streak{display:flex;gap:6px;margin:8px 0}
@@ -259,6 +261,7 @@ function defaults() {
     usedCoupons: {},
   };
 }
+const NOTION_URL = 'https://www.notion.so/3ea7777c03e981f1a72bc9a41c77082f';  // 주간 리포트 붙여넣을 노션 페이지
 const DISC_PRESETS = [
   { title: '단편 1편 완성', pct: 5 },
   { title: '공모전·신춘문예 투고', pct: 3 },
@@ -447,6 +450,53 @@ function viewToday(C) {
   </div>`;
 }
 
+// 한 주(월~일) 리포트를 노션에 붙여넣기 좋은 마크다운으로
+function weekReport(C, mon) {
+  const sun = addD(mon, 6), t = today();
+  const ds = C.days.filter(d => d.date >= mon && d.date <= sun);
+  if (!ds.length) return '';
+  const first = ds[0], last = ds[ds.length - 1];
+  const pct = (last.close / first.open - 1) * 100;
+  const items = allItems(), byId = Object.fromEntries(items.map(i => [i.id, i]));
+  const secPts = {}, itemCnt = {};
+  ds.forEach(d => Object.entries(((S.days[d.date] || {}).done) || {}).forEach(([id, p]) => {
+    const it = byId[id], sk = it ? `${it.sec.emoji}${it.sec.name}` : '기타';
+    secPts[sk] = (secPts[sk] || 0) + p;
+    if (it) itemCnt[id] = (itemCnt[id] || 0) + 1;
+  }));
+  const secLine = S.sectors.map(s => `${s.emoji}${s.name} ${secPts[s.emoji + s.name] || 0}점`).concat(secPts['기타'] ? [`기타 ${secPts['기타']}점`] : []).join(' · ');
+  const itemLine = items.map(i => `${i.name} ${itemCnt[i.id] || 0}회`).join(', ');
+  const open = ds.filter(d => !d.off);
+  const goalDays = open.filter(d => d.ratio >= 1).length, upDays = open.filter(d => d.base >= 0).length, offDays = ds.length - open.length;
+  const avgW = (a, b) => { const v = S.weights.filter(x => x.date >= a && x.date <= b).map(x => +x.val); return v.length ? v.reduce((p, c) => p + c, 0) / v.length : null; };
+  const wNow = avgW(mon, sun), wPrev = avgW(addD(mon, -7), addD(mon, -1));
+  const wTxt = wNow === null ? '기록 없음' : `${wNow.toFixed(1)}kg` + (wPrev === null ? '' : ` (지난주 대비 ${sgn(wNow - wPrev)}${Math.abs(wNow - wPrev).toFixed(1)}kg)`);
+  const sv = S.savings.filter(x => x.date >= mon && x.date <= sun).map(x => `${+x.month.slice(5)}월 ${won(x.val)}원 ${+x.val >= +S.savingGoal ? '달성' : '미달'}`);
+  const dc = S.disclosures.filter(x => x.date >= mon && x.date <= sun).map(x => `${x.title} (+${x.pct}%)`);
+  const cp = C.coupons.filter(x => x.date >= mon && x.date <= sun).map(x => x.reward);
+  const daily = ds.map(d => `${WD[pd(d.date).getDay()]} ${d.off ? '휴장' : pctTxt(d.pct)}${d.closed ? '' : '(장중)'}`).join(' · ');
+  const y = pd(mon).getFullYear();
+  return [
+    `## ${y}. ${md(mon)}(월)~${md(sun)}(일) · 주가 ${pctTxt(pct)}${sun >= t ? ' (진행 중)' : ''}`,
+    `- 주가: ${won(first.open)} → ${won(last.close)}원 (${pctTxt(pct)})`,
+    `- 노력: ${secLine}`,
+    `- 목표 달성 ${goalDays}일 · 보합 이상 ${upDays}일 · 휴장 ${offDays}일 (기록 ${ds.length}일)`,
+    `- 항목별: ${itemLine}`,
+    `- 결과: 체중 ${wTxt}${sv.length ? ' · 저축 ' + sv.join(', ') : ''}`,
+    `- 공시: ${dc.length ? dc.join(', ') : '없음'}`,
+    `- 배당: ${cp.length ? cp.length + '장 (' + cp.join(', ') + ')' : '없음'}`,
+    `- 일별: ${daily}`,
+    `- 한 줄 회고: `,
+  ].join('\n');
+}
+async function copyText(txt) {
+  try { await navigator.clipboard.writeText(txt); return true; } catch (e) {}
+  const ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, txt.length);
+  let ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+  ta.remove(); return ok;
+}
+
 function viewPerf(C) {
   const hs = S.sectors.find(s => s.id === 'health') || S.sectors[0];
   // 최근 6주 (월~일) — 노력과 결과를 나란히
@@ -462,7 +512,8 @@ function viewPerf(C) {
     const wv = S.weights.filter(x => x.date >= a && x.date <= b).map(x => +x.val);
     const avg = wv.length ? (wv.reduce((p, c) => p + c, 0) / wv.length).toFixed(1) + 'kg' : '—';
     weeks.push(`<div class="week"><div class="w1"><span>${md(a)}~${md(b)}${w === 0 ? ' (이번 주)' : ''}</span><span class="num ${cls(pct)}">${pctTxt(pct)}</span></div>
-      <div class="w2"><span class="pill act">노력</span> ${counts} &nbsp; <span class="pill res">결과</span> 체중 ${avg}</div></div>`);
+      <div class="w2"><span class="pill act">노력</span> ${counts} &nbsp; <span class="pill res">결과</span> 체중 ${avg}</div>
+      <button class="btn ghost small copybtn" data-copyweek="${a}">📋 노션용 복사</button></div>`);
   }
   const ws = [...S.weights].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
   const sv = [...S.savings].sort((a, b) => b.month.localeCompare(a.month)).slice(0, 6);
@@ -489,7 +540,10 @@ function viewPerf(C) {
     <p class="muted small" style="margin-top:6px">목표 달성하면 +2% 호재. 가계부(한해살림) 보고 월말에 한 번 적어.</p>
     <div class="list" style="margin-top:6px">${sv.map(s => `<div class="li"><span class="muted small">${s.month}</span><span class="grow num">${won(s.val)}원</span><span class="small ${+s.val >= +S.savingGoal ? 'up' : 'muted'}">${+s.val >= +S.savingGoal ? '달성' : '미달'}</span><button class="x" data-dels="${s.month}">×</button></div>`).join('')}</div>
   </div>
-  <div class="card"><h3>🗓️ 주간 리포트 <span class="sub">노력과 결과 나란히 보기</span></h3>${weeks.join('') || '<div class="muted small">첫 주가 끝나면 쌓여.</div>'}</div>
+  <div class="card"><h3>🗓️ 주간 리포트 <span class="sub">노력과 결과 나란히 보기</span></h3>
+    <p class="muted small" style="margin-bottom:6px">일요일 밤에 이번 주를 복사해서 노션 리포트 페이지 맨 아래에 붙여넣어. 월요일 아침에 미래의 한나가 코멘트를 달아 줘.</p>
+    <a class="btn ghost small notionlink" href="${NOTION_URL}" target="_blank" rel="noopener">노션 리포트 페이지 열기 ↗</a>
+    ${weeks.join('') || '<div class="muted small">첫 주가 끝나면 쌓여.</div>'}</div>
   </div>`;
 }
 
@@ -626,6 +680,14 @@ document.addEventListener('click', e => {
   if (d.deldisc) { if (confirm('이 공시를 취소할까?')) { S.disclosures = S.disclosures.filter(x => x.id !== d.deldisc); save(); render(); } return; }
   if (d.delw) { S.weights = S.weights.filter(x => x.date !== d.delw); save(); render(); return; }
   if (d.dels) { S.savings = S.savings.filter(x => x.month !== d.dels); save(); render(); return; }
+  if (d.copyweek) {
+    const txt = weekReport(compute(), d.copyweek);
+    copyText(txt).then(ok => {
+      if (ok) { toast('📋 복사했어! 노션 페이지 맨 아래에 붙여넣어'); b.textContent = '✅ 복사됨'; setTimeout(() => { b.textContent = '📋 노션용 복사'; }, 2000); }
+      else { window.prompt('자동 복사가 안 돼서 여기서 직접 복사해 줘', txt); }
+    });
+    return;
+  }
   if (d.use) { S.usedCoupons[d.use] = today(); save(); render(); toast('🎁 배당 사용! 제대로 누려.'); return; }
   if (d.delr !== undefined) { S.rewards.splice(+d.delr, 1); save(); render(); return; }
   if (d.delsec !== undefined) { if (confirm('이 사업부를 지울까? (지난 기록의 점수는 그대로 남아)')) { S.sectors.splice(+d.delsec, 1); save(); openSettings(); } return; }
