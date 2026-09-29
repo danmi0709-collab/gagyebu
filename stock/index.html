@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>홍한나 주식</title>
+<meta name="description" content="오늘의 노력이 내일의 주가가 되는 나만의 주식 앱">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f2f4f6">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="홍한나">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+:root{
+  --bg:#f2f4f6; --card:#ffffff; --card2:#f7f8fa; --line:#e5e8eb;
+  --text:#191f28; --text2:#6b7684; --text3:#aeb5bd;
+  --up:#f04452; --upbg:#fdecee; --down:#3182f6; --downbg:#e8f3ff;
+  --flat:#8b95a1; --gold:#e0a100; --goldbg:#fff6da; --warn:#ff8a00;
+  --shadow:0 1px 3px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101113; --card:#1c1d21; --card2:#26272c; --line:#2f3036;
+    --text:#f2f3f5; --text2:#9ea4ad; --text3:#5b6068;
+    --up:#ff5b67; --upbg:#3a1d21; --down:#4d95ff; --downbg:#18263b;
+    --gold:#ffc53d; --goldbg:#3a3018; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101113; --card:#1c1d21; --card2:#26272c; --line:#2f3036;
+  --text:#f2f3f5; --text2:#9ea4ad; --text3:#5b6068;
+  --up:#ff5b67; --upbg:#3a1d21; --down:#4d95ff; --downbg:#18263b;
+  --gold:#ffc53d; --goldbg:#3a3018; --shadow:none;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  color:var(--text);font-size:15px;line-height:1.45;min-height:100vh;
+  padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+button{font-family:inherit;font-size:inherit;color:inherit;border:none;background:none;cursor:pointer}
+input,select{font-family:inherit;font-size:16px;color:var(--text);background:var(--card2);
+  border:1px solid var(--line);border-radius:10px;padding:9px 11px;min-width:0}
+.wrap{max-width:480px;margin:0 auto;padding:0 16px}
+.up{color:var(--up)} .down{color:var(--down)} .flat{color:var(--flat)}
+.muted{color:var(--text2)} .small{font-size:13px}
+.num{font-variant-numeric:tabular-nums}
+
+/* 상단 */
+.top{display:flex;align-items:center;justify-content:space-between;padding:14px 0 6px;
+  padding-top:calc(14px + env(safe-area-inset-top))}
+.top .name{font-size:19px;font-weight:700}
+.top .code{font-size:12px;color:var(--text2);margin-left:6px;font-weight:500}
+.iconbtn{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:19px;color:var(--text2)}
+.iconbtn:active{background:var(--card2)}
+
+.card{background:var(--card);border-radius:18px;padding:18px;margin:10px 0;box-shadow:var(--shadow)}
+.card h3{font-size:16px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card h3 .sub{font-size:12px;font-weight:500;color:var(--text2)}
+
+/* 시세 */
+.price{font-size:36px;font-weight:800;letter-spacing:-1px;transition:color .2s}
+.price small{font-size:22px;font-weight:700}
+.chg{font-size:15px;font-weight:600;margin-top:2px}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);
+  background:var(--card2);border-radius:999px;padding:3px 10px;margin-top:10px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--up);animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.25}}
+.flash-up{animation:fu .6s} .flash-down{animation:fd .6s}
+@keyframes fu{0%{background:var(--upbg)}100%{background:transparent}}
+@keyframes fd{0%{background:var(--downbg)}100%{background:transparent}}
+
+.banner{border-radius:14px;padding:12px 14px;margin:10px 0;font-size:14px;font-weight:600}
+.banner.warn{background:#fff1e0;color:#b25c00}
+.banner.gold{background:var(--goldbg);color:var(--gold)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .banner.warn{background:#3a2a14;color:#ffb35c}}
+:root[data-theme="dark"] .banner.warn{background:#3a2a14;color:#ffb35c}
+
+.chart{position:relative;height:190px;margin:8px -4px 0;touch-action:pan-y;user-select:none}
+.chart svg{display:block;width:100%;height:100%;overflow:visible}
+.tip{position:absolute;top:-4px;transform:translateX(-50%);background:var(--text);color:var(--bg);
+  font-size:12px;padding:3px 8px;border-radius:8px;white-space:nowrap;pointer-events:none;display:none}
+.ranges{display:flex;gap:4px;margin-top:10px;background:var(--card2);border-radius:12px;padding:3px}
+.ranges button{flex:1;padding:7px 0;border-radius:9px;font-size:13px;color:var(--text2);font-weight:600}
+.ranges button.on{background:var(--card);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
+.grid .k{font-size:12px;color:var(--text2)} .grid .v{font-size:15px;font-weight:600}
+
+.sector{display:flex;align-items:center;gap:10px;padding:8px 0}
+.sector .em{font-size:20px;width:28px;text-align:center}
+.sector .nm{width:44px;font-size:14px;font-weight:600}
+.bar{flex:1;height:8px;background:var(--card2);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--up);border-radius:99px;transition:width .3s}
+.sector .pt{width:54px;text-align:right;font-size:13px;color:var(--text2)}
+
+.news{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+.news:first-of-type{border-top:none}
+.news .d{color:var(--text3);font-size:12px;width:40px;flex-shrink:0;padding-top:1px}
+
+/* 오늘 */
+.sticky{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0 4px;
+  padding-top:calc(8px + env(safe-area-inset-top))}
+.daytabs{display:flex;gap:6px;margin-bottom:8px}
+.daytabs button{padding:6px 12px;border-radius:999px;background:var(--card);font-size:13px;font-weight:600;color:var(--text2)}
+.daytabs button.on{background:var(--text);color:var(--bg)}
+.proj{background:var(--card);border-radius:18px;padding:14px 16px;box-shadow:var(--shadow)}
+.proj .row{display:flex;justify-content:space-between;align-items:baseline}
+.proj .big{font-size:24px;font-weight:800}
+.prog{height:10px;background:var(--card2);border-radius:99px;margin-top:10px;position:relative;overflow:visible}
+.prog i{display:block;height:100%;border-radius:99px;background:var(--up);transition:width .3s}
+.prog .mark{position:absolute;top:-3px;width:2px;height:16px;background:var(--text3)}
+.item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:13px 4px;border-top:1px solid var(--line)}
+.item:first-of-type{border-top:none}
+.check{width:26px;height:26px;border-radius:50%;border:2px solid var(--text3);display:grid;place-items:center;
+  flex-shrink:0;font-size:14px;color:transparent;transition:all .15s}
+.item.done .check{background:var(--up);border-color:var(--up);color:#fff}
+.item .t{flex:1;font-size:15px}
+.item.done .t{color:var(--text2)}
+.item .p{font-size:13px;color:var(--text2);font-weight:600}
+.item.done .p{color:var(--up)}
+.item:active{background:var(--card2);border-radius:10px}
+.offbtn{width:100%;padding:13px;border-radius:14px;background:var(--card);color:var(--text2);font-weight:600;margin:6px 0}
+.offbtn.on{background:var(--text);color:var(--bg)}
+
+/* 공통 버튼 */
+.btn{padding:10px 14px;border-radius:12px;background:var(--text);color:var(--bg);font-weight:700;white-space:nowrap}
+.btn.ghost{background:var(--card2);color:var(--text)}
+.btn.red{background:var(--up);color:#fff}
+.btn:disabled{opacity:.4}
+.row2{display:flex;gap:8px;align-items:center}
+.row2 input{flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:7px 11px;border-radius:999px;background:var(--card2);font-size:13px;font-weight:600}
+.chip b{color:var(--up);margin-left:3px}
+.list .li{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+.list .li:first-child{border-top:none}
+.list .li .grow{flex:1}
+.x{color:var(--text3);font-size:18px;padding:0 4px}
+.principle{font-size:14px;line-height:1.6}
+.principle b{font-weight:700}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px}
+.pill.act{background:var(--upbg);color:var(--up)} .pill.res{background:var(--goldbg);color:var(--gold)}
+.week{padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+.week:first-child{border-top:none}
+.week .w1{display:flex;justify-content:space-between;font-weight:600}
+.week .w2{color:var(--text2);font-size:13px;margin-top:2px}
+
+/* 배당 */
+.streak{display:flex;gap:6px;margin:8px 0}
+.streak span{flex:1;height:34px;border-radius:10px;background:var(--card2);display:grid;place-items:center;font-size:15px}
+.streak span.on{background:var(--goldbg);color:var(--gold)}
+.coupon{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:var(--goldbg);margin-top:8px}
+.coupon.used{background:var(--card2);opacity:.6}
+.coupon .ic{font-size:24px}
+.coupon .grow{flex:1;font-size:14px}
+.coupon .grow b{display:block;font-size:15px}
+
+/* 탭바 */
+.tabbar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom);z-index:20}
+.tabbar .in{max-width:480px;margin:0 auto;display:flex}
+.tabbar button{flex:1;padding:9px 0 10px;font-size:11px;color:var(--text3);font-weight:600;display:flex;flex-direction:column;align-items:center;gap:2px}
+.tabbar button .i{font-size:20px;filter:grayscale(1);opacity:.55}
+.tabbar button.on{color:var(--text)}
+.tabbar button.on .i{filter:none;opacity:1}
+
+/* 설정 시트 */
+.sheet{position:fixed;inset:0;background:var(--bg);z-index:50;overflow-y:auto;display:none;padding-bottom:40px}
+.sheet.open{display:block}
+.field{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+.field:first-of-type{border-top:none}
+.field input,.field select{width:110px;text-align:right}
+.field .hint{display:block;font-size:12px;color:var(--text2)}
+.secedit{border-top:1px solid var(--line);padding:12px 0}
+.secedit:first-of-type{border-top:none}
+.secedit .head{display:flex;gap:6px;margin-bottom:8px}
+.secedit .head input:first-child{width:52px;text-align:center}
+.secedit .head input:nth-child(2){flex:1;font-weight:700}
+.itemedit{display:flex;gap:6px;margin:6px 0}
+.itemedit input{flex:1}
+.itemedit select{width:62px;padding:9px 4px}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;
+  z-index:99;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%;text-align:center}
+.toast.show{opacity:1}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<nav class="tabbar"><div class="in">
+  <button data-tab="home" class="on"><span class="i">📈</span>시세</button>
+  <button data-tab="today"><span class="i">✅</span>오늘 장</button>
+  <button data-tab="perf"><span class="i">📊</span>실적·공시</button>
+  <button data-tab="div"><span class="i">💰</span>배당</button>
+</div></nav>
+
+<div class="sheet" id="sheet"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* =========================================================
+   홍한나 주식 — 오늘의 노력이 내일의 주가
+   원칙: 주가는 '행동(노력)'으로만 움직인다.
+         '결과'(체중·저축·당선)는 좋을 때만 호재로 더해지고, 나빠도 깎지 않는다.
+   데이터는 이 기기 브라우저(localStorage)에만 저장된다.
+   ========================================================= */
+const KEY = 'hanna_stock_v1';
+
+/* ---------- 날짜 도우미 (시간대 문제 없게 항상 '현지 날짜'로) ---------- */
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const pd = s => { const [a, b, c] = s.split('-').map(Number); return new Date(a, b - 1, c); };
+const addD = (s, n) => { const d = pd(s); d.setDate(d.getDate() + n); return ymd(d); };
+const diffD = (a, b) => Math.round((pd(b) - pd(a)) / 864e5);
+const now = () => (window.__now ? new Date(window.__now) : new Date());
+const today = () => ymd(now());
+const md = s => { const d = pd(s); return `${d.getMonth() + 1}/${d.getDate()}`; };
+const WD = ['일', '월', '화', '수', '목', '금', '토'];
+const won = v => Math.round(v).toLocaleString('ko-KR');
+const sgn = v => (v > 0 ? '+' : v < 0 ? '−' : '');
+const pctTxt = v => `${sgn(v)}${Math.abs(v).toFixed(2)}%`;
+const cls = v => (v > 0.0001 ? 'up' : v < -0.0001 ? 'down' : 'flat');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+/* ---------- 기본 설정 ---------- */
+function defaults() {
+  return {
+    v: 1, name: '홍한나', code: 'HHN', start: today(), base: 10000, shares: 1000000,
+    settings: { target: 9, up: 1.5, down: 1.5, cap: 3, offLimit: 4, divStreak: 7, divRatio: 0.7 },
+    sectors: [
+      { id: 'write', emoji: '✍️', name: '창작', items: [
+        { id: 'w1', name: '습작 원고 30분 (새로 쓰기·고치기)', pts: 3 },
+        { id: 'w2', name: '독서·필사 기록 1개 남기기', pts: 1 } ] },
+      { id: 'health', emoji: '💪', name: '건강', items: [
+        { id: 'h1', name: '운동 30분', pts: 2 },
+        { id: 'h2', name: '식단 지키기 (야식·단 음료 X)', pts: 2 },
+        { id: 'h3', name: '12시 전에 눕기', pts: 1 } ] },
+      { id: 'kid', emoji: '👧', name: '육아', items: [
+        { id: 'k1', name: '딸과 폰 없이 15분 함께', pts: 2 },
+        { id: 'k2', name: '딸에게 구체적으로 칭찬 1번', pts: 1 } ] },
+      { id: 'money', emoji: '💰', name: '재무', items: [
+        { id: 'm1', name: '가계부 기록', pts: 1 } ] },
+    ],
+    days: {},            // 'YYYY-MM-DD': { done:{itemId:pts}, target, off }
+    disclosures: [],     // { id, date, title, pct }  (결과 → 호재 공시)
+    weights: [],         // { date, val }
+    savings: [],         // { month:'YYYY-MM', val, date }
+    weightGoal: { target: '', dir: 'down' },
+    savingGoal: 1000000,
+    rewards: ['좋아하는 카페 음료 한 잔', '읽고 싶던 책 한 권 사기', '혼자만의 2시간 (카페·산책)', '먹고 싶던 디저트 하나'],
+    usedCoupons: {},
+  };
+}
+const DISC_PRESETS = [
+  { title: '단편 1편 완성', pct: 5 },
+  { title: '공모전·신춘문예 투고', pct: 3 },
+  { title: '합평 반영 퇴고 완료', pct: 2 },
+  { title: '신춘문예 당선', pct: 30 },
+];
+
+let S;
+function load() {
+  try { const raw = localStorage.getItem(KEY); if (raw) { S = Object.assign(defaults(), JSON.parse(raw)); S.settings = Object.assign(defaults().settings, S.settings); return; } } catch (e) {}
+  S = defaults();
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('저장 실패: 저장 공간을 확인해 줘'); } }
+
+/* ---------- 계산 ---------- */
+const allItems = () => S.sectors.flatMap(s => s.items.map(i => ({ ...i, sec: s })));
+const maxPts = () => allItems().reduce((a, i) => a + i.pts, 0);
+const recPts = rec => Object.values((rec && rec.done) || {}).reduce((a, b) => a + b, 0);
+// 달성률 → 기본 등락률(%). 0점이면 -down, 목표 점수면 +up, 그 이상은 상한가(cap)까지.
+const baseChange = r => Math.min(S.settings.cap, -S.settings.down + r * (S.settings.up + S.settings.down));
+const evenPts = () => S.settings.target * S.settings.down / (S.settings.up + S.settings.down);
+
+// 결과 지표 → 실적 이벤트 (좋을 때만 +, 나쁠 때는 0%로 기록만)
+function perfEvents() {
+  const map = {};
+  const push = (d, e) => (map[d] = map[d] || []).push(e);
+  const ws = [...S.weights].sort((a, b) => a.date.localeCompare(b.date));
+  let lastEvt = null;
+  ws.forEach((cur, i) => {
+    let prev = null;
+    for (let j = i - 1; j >= 0; j--) if (diffD(ws[j].date, cur.date) >= 5) { prev = ws[j]; break; }
+    if (!prev || (lastEvt && diffD(lastEvt, cur.date) < 7)) return;
+    const delta = S.weightGoal.dir === 'down' ? prev.val - cur.val : cur.val - prev.val;
+    lastEvt = cur.date;
+    if (delta >= 0.2) push(cur.date, { kind: 'perf', title: `체중 실적 개선 (${delta.toFixed(1)}kg)`, pct: 1 });
+    else push(cur.date, { kind: 'perf', title: '체중 실적 정체 · 결과 지표라 주가 영향 없음', pct: 0 });
+  });
+  S.savings.forEach(s => {
+    if (+s.val >= +S.savingGoal) push(s.date, { kind: 'perf', title: `${+s.month.slice(5)}월 저축 목표 달성`, pct: 2 });
+    else push(s.date, { kind: 'perf', title: `${+s.month.slice(5)}월 저축 목표 미달 · 주가 영향 없음`, pct: 0 });
+  });
+  return map;
+}
+
+// 상장일부터 오늘까지 매일의 시세를 처음부터 다시 계산 (정정하면 이후 주가도 같이 바뀜)
+function compute() {
+  const t = today(), st = S.settings;
+  const disc = {};
+  S.disclosures.forEach(d => (disc[d.date] = disc[d.date] || []).push({ kind: 'disc', title: d.title, pct: +d.pct }));
+  const perf = perfEvents();
+  const days = [], news = [], coupons = [];
+  let price = S.base, hi = S.base, lo = S.base, streak = 0, upRun = 0, downRun = 0;
+  for (let d = S.start; d <= t; d = addD(d, 1)) {
+    const rec = S.days[d] || {};
+    const closed = d < t, off = !!rec.off;
+    const pts = recPts(rec), target = rec.target || st.target, ratio = pts / target;
+    const base = off ? 0 : baseChange(ratio);
+    const ev = [...(disc[d] || []), ...(perf[d] || [])];
+    const bonus = ev.reduce((a, e) => a * (1 + e.pct / 100), 1);
+    const pct = ((1 + base / 100) * bonus - 1) * 100;
+    const open = price, close = open * (1 + pct / 100);
+    const day = { date: d, open, close, pct, base, pts, target, ratio, off, closed, ev };
+    days.push(day);
+    ev.forEach(e => news.push({ date: d, text: `${e.kind === 'disc' ? '📢 공시' : '🧾 실적'} · ${e.title}${e.pct ? ` (${sgn(e.pct)}${e.pct}%)` : ''}`, live: !closed }));
+    if (!closed) break;
+    price = close;
+    if (off) { news.push({ date: d, text: '🏖️ 휴장' }); continue; }
+    if (pct > 0) { upRun++; downRun = 0; } else if (pct < 0) { downRun++; upRun = 0; } else { upRun = 0; downRun = 0; }
+    if (close > hi + 0.01) { if (days.length > 1) news.push({ date: d, text: `📈 신고가 경신 ${won(close)}원` }); hi = close; }
+    lo = Math.min(lo, close);
+    if (base >= st.cap - 0.001) news.push({ date: d, text: '🚀 상한가!' });
+    if (pts === 0) news.push({ date: d, text: `😶 거래 없음 (${pctTxt(base)})` });
+    if ([3, 5, 10, 20, 30].includes(upRun)) news.push({ date: d, text: `🔥 ${upRun}일 연속 상승` });
+    if (downRun === 3) news.push({ date: d, text: '⚠️ 3일 연속 하락 · 관리종목 지정' });
+    if (ratio >= st.divRatio) { streak++; if (streak % st.divStreak === 0) {
+      const reward = S.rewards.length ? S.rewards[coupons.length % S.rewards.length] : '나에게 주는 선물';
+      coupons.push({ key: d, date: d, reward }); news.push({ date: d, text: `💰 배당 지급 · ${reward}` }); } }
+    else streak = 0;
+  }
+  const last = days[days.length - 1];
+  const prevClose = last.open;
+  return { days, news: news.reverse(), coupons, hi: Math.max(hi, last.close), lo: Math.min(lo, last.close), streak, upRun, downRun, last, prevClose };
+}
+
+/* ---------- 화면 ---------- */
+let TAB = 'home', RANGE = 30, EDIT_DAY = null, lastPrice = null;
+const $ = s => document.querySelector(s);
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2200); }
+
+function header() {
+  return `<div class="top"><div><span class="name">${esc(S.name)}</span><span class="code">${esc(S.code)} · 1인 상장사</span></div>
+    <button class="iconbtn" data-act="settings" aria-label="설정">⚙️</button></div>`;
+}
+function closeLeft() {
+  const n = now(), m = new Date(n); m.setHours(24, 0, 0, 0);
+  const min = Math.max(0, Math.round((m - n) / 60000));
+  return `${Math.floor(min / 60)}시간 ${min % 60}분`;
+}
+
+function render() {
+  const C = compute();
+  document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === TAB));
+  const html = { home: viewHome, today: viewToday, perf: viewPerf, div: viewDiv }[TAB](C);
+  $('#app').innerHTML = html;
+  if (TAB === 'home') drawChart(C);
+  const p = C.last.close;
+  if (lastPrice !== null && Math.abs(p - lastPrice) > 0.001) {
+    const el = document.querySelector('[data-flash]');
+    if (el) { el.classList.remove('flash-up', 'flash-down'); void el.offsetWidth; el.classList.add(p > lastPrice ? 'flash-up' : 'flash-down'); }
+  }
+  lastPrice = p;
+}
+
+function viewHome(C) {
+  const L = C.last, chg = L.close - L.open, st = S.settings;
+  const tRec = S.days[L.date] || {};
+  const mgmt = C.downRun >= 3;
+  const secRows = S.sectors.map(s => {
+    const max = s.items.reduce((a, i) => a + i.pts, 0) || 1;
+    const got = s.items.reduce((a, i) => a + ((tRec.done || {})[i.id] || 0), 0);
+    return `<div class="sector"><span class="em">${esc(s.emoji)}</span><span class="nm">${esc(s.name)}</span>
+      <span class="bar"><i style="width:${got / max * 100}%"></i></span><span class="pt num">${got}/${max}점</span></div>`;
+  }).join('');
+  const news = C.news.slice(0, 12).map(n => `<div class="news"><span class="d">${md(n.date)}</span><span>${esc(n.text)}${n.live ? ' <span class="muted small">(오늘)</span>' : ''}</span></div>`).join('')
+    || '<div class="muted small">아직 뉴스가 없어. 오늘 장부터 시작!</div>';
+  const cap = L.close * S.shares;
+  return `<div class="wrap">${header()}
+  <div data-flash style="border-radius:14px;padding:4px 2px">
+    <div class="price num ${cls(chg)}">${won(L.close)}<small>원</small></div>
+    <div class="chg num ${cls(chg)}">${chg >= 0 ? '▲' : '▼'} ${won(Math.abs(chg))}원 (${pctTxt(L.pct)}) <span class="muted small">어제 대비</span></div>
+    <div class="status">${L.off ? '🏖️ 오늘은 휴장' : `<span class="dot"></span> 장중 · 마감까지 ${closeLeft()}`}</div>
+  </div>
+  ${mgmt ? `<div class="banner warn">⚠️ 관리종목 지정 중 — 3일 연속 하락. 오늘 ${evenPts().toFixed(1)}점만 넘겨도 상승 전환이야.</div>` : ''}
+  ${!L.off && L.pts === 0 ? `<div class="banner warn">지금 이대로 마감하면 <b>${pctTxt(-st.down)}</b>. ${evenPts().toFixed(1)}점만 넘겨도 보합 이상이야.</div>` : ''}
+  <div class="card">
+    <div class="chart" id="chart"><div class="tip" id="tip"></div></div>
+    <div class="ranges">${[[7, '1주'], [30, '1달'], [90, '3달'], [0, '전체']].map(([v, t]) => `<button data-range="${v}" class="${RANGE === v ? 'on' : ''}">${t}</button>`).join('')}</div>
+  </div>
+  <div class="card"><h3>오늘 사업부 현황 <span class="sub">${L.pts}/${L.target}점 · 목표 달성 시 +${st.up}%</span></h3>${secRows}</div>
+  <div class="card"><h3>종목 정보</h3><div class="grid">
+    <div><div class="k">상장가 (${md(S.start)})</div><div class="v num">${won(S.base)}원</div></div>
+    <div><div class="k">상장 후 수익률</div><div class="v num ${cls(L.close - S.base)}">${pctTxt((L.close / S.base - 1) * 100)}</div></div>
+    <div><div class="k">최고가</div><div class="v num up">${won(C.hi)}원</div></div>
+    <div><div class="k">최저가</div><div class="v num down">${won(C.lo)}원</div></div>
+    <div><div class="k">시가총액</div><div class="v num">${(cap / 1e8).toFixed(1)}억</div></div>
+    <div><div class="k">연속 상승</div><div class="v num">${C.upRun}일</div></div>
+  </div></div>
+  <div class="card"><h3>뉴스</h3>${news}</div>
+  <p class="muted small" style="text-align:center;margin:14px 0">데이터는 이 기기에만 저장돼. 설정 ⚙️ 에서 가끔 백업해 줘.</p>
+  </div>`;
+}
+
+function editableDays() {
+  const t = today(), out = [];
+  for (let i = 0; i < 3; i++) { const d = addD(t, -i); if (d >= S.start) out.push(d); }
+  return out;
+}
+function viewToday(C) {
+  const eds = editableDays();
+  if (!EDIT_DAY || !eds.includes(EDIT_DAY)) EDIT_DAY = eds[0];
+  const day = C.days.find(x => x.date === EDIT_DAY);
+  const rec = S.days[EDIT_DAY] || {}, st = S.settings, done = rec.done || {};
+  const target = rec.target || st.target;
+  const label = d => d === eds[0] ? '오늘' : diffD(d, eds[0]) === 1 ? '어제' : '그제';
+  const month = EDIT_DAY.slice(0, 7);
+  const offCount = Object.entries(S.days).filter(([d, r]) => r.off && d.startsWith(month)).length;
+  const secs = S.sectors.map(s => `<div class="card"><h3>${esc(s.emoji)} ${esc(s.name)} 사업부</h3>
+    ${s.items.map(i => `<button class="item ${done[i.id] ? 'done' : ''}" data-item="${i.id}" ${rec.off ? 'disabled style="opacity:.4"' : ''}>
+      <span class="check">✓</span><span class="t">${esc(i.name)}</span><span class="p">+${i.pts}점</span></button>`).join('')}
+  </div>`).join('');
+  return `<div class="wrap">
+  <div class="sticky">
+    <div class="daytabs">${eds.map(d => `<button data-day="${d}" class="${d === EDIT_DAY ? 'on' : ''}">${label(d)} ${md(d)}(${WD[pd(d).getDay()]})</button>`).join('')}</div>
+    <div class="proj">
+      <div class="row"><span class="muted small">${EDIT_DAY === eds[0] ? '지금 마감하면' : '정정 후 이날 종가'}</span><span class="muted small num">${day.pts}/${target}점</span></div>
+      <div class="row" data-flash style="border-radius:10px"><span class="big num ${cls(day.pct)}">${pctTxt(day.pct)}</span><span class="num" style="font-weight:700">${won(day.close)}원</span></div>
+      <div class="prog"><i style="width:${Math.min(100, day.ratio * 100)}%;background:${day.pct >= 0 ? 'var(--up)' : 'var(--down)'}"></i>
+        <span class="mark" style="left:${st.down / (st.up + st.down) * 100}%" title="보합선"></span></div>
+      <div class="muted small" style="margin-top:6px">0점 ${pctTxt(-st.down)} · ${evenPts().toFixed(1)}점 보합 · ${target}점 +${st.up}% · 그 이상 최대 +${st.cap}% (상한가)</div>
+    </div>
+  </div>
+  ${EDIT_DAY !== eds[0] ? `<div class="banner gold">📝 정정공시 모드 — 깜빡한 기록은 2일 전까지 고칠 수 있어.</div>` : ''}
+  ${secs}
+  <button class="offbtn ${rec.off ? 'on' : ''}" data-act="off">${rec.off ? '🏖️ 휴장 해제하기' : '🏖️ 이날을 휴장으로 (아픔·여행)'} <span class="small">· 이번 달 ${offCount}/${st.offLimit}일</span></button>
+  <p class="muted small" style="margin:6px 4px 16px">휴장한 날은 주가가 움직이지 않고, 배당 연속 기록도 끊기지 않아.</p>
+  </div>`;
+}
+
+function viewPerf(C) {
+  const hs = S.sectors.find(s => s.id === 'health') || S.sectors[0];
+  // 최근 6주 (월~일) — 노력과 결과를 나란히
+  const t = today(), dow = (pd(t).getDay() + 6) % 7, mon0 = addD(t, -dow);
+  const weeks = [];
+  for (let w = 0; w < 6; w++) {
+    const a = addD(mon0, -7 * w), b = addD(a, 6);
+    if (b < S.start) break;
+    const ds = C.days.filter(d => d.date >= a && d.date <= b);
+    if (!ds.length) continue;
+    const pct = (ds[ds.length - 1].close / ds[0].open - 1) * 100;
+    const counts = (hs ? hs.items : []).map(i => `${esc(i.name.split(' ')[0])} ${ds.filter(d => ((S.days[d.date] || {}).done || {})[i.id]).length}회`).join(' · ');
+    const wv = S.weights.filter(x => x.date >= a && x.date <= b).map(x => +x.val);
+    const avg = wv.length ? (wv.reduce((p, c) => p + c, 0) / wv.length).toFixed(1) + 'kg' : '—';
+    weeks.push(`<div class="week"><div class="w1"><span>${md(a)}~${md(b)}${w === 0 ? ' (이번 주)' : ''}</span><span class="num ${cls(pct)}">${pctTxt(pct)}</span></div>
+      <div class="w2"><span class="pill act">노력</span> ${counts} &nbsp; <span class="pill res">결과</span> 체중 ${avg}</div></div>`);
+  }
+  const ws = [...S.weights].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
+  const sv = [...S.savings].sort((a, b) => b.month.localeCompare(a.month)).slice(0, 6);
+  const ds = [...S.disclosures].sort((a, b) => b.date.localeCompare(a.date));
+  const thisMonth = t.slice(0, 7);
+  return `<div class="wrap">${header()}
+  <div class="card principle">
+    <h3>이 종목의 원칙</h3>
+    <span class="pill act">노력 = 행동</span> 운동, 식단, 원고 쓰기처럼 <b>오늘 내가 할 수 있는 것</b>. 매일 주가를 올리고 내려.<br>
+    <span class="pill res">성과 = 결과</span> 체중, 저축액, 당선처럼 <b>노력 끝에 따라오는 것</b>. 좋으면 호재로 주가를 올리고, <b>나빠도 주가를 깎지 않아</b>.
+  </div>
+  <div class="card"><h3>📢 호재 공시 <span class="sub">큰 성과를 냈을 때</span></h3>
+    <div class="chips">${DISC_PRESETS.map((p, i) => `<button class="chip" data-disc="${i}">${esc(p.title)}<b>+${p.pct}%</b></button>`).join('')}</div>
+    <div class="row2" style="margin-top:10px"><input id="discTitle" placeholder="직접 입력 (예: 합평회 발표)"><input id="discPct" type="number" inputmode="decimal" value="2" style="width:64px;flex:none">%<button class="btn" data-act="discAdd">공시</button></div>
+    <div class="list" style="margin-top:8px">${ds.map(d => `<div class="li"><span class="muted small">${md(d.date)}</span><span class="grow">${esc(d.title)}</span><span class="up num">+${d.pct}%</span><button class="x" data-deldisc="${d.id}">×</button></div>`).join('')}</div>
+  </div>
+  <div class="card"><h3>⚖️ 체중 실적 <span class="sub">주 1회 정도 기록 · ${S.weightGoal.target ? `목표 ${esc(S.weightGoal.target)}kg` : '목표는 설정에서'}</span></h3>
+    <div class="row2"><input id="wVal" type="number" inputmode="decimal" step="0.1" placeholder="오늘 체중 (kg)"><button class="btn" data-act="wAdd">기록</button></div>
+    <p class="muted small" style="margin-top:6px">5일 이상 간격으로 ${S.weightGoal.dir === 'down' ? '0.2kg 이상 줄면' : '0.2kg 이상 늘면'} +1% 호재. 아니면 주가 영향 없이 기록만 해.</p>
+    <div class="list" style="margin-top:6px">${ws.map(w => `<div class="li"><span class="muted small">${md(w.date)}</span><span class="grow num">${w.val}kg</span><button class="x" data-delw="${w.date}">×</button></div>`).join('')}</div>
+  </div>
+  <div class="card"><h3>🐷 저축 실적 <span class="sub">월 목표 ${won(S.savingGoal)}원</span></h3>
+    <div class="row2"><input id="sMonth" type="month" value="${thisMonth}" style="flex:none;width:140px"><input id="sVal" type="number" inputmode="numeric" placeholder="이번 달 저축액"><button class="btn" data-act="sAdd">기록</button></div>
+    <p class="muted small" style="margin-top:6px">목표 달성하면 +2% 호재. 가계부(한해살림) 보고 월말에 한 번 적어.</p>
+    <div class="list" style="margin-top:6px">${sv.map(s => `<div class="li"><span class="muted small">${s.month}</span><span class="grow num">${won(s.val)}원</span><span class="small ${+s.val >= +S.savingGoal ? 'up' : 'muted'}">${+s.val >= +S.savingGoal ? '달성' : '미달'}</span><button class="x" data-dels="${s.month}">×</button></div>`).join('')}</div>
+  </div>
+  <div class="card"><h3>🗓️ 주간 리포트 <span class="sub">노력과 결과 나란히 보기</span></h3>${weeks.join('') || '<div class="muted small">첫 주가 끝나면 쌓여.</div>'}</div>
+  </div>`;
+}
+
+function viewDiv(C) {
+  const st = S.settings, n = C.streak % st.divStreak;
+  const boxes = Array.from({ length: st.divStreak }, (_, i) => `<span class="${i < n ? 'on' : ''}">${i < n ? '★' : i + 1}</span>`).join('');
+  const cps = [...C.coupons].reverse().map(c => {
+    const used = S.usedCoupons[c.key];
+    return `<div class="coupon ${used ? 'used' : ''}"><span class="ic">${used ? '✅' : '🎁'}</span>
+      <span class="grow"><b>${esc(c.reward)}</b><span class="muted small">${md(c.date)} 배당${used ? ` · ${md(used)} 사용` : ''}</span></span>
+      ${used ? '' : `<button class="btn" data-use="${c.key}">사용</button>`}</div>`;
+  }).join('');
+  return `<div class="wrap">${header()}
+  <div class="card"><h3>배당 조건</h3>
+    <p class="small muted">목표 점수의 ${Math.round(st.divRatio * 100)}% 이상(${Math.ceil(st.target * st.divRatio)}점)을 <b>${st.divStreak}일 연속</b> 채우면 배당 쿠폰 1장. 휴장일은 연속 기록을 끊지 않아.</p>
+    <div class="streak">${boxes}</div>
+    <p class="small">다음 배당까지 <b>${st.divStreak - n}일</b></p>
+  </div>
+  <div class="card"><h3>배당 쿠폰함 <span class="sub">${C.coupons.filter(c => !S.usedCoupons[c.key]).length}장 보유</span></h3>
+    ${cps || '<div class="muted small">아직 받은 배당이 없어. 첫 배당까지 달려 보자.</div>'}</div>
+  <div class="card"><h3>배당 상품 목록 <span class="sub">순서대로 지급</span></h3>
+    <div class="list">${S.rewards.map((r, i) => `<div class="li"><span class="grow">${esc(r)}</span><button class="x" data-delr="${i}">×</button></div>`).join('')}</div>
+    <div class="row2" style="margin-top:8px"><input id="rNew" placeholder="새 보상 추가"><button class="btn" data-act="rAdd">추가</button></div>
+  </div></div>`;
+}
+
+/* ---------- 차트 (직접 그린 SVG) ---------- */
+function drawChart(C) {
+  const el = $('#chart'); if (!el) return;
+  let ds = C.days; if (RANGE) ds = ds.slice(-RANGE);
+  const pts = [{ label: ds[0].date === S.start ? '상장' : md(addD(ds[0].date, -1)), v: ds[0].open }, ...ds.map(d => ({ label: md(d.date) + (d.closed ? '' : ' (장중)'), v: d.close }))];
+  const W = el.clientWidth, H = el.clientHeight, pT = 22, pB = 16;
+  const vs = pts.map(p => p.v), mn = Math.min(...vs), mx = Math.max(...vs), span = (mx - mn) || mx * 0.02;
+  const x = i => pts.length === 1 ? W / 2 : 6 + i * (W - 12) / (pts.length - 1);
+  const y = v => pT + (1 - (v - mn) / span) * (H - pT - pB);
+  const up = pts[pts.length - 1].v >= pts[0].v, col = up ? 'var(--up)' : 'var(--down)';
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join('');
+  const lastLive = !ds[ds.length - 1].closed;
+  const solidN = lastLive ? pts.length - 1 : pts.length;
+  const solid = pts.slice(0, solidN).map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join('');
+  const liveSeg = lastLive && pts.length > 1 ? `<path d="M${x(pts.length - 2)},${y(pts[pts.length - 2].v)}L${x(pts.length - 1)},${y(pts[pts.length - 1].v)}" stroke="${col}" stroke-width="2.2" stroke-dasharray="4 4" fill="none"/>` : '';
+  const iMax = vs.indexOf(mx), iMin = vs.indexOf(mn);
+  const lab = (i, txt, below) => { const ax = Math.min(Math.max(x(i), 30), W - 30); return `<text x="${ax}" y="${below ? y(vs[i]) + 14 : y(vs[i]) - 7}" text-anchor="middle" font-size="11" fill="var(--text2)">${txt}</text>`; };
+  el.insertAdjacentHTML('afterbegin', `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${up ? '#f04452' : '#3182f6'}" stop-opacity=".18"/><stop offset="1" stop-color="${up ? '#f04452' : '#3182f6'}" stop-opacity="0"/></linearGradient></defs>
+    <line x1="0" x2="${W}" y1="${y(pts[0].v)}" y2="${y(pts[0].v)}" stroke="var(--text3)" stroke-dasharray="2 4"/>
+    ${pts.length > 1 ? `<path d="${line}L${x(pts.length - 1)},${H}L${x(0)},${H}Z" fill="url(#g)"/>` : ''}
+    <path d="${solid}" stroke="${col}" stroke-width="2.2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>${liveSeg}
+    <circle cx="${x(pts.length - 1)}" cy="${y(vs[vs.length - 1])}" r="4" fill="${col}"/>
+    ${mx !== mn ? lab(iMax, `최고 ${won(mx)}`) + lab(iMin, `최저 ${won(mn)}`, true) : ''}
+    <line id="cur" y1="0" y2="${H}" stroke="var(--text3)" visibility="hidden"/>
+  </svg>`);
+  const tip = $('#tip'), cur = el.querySelector('#cur');
+  const move = e => {
+    const r = el.getBoundingClientRect(), px = e.clientX - r.left;
+    const i = Math.max(0, Math.min(pts.length - 1, Math.round((px - 6) / ((W - 12) / Math.max(1, pts.length - 1)))));
+    cur.setAttribute('x1', x(i)); cur.setAttribute('x2', x(i)); cur.setAttribute('visibility', 'visible');
+    tip.style.display = 'block'; tip.style.left = Math.min(Math.max(x(i), 50), W - 50) + 'px';
+    tip.textContent = `${pts[i].label} · ${won(pts[i].v)}원`;
+  };
+  const leave = () => { tip.style.display = 'none'; cur.setAttribute('visibility', 'hidden'); };
+  el.onpointerdown = move; el.onpointermove = move; el.onpointerleave = leave; el.onpointerup = e => { if (e.pointerType !== 'mouse') setTimeout(leave, 1200); };
+}
+
+/* ---------- 설정 ---------- */
+function openSettings() {
+  const st = S.settings;
+  const f = (k, label, hint, attrs = '') => `<label class="field"><span>${label}${hint ? `<span class="hint">${hint}</span>` : ''}</span><input data-set="${k}" type="number" inputmode="decimal" value="${st[k]}" ${attrs}></label>`;
+  const secs = S.sectors.map((s, si) => `<div class="secedit">
+    <div class="head"><input data-sec="${si}" data-f="emoji" value="${esc(s.emoji)}"><input data-sec="${si}" data-f="name" value="${esc(s.name)}"><button class="x" data-delsec="${si}">🗑</button></div>
+    ${s.items.map((it, ii) => `<div class="itemedit"><input data-sec="${si}" data-it="${ii}" data-f="name" value="${esc(it.name)}">
+      <select data-sec="${si}" data-it="${ii}" data-f="pts">${[1, 2, 3, 4, 5].map(n => `<option value="${n}" ${it.pts === n ? 'selected' : ''}>${n}점</option>`).join('')}</select>
+      <button class="x" data-delit="${si}:${ii}">×</button></div>`).join('')}
+    <button class="btn ghost small" data-additem="${si}" style="margin-top:4px">+ 항목</button></div>`).join('');
+  $('#sheet').innerHTML = `<div class="wrap">
+  <div class="top"><span class="name">설정</span><button class="btn" data-act="closeSettings">완료</button></div>
+  <div class="card"><h3>종목</h3>
+    <label class="field"><span>종목명</span><input data-top="name" value="${esc(S.name)}" style="width:140px"></label>
+    <label class="field"><span>종목 코드</span><input data-top="code" value="${esc(S.code)}" style="width:140px"></label>
+    <label class="field"><span>화면 테마</span><select data-theme-sel style="width:140px">
+      ${[['auto', '자동'], ['light', '밝게'], ['dark', '어둡게']].map(([v, t]) => `<option value="${v}" ${(localStorage.getItem(KEY + '_theme') || 'auto') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+  </div>
+  <div class="card"><h3>주가 규칙 <span class="sub">현재 항목 합계 ${maxPts()}점</span></h3>
+    ${f('target', '하루 목표 점수', '이만큼 채우면 +상승폭', 'min="1"')}
+    ${f('up', '목표 달성 시 상승 %', '')}
+    ${f('down', '0점일 때 하락 %', '순한 맛 1 · 보통 1.5 · 매운 맛 2.5')}
+    ${f('cap', '상한가 %', '목표 넘겨 더 하면 여기까지')}
+    ${f('offLimit', '한 달 휴장 한도', '')}
+    ${f('divStreak', '배당 연속 일수', '')}
+    <p class="muted small" style="margin-top:8px">규칙을 바꾸면 이미 기록한 날은 그날 기준 그대로 두고, 앞으로의 날부터 적용돼. (단, 상승·하락 %는 전체에 다시 계산돼.)</p>
+  </div>
+  <div class="card"><h3>사업부 · 하루 체크 항목 <span class="sub">사업부당 3개 이하 추천</span></h3>${secs}
+    <button class="btn ghost" data-act="addsec" style="width:100%;margin-top:8px">+ 사업부 추가</button></div>
+  <div class="card"><h3>결과 목표</h3>
+    <label class="field"><span>목표 체중 (kg)</span><input data-wg="target" type="number" step="0.1" value="${esc(S.weightGoal.target)}"></label>
+    <label class="field"><span>체중 방향</span><select data-wg="dir"><option value="down" ${S.weightGoal.dir === 'down' ? 'selected' : ''}>빼기</option><option value="up" ${S.weightGoal.dir === 'up' ? 'selected' : ''}>늘리기</option></select></label>
+    <label class="field"><span>월 저축 목표 (원)</span><input data-top="savingGoal" type="number" inputmode="numeric" value="${S.savingGoal}" style="width:140px"></label>
+  </div>
+  <div class="card"><h3>백업</h3>
+    <p class="muted small" style="margin-bottom:10px">브라우저 데이터를 지우거나 폰을 바꾸면 기록이 사라져. 한 달에 한 번 파일로 저장해 둬.</p>
+    <div class="row2"><button class="btn" data-act="export" style="flex:1">백업 파일 저장</button><button class="btn ghost" data-act="import" style="flex:1">백업 불러오기</button></div>
+    <input type="file" id="importFile" accept=".json,application/json" class="hidden">
+  </div>
+  <div class="card"><h3>초기화</h3><p class="muted small" style="margin-bottom:10px">모든 기록을 지우고 오늘 10,000원에 다시 상장해.</p>
+    <button class="btn red" data-act="reset">전체 초기화</button></div>
+  </div>`;
+  $('#sheet').classList.add('open');
+  $('#sheet').scrollTop = 0;
+}
+
+function applyTheme() {
+  let t = 'auto'; try { t = localStorage.getItem(KEY + '_theme') || 'auto'; } catch (e) {}
+  if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t);
+}
+
+/* ---------- 이벤트 ---------- */
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const d = b.dataset, st = S.settings;
+  if (d.tab) { TAB = d.tab; EDIT_DAY = null; render(); window.scrollTo(0, 0); return; }
+  if (d.range !== undefined) { RANGE = +d.range; render(); return; }
+  if (d.day) { EDIT_DAY = d.day; render(); return; }
+  if (d.item) {
+    const rec = S.days[EDIT_DAY] = S.days[EDIT_DAY] || { done: {} };
+    rec.done = rec.done || {};
+    const it = allItems().find(i => i.id === d.item);
+    if (rec.done[d.item]) delete rec.done[d.item]; else rec.done[d.item] = it.pts;
+    rec.target = st.target;
+    save(); render();
+    if (rec.done[d.item] && navigator.vibrate) navigator.vibrate(15);
+    return;
+  }
+  if (d.disc !== undefined) { addDisc(DISC_PRESETS[+d.disc].title, DISC_PRESETS[+d.disc].pct); return; }
+  if (d.deldisc) { if (confirm('이 공시를 취소할까?')) { S.disclosures = S.disclosures.filter(x => x.id !== d.deldisc); save(); render(); } return; }
+  if (d.delw) { S.weights = S.weights.filter(x => x.date !== d.delw); save(); render(); return; }
+  if (d.dels) { S.savings = S.savings.filter(x => x.month !== d.dels); save(); render(); return; }
+  if (d.use) { S.usedCoupons[d.use] = today(); save(); render(); toast('🎁 배당 사용! 제대로 누려.'); return; }
+  if (d.delr !== undefined) { S.rewards.splice(+d.delr, 1); save(); render(); return; }
+  if (d.delsec !== undefined) { if (confirm('이 사업부를 지울까? (지난 기록의 점수는 그대로 남아)')) { S.sectors.splice(+d.delsec, 1); save(); openSettings(); } return; }
+  if (d.delit) { const [si, ii] = d.delit.split(':').map(Number); S.sectors[si].items.splice(ii, 1); save(); openSettings(); return; }
+  if (d.additem !== undefined) { S.sectors[+d.additem].items.push({ id: uid(), name: '새 항목', pts: 1 }); save(); openSettings(); return; }
+  switch (d.act) {
+    case 'settings': openSettings(); break;
+    case 'closeSettings': $('#sheet').classList.remove('open'); render(); break;
+    case 'addsec': S.sectors.push({ id: uid(), emoji: '⭐', name: '새 사업부', items: [{ id: uid(), name: '새 항목', pts: 1 }] }); save(); openSettings(); break;
+    case 'off': {
+      const rec = S.days[EDIT_DAY] = S.days[EDIT_DAY] || { done: {} };
+      if (!rec.off) {
+        const m = EDIT_DAY.slice(0, 7);
+        const cnt = Object.entries(S.days).filter(([k, r]) => r.off && k.startsWith(m)).length;
+        if (cnt >= st.offLimit) { toast(`이번 달 휴장 한도(${st.offLimit}일)를 다 썼어`); break; }
+      }
+      rec.off = !rec.off; save(); render(); break;
+    }
+    case 'discAdd': {
+      const t = $('#discTitle').value.trim(), p = parseFloat($('#discPct').value);
+      if (!t) { toast('공시 내용을 적어 줘'); break; }
+      if (!(p > 0)) { toast('공시는 호재만 가능해 (0보다 큰 %)'); break; }
+      addDisc(t, p); break;
+    }
+    case 'wAdd': {
+      const v = parseFloat($('#wVal').value);
+      if (!(v > 20 && v < 300)) { toast('체중을 kg으로 적어 줘'); break; }
+      S.weights = S.weights.filter(x => x.date !== today()); S.weights.push({ date: today(), val: v }); save(); render(); toast('체중 기록 완료'); break;
+    }
+    case 'sAdd': {
+      const m = $('#sMonth').value, v = parseInt($('#sVal').value, 10);
+      if (!m || !(v >= 0)) { toast('월과 금액을 적어 줘'); break; }
+      S.savings = S.savings.filter(x => x.month !== m); S.savings.push({ month: m, val: v, date: today() }); save(); render(); toast('저축 실적 기록 완료'); break;
+    }
+    case 'rAdd': { const v = $('#rNew').value.trim(); if (v) { S.rewards.push(v); save(); render(); } break; }
+    case 'export': {
+      const blob = new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `홍한나주식_백업_${today()}.json`; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 3000); break;
+    }
+    case 'import': $('#importFile').click(); break;
+    case 'reset':
+      if (confirm('정말 모든 기록을 지울까? 되돌릴 수 없어.') && confirm('한 번 더 확인할게. 백업은 해 뒀어?')) {
+        S = defaults(); save(); $('#sheet').classList.remove('open'); TAB = 'home'; render(); toast('오늘 다시 상장했어');
+      }
+      break;
+  }
+});
+function addDisc(title, pct) {
+  if (!confirm(`"${title}" 호재 공시 (+${pct}%)를 오늘 날짜로 낼까?`)) return;
+  S.disclosures.push({ id: uid(), date: today(), title, pct }); save(); render(); toast(`📢 공시 완료! +${pct}%`);
+}
+
+document.addEventListener('change', e => {
+  const el = e.target, d = el.dataset;
+  if (d.set) { const v = parseFloat(el.value); if (v > 0) { S.settings[d.set] = v; save(); } else el.value = S.settings[d.set]; return; }
+  if (d.top) { S[d.top] = d.top === 'savingGoal' ? (parseInt(el.value, 10) || 0) : el.value.trim() || S[d.top]; save(); return; }
+  if (d.wg) { S.weightGoal[d.wg] = el.value; save(); return; }
+  if (d.themeSel !== undefined) { try { localStorage.setItem(KEY + '_theme', el.value); } catch (x) {} applyTheme(); return; }
+  if (d.sec !== undefined) {
+    const s = S.sectors[+d.sec];
+    if (d.it !== undefined) { const it = s.items[+d.it]; it[d.f] = d.f === 'pts' ? +el.value : (el.value.trim() || it.name); }
+    else s[d.f] = el.value.trim() || s[d.f];
+    save(); return;
+  }
+  if (el.id === 'importFile' && el.files[0]) {
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const obj = JSON.parse(r.result);
+        if (!obj.sectors || !obj.days || !obj.start) throw 0;
+        if (!confirm('지금 기록을 백업 파일 내용으로 바꿀까?')) return;
+        S = Object.assign(defaults(), obj); save(); $('#sheet').classList.remove('open'); render(); toast('백업을 불러왔어');
+      } catch (x) { toast('올바른 백업 파일이 아니야'); }
+    };
+    r.readAsText(el.files[0]);
+  }
+});
+
+// 자정이 지나면 장 마감 반영
+let lastDay = null;
+setInterval(() => { if (today() !== lastDay) { lastDay = today(); EDIT_DAY = null; if (!$('#sheet').classList.contains('open')) render(); } else if (TAB === 'home' && !$('#sheet').classList.contains('open')) { const s = document.querySelector('.status'); if (s && !s.textContent.includes('휴장')) s.innerHTML = `<span class="dot"></span> 장중 · 마감까지 ${closeLeft()}`; } }, 30000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+window.addEventListener('resize', () => { if (TAB === 'home') render(); });
+
+load(); applyTheme(); lastDay = today(); render();
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
