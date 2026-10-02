@@ -267,6 +267,7 @@ function defaults() {
 }
 const NOTION_URL = 'https://www.notion.so/3ea7777c03e981f1a72bc9a41c77082f';  // 주간 리포트 붙여넣을 노션 페이지
 const DISC_PRESETS = [
+  { title: '📚 완독', pct: 1, book: true },
   { title: '단편 1편 완성', pct: 5 },
   { title: '공모전·신춘문예 투고', pct: 3 },
   { title: '합평 반영 퇴고 완료', pct: 2 },
@@ -693,7 +694,7 @@ document.addEventListener('click', e => {
     if (rec.done[d.item] && navigator.vibrate) navigator.vibrate(15);
     return;
   }
-  if (d.disc !== undefined) { addDisc(DISC_PRESETS[+d.disc].title, DISC_PRESETS[+d.disc].pct); return; }
+  if (d.disc !== undefined) { const pr = DISC_PRESETS[+d.disc]; if (pr.book) addBookDisc(pr.pct); else addDisc(pr.title, pr.pct); return; }
   if (d.deldisc) { if (confirm('이 공시를 취소할까?')) { S.disclosures = S.disclosures.filter(x => x.id !== d.deldisc); save(); render(); } return; }
   if (d.delw) { S.weights = S.weights.filter(x => x.date !== d.delw); save(); render(); return; }
   if (d.dels) { S.savings = S.savings.filter(x => x.month !== d.dels); save(); render(); return; }
@@ -756,6 +757,15 @@ document.addEventListener('click', e => {
       break;
   }
 });
+// 완독 공시: 책 제목만 물어보고(비워도 됨) 바로 공시. 최근 7일 안에 완료한 [독서] 항목이 있으면 제목을 미리 채워 둔다
+function addBookDisc(pct) {
+  const recent = allItems().filter(i => i.ended && diffD(i.ended, today()) <= 7 && /^\s*\[독서\]/.test(i.name)).sort((a, b) => b.ended.localeCompare(a.ended))[0];
+  const guess = recent ? recent.name.replace(/^\s*\[독서\]\s*/, '') : '';
+  const name = prompt(`📚 완독 공시 (+${pct}%)\n어떤 책을 다 읽었어? (비워도 돼)`, guess);
+  if (name === null) return;
+  const title = name.trim() ? `📚 완독: ${name.trim()}` : '📚 완독';
+  S.disclosures.push({ id: uid(), date: today(), title, pct }); save(); render(); toast(`📢 ${title} +${pct}%`);
+}
 function addDisc(title, pct) {
   if (!confirm(`"${title}" 호재 공시 (+${pct}%)를 오늘 날짜로 낼까?`)) return;
   S.disclosures.push({ id: uid(), date: today(), title, pct }); save(); render(); toast(`📢 공시 완료! +${pct}%`);

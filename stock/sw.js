@@ -1,5 +1,5 @@
 // 홍한나 주식 Service Worker — 네트워크 우선, 오프라인이면 캐시
-const CACHE_NAME = 'hanna-stock-v3';
+const CACHE_NAME = 'hanna-stock-v4';
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(['./', './index.html'])));
