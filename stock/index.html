@@ -184,6 +184,10 @@ input,select{font-family:inherit;font-size:16px;color:var(--text);background:var
 .itemedit{display:flex;gap:6px;margin:6px 0}
 .itemedit input{flex:1}
 .itemedit select{width:62px;padding:9px 4px}
+.endbtn{flex-shrink:0;padding:0 10px;border-radius:10px;background:var(--card2);color:var(--text2);font-size:13px;font-weight:600;white-space:nowrap}
+.endedlist{margin-top:8px;padding:6px 10px;border-radius:12px;background:var(--card2)}
+.endedlist .li{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px;color:var(--text2)}
+.restore{font-size:12px;font-weight:600;color:var(--down);flex-shrink:0}
 .toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);
   background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;
   z-index:99;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%;text-align:center}
@@ -277,8 +281,11 @@ function load() {
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('저장 실패: 저장 공간을 확인해 줘'); } }
 
 /* ---------- 계산 ---------- */
+// 항목·사업부는 지우지 않고 '완료(ended)' 날짜만 붙인다 → 지난 기록의 이름·사업부가 그대로 남는다
 const allItems = () => S.sectors.flatMap(s => s.items.map(i => ({ ...i, sec: s })));
-const maxPts = () => allItems().reduce((a, i) => a + i.pts, 0);
+const endOf = (s, i) => [s.ended, i && i.ended].filter(Boolean).sort()[0] || null;
+const activeOn = (s, i, d) => { const e = endOf(s, i); return !e || d < e; };
+const maxPts = () => allItems().filter(i => activeOn(i.sec, i, today())).reduce((a, i) => a + i.pts, 0);
 const recPts = rec => Object.values((rec && rec.done) || {}).reduce((a, b) => a + b, 0);
 // 달성률 → 기본 등락률(%). 0점이면 -down, 목표 점수면 +up, 그 이상은 상한가(cap)까지.
 const baseChange = r => Math.min(S.settings.cap, -S.settings.down + r * (S.settings.up + S.settings.down));
@@ -380,8 +387,9 @@ function viewHome(C) {
   const tRec = S.days[L.date] || {};
   const mgmt = C.downRun >= 3;
   const secRows = S.sectors.map(s => {
-    const max = s.items.reduce((a, i) => a + i.pts, 0) || 1;
+    const max = s.items.filter(i => activeOn(s, i, L.date)).reduce((a, i) => a + i.pts, 0) || 1;
     const got = s.items.reduce((a, i) => a + ((tRec.done || {})[i.id] || 0), 0);
+    if (!activeOn(s, null, L.date) && !got) return '';
     return `<div class="sector"><span class="em">${esc(s.emoji)}</span><span class="nm">${esc(s.name)}</span>
       <span class="bar"><i style="width:${got / max * 100}%"></i></span><span class="pt num">${got}/${max}점</span></div>`;
   }).join('');
@@ -428,10 +436,14 @@ function viewToday(C) {
   const label = d => d === eds[0] ? '오늘' : diffD(d, eds[0]) === 1 ? '어제' : '그제';
   const month = EDIT_DAY.slice(0, 7);
   const offCount = Object.entries(S.days).filter(([d, r]) => r.off && d.startsWith(month)).length;
-  const secs = S.sectors.map(s => `<div class="card"><h3>${esc(s.emoji)} ${esc(s.name)} 사업부</h3>
-    ${s.items.map(i => `<button class="item ${done[i.id] ? 'done' : ''}" data-item="${i.id}" ${rec.off ? 'disabled style="opacity:.4"' : ''}>
-      <span class="check">✓</span><span class="t">${esc(i.name)}</span><span class="p">+${i.pts}점</span></button>`).join('')}
-  </div>`).join('');
+  const secs = S.sectors.map(s => {
+    const its = s.items.filter(i => activeOn(s, i, EDIT_DAY) || done[i.id]);
+    if (!its.length) return '';
+    return `<div class="card"><h3>${esc(s.emoji)} ${esc(s.name)} 사업부</h3>
+    ${its.map(i => `<button class="item ${done[i.id] ? 'done' : ''}" data-item="${i.id}" ${rec.off ? 'disabled style="opacity:.4"' : ''}>
+      <span class="check">✓</span><span class="t">${esc(i.name)}${activeOn(s, i, EDIT_DAY) ? '' : ' <span class="muted small">(완료된 항목)</span>'}</span><span class="p">+${done[i.id] || i.pts}점</span></button>`).join('')}
+  </div>`;
+  }).join('');
   return `<div class="wrap">
   <div class="sticky">
     <div class="daytabs">${eds.map(d => `<button data-day="${d}" class="${d === EDIT_DAY ? 'on' : ''}">${label(d)} ${md(d)}(${WD[pd(d).getDay()]})</button>`).join('')}</div>
@@ -464,8 +476,8 @@ function weekReport(C, mon) {
     secPts[sk] = (secPts[sk] || 0) + p;
     if (it) itemCnt[id] = (itemCnt[id] || 0) + 1;
   }));
-  const secLine = S.sectors.map(s => `${s.emoji}${s.name} ${secPts[s.emoji + s.name] || 0}점`).concat(secPts['기타'] ? [`기타 ${secPts['기타']}점`] : []).join(' · ');
-  const itemLine = items.map(i => `${i.name} ${itemCnt[i.id] || 0}회`).join(', ');
+  const secLine = S.sectors.filter(s => activeOn(s, null, mon) || secPts[s.emoji + s.name]).map(s => `${s.emoji}${s.name} ${secPts[s.emoji + s.name] || 0}점`).concat(secPts['기타'] ? [`기타 ${secPts['기타']}점`] : []).join(' · ');
+  const itemLine = items.filter(i => activeOn(i.sec, i, mon) || itemCnt[i.id]).map(i => `${i.name} ${itemCnt[i.id] || 0}회${activeOn(i.sec, i, sun) ? '' : ' (완료)'}`).join(', ');
   const open = ds.filter(d => !d.off);
   const goalDays = open.filter(d => d.ratio >= 1).length, upDays = open.filter(d => d.base >= 0).length, offDays = ds.length - open.length;
   const avgW = (a, b) => { const v = S.weights.filter(x => x.date >= a && x.date <= b).map(x => +x.val); return v.length ? v.reduce((p, c) => p + c, 0) / v.length : null; };
@@ -508,7 +520,7 @@ function viewPerf(C) {
     const ds = C.days.filter(d => d.date >= a && d.date <= b);
     if (!ds.length) continue;
     const pct = (ds[ds.length - 1].close / ds[0].open - 1) * 100;
-    const counts = (hs ? hs.items : []).map(i => `${esc(i.name.split(' ')[0])} ${ds.filter(d => ((S.days[d.date] || {}).done || {})[i.id]).length}회`).join(' · ');
+    const counts = (hs ? hs.items : []).map(i => [i, ds.filter(d => ((S.days[d.date] || {}).done || {})[i.id]).length]).filter(([i, n]) => n || activeOn(hs, i, a)).map(([i, n]) => `${esc(i.name.split(' ')[0])} ${n}회`).join(' · ');
     const wv = S.weights.filter(x => x.date >= a && x.date <= b).map(x => +x.val);
     const avg = wv.length ? (wv.reduce((p, c) => p + c, 0) / wv.length).toFixed(1) + 'kg' : '—';
     weeks.push(`<div class="week"><div class="w1"><span>${md(a)}~${md(b)}${w === 0 ? ' (이번 주)' : ''}</span><span class="num ${cls(pct)}">${pctTxt(pct)}</span></div>
@@ -612,12 +624,15 @@ function drawChart(C) {
 function openSettings() {
   const st = S.settings;
   const f = (k, label, hint, attrs = '') => `<label class="field"><span>${label}${hint ? `<span class="hint">${hint}</span>` : ''}</span><input data-set="${k}" type="number" inputmode="decimal" value="${st[k]}" ${attrs}></label>`;
-  const secs = S.sectors.map((s, si) => `<div class="secedit">
-    <div class="head"><input data-sec="${si}" data-f="emoji" value="${esc(s.emoji)}"><input data-sec="${si}" data-f="name" value="${esc(s.name)}"><button class="x" data-delsec="${si}">🗑</button></div>
-    ${s.items.map((it, ii) => `<div class="itemedit"><input data-sec="${si}" data-it="${ii}" data-f="name" value="${esc(it.name)}">
+  const secs = S.sectors.map((s, si) => s.ended ? '' : `<div class="secedit">
+    <div class="head"><input data-sec="${si}" data-f="emoji" value="${esc(s.emoji)}"><input data-sec="${si}" data-f="name" value="${esc(s.name)}"><button class="endbtn" data-endsec="${si}">사업부 완료</button></div>
+    ${s.items.map((it, ii) => it.ended ? '' : `<div class="itemedit"><input data-sec="${si}" data-it="${ii}" data-f="name" value="${esc(it.name)}">
       <select data-sec="${si}" data-it="${ii}" data-f="pts">${[1, 2, 3, 4, 5].map(n => `<option value="${n}" ${it.pts === n ? 'selected' : ''}>${n}점</option>`).join('')}</select>
-      <button class="x" data-delit="${si}:${ii}">×</button></div>`).join('')}
-    <button class="btn ghost small" data-additem="${si}" style="margin-top:4px">+ 항목</button></div>`).join('');
+      <button class="endbtn" data-enditem="${si}:${ii}">완료</button></div>`).join('')}
+    <button class="btn ghost small" data-additem="${si}" style="margin-top:4px">+ 항목</button>
+    ${s.items.some(it => it.ended) ? `<div class="endedlist">${s.items.map((it, ii) => it.ended ? `<div class="li"><span class="grow">✓ ${esc(it.name)} <span class="muted small">· ${md(it.ended)} 완료</span></span><button class="restore" data-restoreitem="${si}:${ii}">되살리기</button></div>` : '').join('')}</div>` : ''}
+  </div>`).join('');
+  const endedSecs = S.sectors.map((s, si) => s.ended ? `<div class="li"><span class="grow">✓ ${esc(s.emoji)} ${esc(s.name)} <span class="muted small">· ${md(s.ended)} 완료</span></span><button class="restore" data-restoresec="${si}">되살리기</button></div>` : '').join('');
   $('#sheet').innerHTML = `<div class="wrap">
   <div class="top"><span class="name">설정</span><button class="btn" data-act="closeSettings">완료</button></div>
   <div class="card"><h3>종목</h3>
@@ -636,7 +651,9 @@ function openSettings() {
     <p class="muted small" style="margin-top:8px">규칙을 바꾸면 이미 기록한 날은 그날 기준 그대로 두고, 앞으로의 날부터 적용돼. (단, 상승·하락 %는 전체에 다시 계산돼.)</p>
   </div>
   <div class="card"><h3>사업부 · 하루 체크 항목 <span class="sub">사업부당 3개 이하 추천</span></h3>${secs}
-    <button class="btn ghost" data-act="addsec" style="width:100%;margin-top:8px">+ 사업부 추가</button></div>
+    <button class="btn ghost" data-act="addsec" style="width:100%;margin-top:8px">+ 사업부 추가</button>
+    <p class="muted small" style="margin-top:8px">다 끝낸 항목은 '완료'를 눌러. 오늘부터 체크 목록에서 빠지고, 지난 기록·주가·리포트에는 이름 그대로 남아.</p>
+    ${endedSecs ? `<div class="endedlist" style="margin-top:10px"><div class="small" style="font-weight:700;margin-bottom:4px">완료한 사업부</div>${endedSecs}</div>` : ''}</div>
   <div class="card"><h3>결과 목표</h3>
     <label class="field"><span>목표 체중 (kg)</span><input data-wg="target" type="number" step="0.1" value="${esc(S.weightGoal.target)}"></label>
     <label class="field"><span>체중 방향</span><select data-wg="dir"><option value="down" ${S.weightGoal.dir === 'down' ? 'selected' : ''}>빼기</option><option value="up" ${S.weightGoal.dir === 'up' ? 'selected' : ''}>늘리기</option></select></label>
@@ -670,7 +687,7 @@ document.addEventListener('click', e => {
     const rec = S.days[EDIT_DAY] = S.days[EDIT_DAY] || { done: {} };
     rec.done = rec.done || {};
     const it = allItems().find(i => i.id === d.item);
-    if (rec.done[d.item]) delete rec.done[d.item]; else rec.done[d.item] = it.pts;
+    if (rec.done[d.item]) delete rec.done[d.item]; else if (it) rec.done[d.item] = it.pts;
     rec.target = st.target;
     save(); render();
     if (rec.done[d.item] && navigator.vibrate) navigator.vibrate(15);
@@ -690,8 +707,11 @@ document.addEventListener('click', e => {
   }
   if (d.use) { S.usedCoupons[d.use] = today(); save(); render(); toast('🎁 배당 사용! 제대로 누려.'); return; }
   if (d.delr !== undefined) { S.rewards.splice(+d.delr, 1); save(); render(); return; }
-  if (d.delsec !== undefined) { if (confirm('이 사업부를 지울까? (지난 기록의 점수는 그대로 남아)')) { S.sectors.splice(+d.delsec, 1); save(); openSettings(); } return; }
-  if (d.delit) { const [si, ii] = d.delit.split(':').map(Number); S.sectors[si].items.splice(ii, 1); save(); openSettings(); return; }
+  if (d.endsec !== undefined) { const sc = S.sectors[+d.endsec]; if (confirm(`'${sc.name}' 사업부를 완료할까?\n오늘부터 체크 목록에서 빠지고, 지난 기록은 그대로 남아.`)) { sc.ended = today(); save(); openSettings(); } return; }
+  if (d.enditem) { const [si, ii] = d.enditem.split(':').map(Number), it = S.sectors[si].items[ii];
+    if (confirm(`'${it.name}' 항목을 완료할까?\n오늘부터 체크 목록에서 빠지고, 지난 기록·리포트에는 이름 그대로 남아.`)) { it.ended = today(); save(); openSettings(); toast(`✓ ${it.name} 완료!`); } return; }
+  if (d.restoreitem) { const [si, ii] = d.restoreitem.split(':').map(Number); delete S.sectors[si].items[ii].ended; save(); openSettings(); return; }
+  if (d.restoresec !== undefined) { delete S.sectors[+d.restoresec].ended; save(); openSettings(); return; }
   if (d.additem !== undefined) { S.sectors[+d.additem].items.push({ id: uid(), name: '새 항목', pts: 1 }); save(); openSettings(); return; }
   switch (d.act) {
     case 'settings': openSettings(); break;
