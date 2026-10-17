@@ -502,7 +502,16 @@ function weekReport(C, mon) {
     `- 한 줄 회고: `,
   ].join('\n');
 }
-async function copyText(txt) {
+// 노션은 HTML로 붙여넣어야 제목·목록이 각각 블록으로 들어간다 (일반 텍스트는 폰에서 한 줄로 뭉쳐지는 경우가 있음)
+const reportHtml = txt => txt.split('\n').map(l => l.startsWith('## ') ? `<h2>${esc(l.slice(3))}</h2>` : l.startsWith('- ') ? `<li>${esc(l.slice(2))}</li>` : `<p>${esc(l)}</p>`)
+  .join('').replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+async function copyText(txt, html) {
+  if (html && window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ 'text/plain': new Blob([txt], { type: 'text/plain' }), 'text/html': new Blob([html], { type: 'text/html' }) })]);
+      return true;
+    } catch (e) {}
+  }
   try { await navigator.clipboard.writeText(txt); return true; } catch (e) {}
   const ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
   document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, txt.length);
@@ -700,7 +709,7 @@ document.addEventListener('click', e => {
   if (d.dels) { S.savings = S.savings.filter(x => x.month !== d.dels); save(); render(); return; }
   if (d.copyweek) {
     const txt = weekReport(compute(), d.copyweek);
-    copyText(txt).then(ok => {
+    copyText(txt, reportHtml(txt)).then(ok => {
       if (ok) { toast('📋 복사했어! 노션 페이지 맨 아래에 붙여넣어'); b.textContent = '✅ 복사됨'; setTimeout(() => { b.textContent = '📋 노션용 복사'; }, 2000); }
       else { window.prompt('자동 복사가 안 돼서 여기서 직접 복사해 줘', txt); }
     });
