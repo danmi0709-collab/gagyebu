@@ -1162,6 +1162,7 @@
   .cf-copy-btn { width:100%; padding:10px; margin-top:6px; background:none; border:1px dashed var(--accent); color:var(--accent); border-radius:8px; font-size:13px; cursor:pointer; font-family:inherit; }
   .cf-acc-sum { display:flex; justify-content:space-between; font-size:13px; padding:6px 0; border-bottom:1px solid var(--border); }
   .cf-acc-sum:last-child { border-bottom:none; }
+  .cf-acc-total { border-top:1px solid var(--border); margin-top:4px; padding-top:10px; font-weight:700; color:#f85149; }
   @media (max-width:420px) {
     .cf-row.exp, .cf-col-head { grid-template-columns: 26px 1fr 1fr 82px 20px; gap:4px; }
     .cf-row input[type=text] { font-size:12px; padding:6px; }
@@ -6910,12 +6911,12 @@ function cfRenderSummary(all) {
     if (r.done) byAcc[k].done += r.amount || 0;
   });
   const keys = Object.keys(byAcc);
-  document.getElementById('cfAccCard').style.display = keys.length > 1 ? '' : 'none';
+  document.getElementById('cfAccCard').style.display = keys.length ? '' : 'none';
   document.getElementById('cfAccList').innerHTML = keys.map(k => {
     const a = byAcc[k];
     const ok = a.total > 0 && a.done === a.total;
     return `<div class="cf-acc-sum"><span>${ok ? '✅ ' : ''}${cfEsc(k)}</span><span>${formatKRW(a.total)}</span></div>`;
-  }).join('');
+  }).join('') + (keys.length ? `<div class="cf-acc-sum cf-acc-total"><span>총 지출 합계</span><span>${formatKRW(expense)}</span></div>` : '');
 }
 
 function renderTab7() {
