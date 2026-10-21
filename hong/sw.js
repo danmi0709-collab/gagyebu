@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-hong-v73';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = '자금흐름 통장별 합계에 총 지출 합계 추가';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-hong-v74';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '자금흐름 통장별 묶음 체크 + 연예산 고정지출 불러오기';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {

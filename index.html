@@ -1162,6 +1162,22 @@
   .cf-copy-btn { width:100%; padding:10px; margin-top:6px; background:none; border:1px dashed var(--accent); color:var(--accent); border-radius:8px; font-size:13px; cursor:pointer; font-family:inherit; }
   .cf-acc-sum { display:flex; justify-content:space-between; font-size:13px; padding:6px 0; border-bottom:1px solid var(--border); }
   .cf-acc-sum:last-child { border-bottom:none; }
+  .cf-group { border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:10px; }
+  .cf-group.done { background:rgba(63,185,80,0.07); border-color:rgba(63,185,80,0.55); }
+  .cf-group.no-acc { border-style:dashed; }
+  .cf-group-head { display:grid; grid-template-columns:30px 1fr auto; gap:8px; align-items:center; margin-bottom:8px; }
+  .cf-acc-name { background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); padding:7px 8px; font-size:14px; font-weight:700; font-family:inherit; width:100%; min-width:0; }
+  .cf-acc-name:focus { outline:none; border-color:#e2b96b; }
+  .cf-group-total { font-weight:700; color:#f85149; font-size:14px; white-space:nowrap; }
+  .cf-row.item { grid-template-columns: 1fr 110px 24px; }
+  .cf-row.item4 { grid-template-columns: 1fr 96px 80px 24px; }
+  .cf-group .cf-row { margin-left:38px; }
+  .cf-sub-add { background:none; border:none; color:var(--accent); font-size:12px; cursor:pointer; padding:2px 0 0 38px; font-family:inherit; }
+  @media (max-width:420px) {
+    .cf-group .cf-row { margin-left:0; }
+    .cf-sub-add { padding-left:0; }
+    .cf-row.item4 { grid-template-columns: 1fr 82px 70px 20px; gap:4px; }
+  }
   .cf-acc-total { border-top:1px solid var(--border); margin-top:4px; padding-top:10px; font-weight:700; color:#f85149; }
   @media (max-width:420px) {
     .cf-row.exp, .cf-col-head { grid-template-columns: 26px 1fr 1fr 82px 20px; gap:4px; }
@@ -1930,11 +1946,11 @@
   <div class="card">
     <div class="cf-head">
       <span class="cf-head-title" style="color:#f85149">💸 통장별 보낼 돈</span>
-      <button class="cf-add-btn" onclick="addCfItem()">+</button>
+      <button class="cf-add-btn" onclick="addCfItem()">+ 통장</button>
     </div>
-    <div class="cf-col-head"><span>넣음</span><span>통장</span><span>용도</span><span style="text-align:right">금액</span><span></span></div>
     <div id="cfItemList"></div>
     <div id="cfCopyArea"></div>
+    <button class="cf-copy-btn" onclick="importCfFixed()">📥 연예산 고정지출 불러오기</button>
   </div>
   <div class="card" id="cfAccCard" style="display:none">
     <div class="card-title">통장별 합계</div>
@@ -6786,12 +6802,32 @@ function loadCashflow() {
 function saveCashflow(d) { localStorage.setItem(CASHFLOW_KEY, JSON.stringify(d)); }
 
 function cfGetMonth(all, ym) {
-  if (!all.months[ym]) all.months[ym] = { incomes: [], items: [] };
-  return all.months[ym];
+  if (!all.months[ym]) all.months[ym] = { incomes: [], items: [], accDone: {} };
+  const m = all.months[ym];
+  if (!m.incomes) m.incomes = [];
+  if (!m.items) m.items = [];
+  if (!m.accDone) {
+    // 예전(항목별 체크) 기록 → 통장의 항목이 모두 체크돼 있었으면 통장 체크로 옮김
+    m.accDone = {};
+    cfGroups(m).forEach(g => { if (g.items.length && g.items.every(r => r.done)) m.accDone[g.acc] = true; });
+  }
+  return m;
 }
 function cfHasData(all, ym) {
   const m = all.months[ym];
-  return !!(m && (m.incomes.length || m.items.length));
+  return !!(m && ((m.incomes || []).length || (m.items || []).length));
+}
+// 같은 통장끼리 묶기 (처음 나온 순서대로)
+function cfGroups(m) {
+  const map = new Map();
+  (m.items || []).forEach(r => {
+    const k = r.account || '';
+    if (!map.has(k)) map.set(k, { acc: k, gid: r.id, items: [], total: 0 });
+    const g = map.get(k);
+    g.items.push(r);
+    g.total += r.amount || 0;
+  });
+  return [...map.values()];
 }
 function cfId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 function cfParse(v) { return parseInt(String(v).replace(/[^0-9]/g, ''), 10) || 0; }
@@ -6802,6 +6838,9 @@ function cfEsc(v) {
 function cfPrevYM(ym) {
   const [y, m] = ym.split('-').map(Number);
   return toYM(new Date(y, m - 2, 15));
+}
+function cfRememberAccount(all, acc) {
+  if (acc && !all.accounts.includes(acc)) all.accounts.push(acc);
 }
 
 function changeCfMonth(delta) {
@@ -6818,45 +6857,97 @@ function addCfIncome() {
   const inputs = document.querySelectorAll('#cfIncomeList input');
   if (inputs.length) inputs[inputs.length - 2].focus();
 }
+
+// 맨 위 + : 새 통장 칸 (이름 없는 칸이 이미 있으면 거기로)
 function addCfItem() {
   const all = loadCashflow();
-  cfGetMonth(all, cfMonth).items.push({ id: cfId(), account: '', purpose: '', amount: 0, done: false });
+  const m = cfGetMonth(all, cfMonth);
+  if (!m.items.some(r => !r.account)) m.items.push({ id: cfId(), account: '', purpose: '', amount: 0 });
   saveCashflow(all);
   renderTab7();
-  const inputs = document.querySelectorAll('#cfItemList input[type=text]');
-  if (inputs.length) inputs[inputs.length - 3].focus();
+  const el = document.querySelector('#cfItemList .cf-group[data-acc=""] .cf-acc-name');
+  if (el) el.focus();
 }
 
-// 입력칸 하나가 바뀌었을 때 (화면 전체를 다시 그리지 않아 입력 중 커서가 튀지 않음)
+// 통장 칸 안의 "+ 용도 추가"
+function addCfItemTo(gid) {
+  const all = loadCashflow();
+  const m = cfGetMonth(all, cfMonth);
+  const base = m.items.find(r => r.id === gid);
+  if (!base) return;
+  const id = cfId();
+  // 같은 통장의 마지막 항목 바로 뒤에 넣음
+  let last = -1;
+  m.items.forEach((r, i) => { if ((r.account || '') === (base.account || '')) last = i; });
+  m.items.splice(last + 1, 0, { id, account: base.account || '', purpose: '', amount: 0 });
+  saveCashflow(all);
+  renderTab7();
+  const el = document.querySelector(`#cfItemList [data-id="${id}"] input`);
+  if (el) el.focus();
+}
+
+// 입력칸 하나가 바뀌었을 때
 function updateCf(kind, id, field, el) {
   const all = loadCashflow();
-  const list = cfGetMonth(all, cfMonth)[kind];
-  const row = list.find(r => r.id === id);
+  const m = cfGetMonth(all, cfMonth);
+  const row = m[kind].find(r => r.id === id);
   if (!row) return;
   if (field === 'amount') {
     row.amount = cfParse(el.value);
     el.value = cfFmt(row.amount);
-  } else if (field === 'done') {
-    row.done = el.checked;
-    el.closest('.cf-row').classList.toggle('done', el.checked);
   } else {
     row[field] = el.value.trim();
-    if (field === 'account' && row.account && !all.accounts.includes(row.account)) {
-      all.accounts.push(row.account);
-      cfRenderAccountList(all);
-    }
+  }
+  if (field === 'account') {
+    cfRememberAccount(all, row.account);
+    saveCashflow(all);
+    renderTab7(); // 다른 통장 칸으로 옮겨감
+    return;
   }
   saveCashflow(all);
   cfRenderSummary(all);
+}
+
+// 통장 체크 (통장 하나당 하나)
+function toggleCfAcc(gid, el) {
+  const all = loadCashflow();
+  const m = cfGetMonth(all, cfMonth);
+  const base = m.items.find(r => r.id === gid);
+  if (!base) return;
+  const acc = base.account || '';
+  if (el.checked) m.accDone[acc] = true; else delete m.accDone[acc];
+  el.closest('.cf-group').classList.toggle('done', el.checked);
+  saveCashflow(all);
+  cfRenderSummary(all);
+}
+
+// 통장 이름 바꾸기 → 그 통장의 항목 전부 함께 이동
+function renameCfAcc(gid, el) {
+  const all = loadCashflow();
+  const m = cfGetMonth(all, cfMonth);
+  const base = m.items.find(r => r.id === gid);
+  if (!base) return;
+  const oldAcc = base.account || '';
+  const newAcc = el.value.trim();
+  if (oldAcc === newAcc) return;
+  m.items.forEach(r => { if ((r.account || '') === oldAcc) r.account = newAcc; });
+  if (m.accDone[oldAcc]) { m.accDone[newAcc] = true; delete m.accDone[oldAcc]; }
+  cfRememberAccount(all, newAcc);
+  saveCashflow(all);
+  renderTab7();
 }
 
 function delCf(kind, id) {
   const all = loadCashflow();
   const m = cfGetMonth(all, cfMonth);
   const row = m[kind].find(r => r.id === id);
-  const hasContent = row && (row.amount || row.name || row.account || row.purpose);
+  const hasContent = row && (row.amount || row.name || row.purpose);
   if (hasContent && !confirm('이 줄을 지울까요?')) return;
   m[kind] = m[kind].filter(r => r.id !== id);
+  if (kind === 'items' && row) {
+    const acc = row.account || '';
+    if (!m.items.some(r => (r.account || '') === acc)) delete m.accDone[acc];
+  }
   saveCashflow(all);
   renderTab7();
 }
@@ -6867,11 +6958,44 @@ function copyCfFromPrev() {
   const prev = all.months[cfPrevYM(cfMonth)];
   if (!prev) return;
   all.months[cfMonth] = {
-    incomes: prev.incomes.map(r => ({ id: cfId(), name: r.name, amount: r.amount })),
-    items:   prev.items.map(r => ({ id: cfId(), account: r.account, purpose: r.purpose, amount: r.amount, done: false })),
+    incomes: (prev.incomes || []).map(r => ({ id: cfId(), name: r.name, amount: r.amount })),
+    items:   (prev.items || []).map(r => ({ id: cfId(), account: r.account, purpose: r.purpose, amount: r.amount })),
+    accDone: {},
   };
   saveCashflow(all);
   renderTab7();
+}
+
+// 연예산 고정지출 → 자금흐름 (연합계 ÷ 연예산 기간 개월수 = 한 달 금액)
+function importCfFixed() {
+  const year = cfMonth.slice(0, 4);
+  const yd = loadAnnual()[year] || {};
+  const fixed = (yd.fixed || []).filter(r => (r.name || '').trim() && evalFormula(r.formula) > 0);
+  if (!fixed.length) { alert(`${year}년 연예산에 고정지출 항목이 없어요.`); return; }
+  const months = Math.max(1, (parseInt(yd._end) || 12) - (parseInt(yd._start) || 1) + 1);
+
+  const all = loadCashflow();
+  const m = cfGetMonth(all, cfMonth);
+  // 예전 달에 같은 용도를 넣었던 통장 기억
+  const memo = {};
+  Object.keys(all.months).sort().forEach(ym => (all.months[ym].items || []).forEach(r => {
+    if (r.purpose && r.account) memo[r.purpose] = r.account;
+  }));
+  const exist = new Set(m.items.map(r => (r.purpose || '').trim()));
+  let added = 0, skipped = 0;
+  fixed.forEach(r => {
+    const name = r.name.trim();
+    if (exist.has(name)) { skipped++; return; }
+    const acc = memo[name] || '';
+    m.items.push({ id: cfId(), account: acc, purpose: name, amount: Math.round(evalFormula(r.formula) / months) });
+    delete m.accDone[acc]; // 넣을 돈이 늘었으니 그 통장 체크는 풀기
+    exist.add(name);
+    added++;
+  });
+  saveCashflow(all);
+  renderTab7();
+  const msg = `📥 고정지출 ${added}개 불러왔어요` + (skipped ? ` (이미 있는 ${skipped}개는 건너뜀)` : '');
+  if (typeof showToast === 'function') showToast(msg); else alert(msg);
 }
 
 function cfRenderAccountList(all) {
@@ -6881,10 +7005,11 @@ function cfRenderAccountList(all) {
 
 function cfRenderSummary(all) {
   const m = cfGetMonth(all, cfMonth);
+  const groups = cfGroups(m);
   const income = m.incomes.reduce((s, r) => s + (r.amount || 0), 0);
-  const expense = m.items.reduce((s, r) => s + (r.amount || 0), 0);
-  const doneAmt = m.items.filter(r => r.done).reduce((s, r) => s + (r.amount || 0), 0);
-  const doneCnt = m.items.filter(r => r.done).length;
+  const expense = groups.reduce((s, g) => s + g.total, 0);
+  const doneGroups = groups.filter(g => m.accDone[g.acc]);
+  const doneAmt = doneGroups.reduce((s, g) => s + g.total, 0);
   const remain = income - expense;
 
   document.getElementById('cfIncomeTotal').textContent = formatKRW(income);
@@ -6894,35 +7019,27 @@ function cfRenderSummary(all) {
   rEl.style.color = remain < 0 ? '#f85149' : '';
   document.getElementById('cfDoneAmt').textContent = formatKRW(doneAmt);
   document.getElementById('cfLeftAmt').textContent = formatKRW(expense - doneAmt);
-  document.getElementById('cfDoneCount').textContent = doneCnt + '/' + m.items.length;
+  document.getElementById('cfDoneCount').textContent = '통장 ' + doneGroups.length + '/' + groups.length;
   document.getElementById('cfBar').style.width = (expense ? Math.round(doneAmt / expense * 100) : 0) + '%';
 
   const incT = document.getElementById('cfIncTotalRow');
   if (incT) incT.textContent = formatKRW(income);
-  const expT = document.getElementById('cfExpTotalRow');
-  if (expT) expT.textContent = formatKRW(expense);
-
-  // 통장별 합계
-  const byAcc = {};
-  m.items.forEach(r => {
-    const k = r.account || '(통장 미입력)';
-    if (!byAcc[k]) byAcc[k] = { total: 0, done: 0 };
-    byAcc[k].total += r.amount || 0;
-    if (r.done) byAcc[k].done += r.amount || 0;
+  groups.forEach(g => {
+    const el = document.getElementById('cfg-' + g.gid);
+    if (el) el.textContent = formatKRW(g.total);
   });
-  const keys = Object.keys(byAcc);
-  document.getElementById('cfAccCard').style.display = keys.length ? '' : 'none';
-  document.getElementById('cfAccList').innerHTML = keys.map(k => {
-    const a = byAcc[k];
-    const ok = a.total > 0 && a.done === a.total;
-    return `<div class="cf-acc-sum"><span>${ok ? '✅ ' : ''}${cfEsc(k)}</span><span>${formatKRW(a.total)}</span></div>`;
-  }).join('') + (keys.length ? `<div class="cf-acc-sum cf-acc-total"><span>총 지출 합계</span><span>${formatKRW(expense)}</span></div>` : '');
+
+  // 통장별 합계 + 총 지출 합계
+  document.getElementById('cfAccCard').style.display = groups.length ? '' : 'none';
+  document.getElementById('cfAccList').innerHTML = groups.map(g =>
+    `<div class="cf-acc-sum"><span>${m.accDone[g.acc] ? '✅ ' : ''}${cfEsc(g.acc || '통장 미정')}</span><span>${formatKRW(g.total)}</span></div>`
+  ).join('') + (groups.length ? `<div class="cf-acc-sum cf-acc-total"><span>총 지출 합계</span><span>${formatKRW(expense)}</span></div>` : '');
 }
 
 function renderTab7() {
   const all = loadCashflow();
   document.getElementById('cfMonthLabel').textContent = getMonthLabel(cfMonth);
-  const m = all.months[cfMonth] || { incomes: [], items: [] };
+  const m = cfGetMonth(all, cfMonth);
   cfRenderAccountList(all);
 
   document.getElementById('cfIncomeList').innerHTML = m.incomes.length
@@ -6934,16 +7051,30 @@ function renderTab7() {
       </div>`).join('') + `<div class="cf-total"><span>수입 합계</span><span id="cfIncTotalRow" style="color:#3fb950"></span></div>`
     : `<div class="cf-empty">+ 버튼을 눌러 이달 수입을 적어주세요</div>`;
 
-  document.getElementById('cfItemList').innerHTML = m.items.length
-    ? m.items.map(r => `
-      <div class="cf-row exp${r.done ? ' done' : ''}">
-        <input type="checkbox" class="cf-check" ${r.done ? 'checked' : ''} onchange="updateCf('items','${r.id}','done',this)" title="돈 넣었으면 체크">
-        <input type="text" list="cfAccountList" placeholder="통장" value="${cfEsc(r.account)}" onchange="updateCf('items','${r.id}','account',this)">
-        <input type="text" placeholder="용도" value="${cfEsc(r.purpose)}" onchange="updateCf('items','${r.id}','purpose',this)">
-        <input type="text" class="cf-amt" inputmode="numeric" placeholder="금액" value="${cfFmt(r.amount)}" onchange="updateCf('items','${r.id}','amount',this)">
-        <button class="cf-del" onclick="delCf('items','${r.id}')">✕</button>
-      </div>`).join('') + `<div class="cf-total"><span>보낼 돈 합계</span><span id="cfExpTotalRow" style="color:#f85149"></span></div>`
-    : `<div class="cf-empty">+ 버튼을 눌러 어느 통장에 얼마, 무슨 용도인지 적어주세요</div>`;
+  const groups = cfGroups(m);
+  document.getElementById('cfItemList').innerHTML = groups.length
+    ? groups.map(g => {
+      const done = !!m.accDone[g.acc];
+      const noAcc = !g.acc; // 통장 미정 칸: 항목마다 통장을 따로 정할 수 있음
+      const rows = g.items.map(r => `
+        <div class="cf-row ${noAcc ? 'item4' : 'item'}" data-id="${r.id}">
+          <input type="text" placeholder="용도" value="${cfEsc(r.purpose)}" onchange="updateCf('items','${r.id}','purpose',this)">
+          <input type="text" class="cf-amt" inputmode="numeric" placeholder="금액" value="${cfFmt(r.amount)}" onchange="updateCf('items','${r.id}','amount',this)">
+          ${noAcc ? `<input type="text" list="cfAccountList" placeholder="통장" onchange="updateCf('items','${r.id}','account',this)">` : ''}
+          <button class="cf-del" onclick="delCf('items','${r.id}')">✕</button>
+        </div>`).join('');
+      return `
+      <div class="cf-group${done ? ' done' : ''}${noAcc ? ' no-acc' : ''}" data-acc="${cfEsc(g.acc)}">
+        <div class="cf-group-head">
+          <input type="checkbox" class="cf-check" ${done ? 'checked' : ''} onchange="toggleCfAcc('${g.gid}',this)" title="이 통장에 돈 넣었으면 체크">
+          <input type="text" class="cf-acc-name" list="cfAccountList" placeholder="${noAcc ? '통장 미정 (이름 적으면 전부 이동)' : '통장 이름'}" value="${cfEsc(g.acc)}" onchange="renameCfAcc('${g.gid}',this)">
+          <span class="cf-group-total" id="cfg-${g.gid}">${formatKRW(g.total)}</span>
+        </div>
+        ${rows}
+        <button class="cf-sub-add" onclick="addCfItemTo('${g.gid}')">+ 용도 추가</button>
+      </div>`;
+    }).join('')
+    : `<div class="cf-empty">+ 버튼으로 통장을 추가하거나, 아래에서 연예산 고정지출을 불러오세요</div>`;
 
   // 이번 달이 비어 있고 지난달 기록이 있으면 복사 버튼
   const prevYM = cfPrevYM(cfMonth);
@@ -6954,7 +7085,6 @@ function renderTab7() {
 
   cfRenderSummary(all);
 }
-
 
 </script>
 
