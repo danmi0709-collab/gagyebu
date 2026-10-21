@@ -1,6 +1,6 @@
 // 나만의 가계부 Service Worker
-const CACHE_NAME = 'gagyebu-v71';  // deploy.py가 자동으로 올림
-const RELEASE_NOTES = 'fix: 날짜 저장시 새벽시간대 하루 전으로 저장되는 버그 수정';          // deploy.py가 커밋 메시지로 자동 채움
+const CACHE_NAME = 'gagyebu-v72';  // deploy.py가 자동으로 올림
+const RELEASE_NOTES = '자금흐름 탭 추가';          // deploy.py가 커밋 메시지로 자동 채움
 
 // 설치
 self.addEventListener('install', (e) => {

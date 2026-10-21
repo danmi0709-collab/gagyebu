@@ -1136,6 +1136,36 @@
   .settings-sync-log {
     font-size: 11px; color: var(--text2); margin-top: 10px; text-align: center;
   }
+
+  /* ===== 자금흐름 탭 ===== */
+  .cf-summary { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px; }
+  .cf-progress-top { display:flex; justify-content:space-between; font-size:12px; color:var(--text2); margin-bottom:6px; }
+  .cf-progress-top b { color:var(--text); }
+  .cf-bar-bg { height:8px; background:var(--card2); border-radius:4px; overflow:hidden; }
+  .cf-bar { height:100%; background:#3fb950; border-radius:4px; transition:width .3s; }
+  .cf-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .cf-head-title { font-weight:700; font-size:14px; }
+  .cf-add-btn { background:none; border:1.5px solid #e2b96b; color:#e2b96b; border-radius:8px; padding:4px 14px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .cf-row { display:grid; gap:6px; align-items:center; margin-bottom:8px; }
+  .cf-row.inc { grid-template-columns: 1fr 120px 24px; }
+  .cf-row.exp, .cf-col-head { grid-template-columns: 30px 1fr 1fr 96px 24px; }
+  .cf-col-head { display:grid; gap:6px; font-size:10px; color:var(--text2); font-weight:600; margin-bottom:6px; }
+  .cf-row input[type=text] { background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); padding:7px 8px; font-size:13px; font-family:inherit; width:100%; min-width:0; }
+  .cf-row input[type=text]:focus { outline:none; border-color:#e2b96b; }
+  .cf-row input.cf-amt { text-align:right; }
+  .cf-row.done input[type=text] { color:var(--text2); background:rgba(63,185,80,0.08); }
+  .cf-check { width:22px; height:22px; accent-color:#3fb950; cursor:pointer; justify-self:center; }
+  .cf-del { background:none; border:none; color:var(--text3); font-size:14px; cursor:pointer; }
+  .cf-del:hover { color:#f85149; }
+  .cf-empty { text-align:center; color:var(--text2); font-size:13px; padding:12px 0; }
+  .cf-total { display:flex; justify-content:space-between; border-top:1px solid var(--border); padding-top:10px; margin-top:4px; font-size:13px; font-weight:700; }
+  .cf-copy-btn { width:100%; padding:10px; margin-top:6px; background:none; border:1px dashed var(--accent); color:var(--accent); border-radius:8px; font-size:13px; cursor:pointer; font-family:inherit; }
+  .cf-acc-sum { display:flex; justify-content:space-between; font-size:13px; padding:6px 0; border-bottom:1px solid var(--border); }
+  .cf-acc-sum:last-child { border-bottom:none; }
+  @media (max-width:420px) {
+    .cf-row.exp, .cf-col-head { grid-template-columns: 26px 1fr 1fr 82px 20px; gap:4px; }
+    .cf-row input[type=text] { font-size:12px; padding:6px; }
+  }
 </style>
 </head>
 <body>
@@ -1870,6 +1900,48 @@
   <div id="tab6Content"></div>
 </div>
 
+<!-- 탭7: 자금흐름 -->
+<div id="tab7" class="tab-content">
+  <div class="month-nav">
+    <button onclick="changeCfMonth(-1)">‹</button>
+    <span class="month-label" id="cfMonthLabel"></span>
+    <button onclick="changeCfMonth(1)">›</button>
+  </div>
+  <div class="cf-summary">
+    <div class="summary-chip chip-income"><div class="chip-label">이달 수입</div><div class="chip-val" id="cfIncomeTotal">0원</div></div>
+    <div class="summary-chip chip-expense"><div class="chip-label">보낼 돈 합계</div><div class="chip-val" id="cfExpenseTotal">0원</div></div>
+    <div class="summary-chip chip-balance"><div class="chip-label">남는 돈</div><div class="chip-val" id="cfRemain">0원</div></div>
+  </div>
+  <div class="card">
+    <div class="cf-progress-top">
+      <span>✅ 넣은 돈 <b id="cfDoneAmt">0원</b></span>
+      <span>아직 <b id="cfLeftAmt">0원</b> (<span id="cfDoneCount">0/0</span>)</span>
+    </div>
+    <div class="cf-bar-bg"><div class="cf-bar" id="cfBar" style="width:0%"></div></div>
+  </div>
+  <div class="card">
+    <div class="cf-head">
+      <span class="cf-head-title" style="color:#3fb950">💰 이달 수입</span>
+      <button class="cf-add-btn" onclick="addCfIncome()">+</button>
+    </div>
+    <div id="cfIncomeList"></div>
+  </div>
+  <div class="card">
+    <div class="cf-head">
+      <span class="cf-head-title" style="color:#f85149">💸 통장별 보낼 돈</span>
+      <button class="cf-add-btn" onclick="addCfItem()">+</button>
+    </div>
+    <div class="cf-col-head"><span>넣음</span><span>통장</span><span>용도</span><span style="text-align:right">금액</span><span></span></div>
+    <div id="cfItemList"></div>
+    <div id="cfCopyArea"></div>
+  </div>
+  <div class="card" id="cfAccCard" style="display:none">
+    <div class="card-title">통장별 합계</div>
+    <div id="cfAccList"></div>
+  </div>
+  <datalist id="cfAccountList"></datalist>
+</div>
+
 <!-- 하단 탭 -->
 <nav class="bottom-nav">
   <button id="nav1" class="active" onclick="switchTab(1)">
@@ -1889,6 +1961,9 @@
   </button>
   <button id="nav6" onclick="switchTab(6)">
     <span class="icon">🔄</span>구독
+  </button>
+  <button id="nav7" onclick="switchTab(7)">
+    <span class="icon">🔀</span>자금흐름
   </button>
 </nav>
 
@@ -2611,7 +2686,7 @@ function changeCatMonth(delta) {
 
 function switchTab(n) {
   activeTabN = n;
-  [1,2,3,4,5,6].forEach(i => {
+  [1,2,3,4,5,6,7].forEach(i => {
     document.getElementById('tab' + i).classList.toggle('active', i === n);
     document.getElementById('nav' + i).classList.toggle('active', i === n);
   });
@@ -2620,6 +2695,7 @@ function switchTab(n) {
   if (n === 4) renderTab4();
   if (n === 5) renderTab5();
   if (n === 6) renderTab6();
+  if (n === 7) renderTab7();
 }
 
 function renderAll() {
@@ -3315,6 +3391,7 @@ function exportJSON() {
     subscriptions: loadSubs(),
     assets:       loadAssets(),
     budgetLearn:  loadBudgetLearn(),
+    cashflow:     loadCashflow(),
   };
   const json = JSON.stringify(backup, null, 2);
   const today = toLocalYMD(new Date());
@@ -3363,6 +3440,7 @@ function saveUndoSnapshot() {
       subscriptions: loadSubs(),
       assets:       loadAssets(),
       budgetLearn:  loadBudgetLearn(),
+      cashflow:     loadCashflow(),
       savedAt:      new Date().toISOString(),
     };
     localStorage.setItem(UNDO_KEY, JSON.stringify(snap));
@@ -3381,6 +3459,7 @@ function undoRestore() {
     if (snap.subscriptions && snap.subscriptions.length > 0)            saveSubs(snap.subscriptions);
     if (snap.assets)                                                     saveAssets(snap.assets);
     if (snap.budgetLearn && Object.keys(snap.budgetLearn).length > 0)  saveBudgetLearn(snap.budgetLearn);
+    if (snap.cashflow)                                                   saveCashflow(snap.cashflow);
     localStorage.removeItem(UNDO_KEY);
     renderAll();
     showToast('↩️ 복원 전 상태로 되돌렸어요!', '#c07a3a');
@@ -3408,6 +3487,7 @@ function importJSON(e) {
         if (d.subscriptions && d.subscriptions.length > 0) saveSubs(d.subscriptions);
         if (d.assets)        saveAssets(d.assets);
         if (d.budgetLearn && Object.keys(d.budgetLearn || {}).length > 0) saveBudgetLearn(d.budgetLearn);
+        if (d.cashflow && Object.keys(d.cashflow.months || {}).length > 0) saveCashflow(d.cashflow);
         renderAll();
         showToast(`✅ ${fileCount}건 불러왔어요!`);
         const btn = document.getElementById('undoRestoreBtn');
@@ -6689,6 +6769,191 @@ function closeInstallBanner() {
   const b = document.getElementById('installBanner');
   if (b) b.classList.remove('show');
 }
+
+// ===== 자금흐름 (이달 수입 → 통장별로 돈 넣기) =====
+const CASHFLOW_KEY = 'hanna_cashflow';
+let cfMonth = toYM(new Date());
+
+function loadCashflow() {
+  try {
+    const d = JSON.parse(localStorage.getItem(CASHFLOW_KEY) || '{}');
+    if (!d.months) d.months = {};
+    if (!d.accounts) d.accounts = [];
+    return d;
+  } catch { return { months: {}, accounts: [] }; }
+}
+function saveCashflow(d) { localStorage.setItem(CASHFLOW_KEY, JSON.stringify(d)); }
+
+function cfGetMonth(all, ym) {
+  if (!all.months[ym]) all.months[ym] = { incomes: [], items: [] };
+  return all.months[ym];
+}
+function cfHasData(all, ym) {
+  const m = all.months[ym];
+  return !!(m && (m.incomes.length || m.items.length));
+}
+function cfId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function cfParse(v) { return parseInt(String(v).replace(/[^0-9]/g, ''), 10) || 0; }
+function cfFmt(n) { return n ? n.toLocaleString('ko-KR') : ''; }
+function cfEsc(v) {
+  return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function cfPrevYM(ym) {
+  const [y, m] = ym.split('-').map(Number);
+  return toYM(new Date(y, m - 2, 15));
+}
+
+function changeCfMonth(delta) {
+  const [y, m] = cfMonth.split('-').map(Number);
+  cfMonth = toYM(new Date(y, m - 1 + delta, 15));
+  renderTab7();
+}
+
+function addCfIncome() {
+  const all = loadCashflow();
+  cfGetMonth(all, cfMonth).incomes.push({ id: cfId(), name: '', amount: 0 });
+  saveCashflow(all);
+  renderTab7();
+  const inputs = document.querySelectorAll('#cfIncomeList input');
+  if (inputs.length) inputs[inputs.length - 2].focus();
+}
+function addCfItem() {
+  const all = loadCashflow();
+  cfGetMonth(all, cfMonth).items.push({ id: cfId(), account: '', purpose: '', amount: 0, done: false });
+  saveCashflow(all);
+  renderTab7();
+  const inputs = document.querySelectorAll('#cfItemList input[type=text]');
+  if (inputs.length) inputs[inputs.length - 3].focus();
+}
+
+// 입력칸 하나가 바뀌었을 때 (화면 전체를 다시 그리지 않아 입력 중 커서가 튀지 않음)
+function updateCf(kind, id, field, el) {
+  const all = loadCashflow();
+  const list = cfGetMonth(all, cfMonth)[kind];
+  const row = list.find(r => r.id === id);
+  if (!row) return;
+  if (field === 'amount') {
+    row.amount = cfParse(el.value);
+    el.value = cfFmt(row.amount);
+  } else if (field === 'done') {
+    row.done = el.checked;
+    el.closest('.cf-row').classList.toggle('done', el.checked);
+  } else {
+    row[field] = el.value.trim();
+    if (field === 'account' && row.account && !all.accounts.includes(row.account)) {
+      all.accounts.push(row.account);
+      cfRenderAccountList(all);
+    }
+  }
+  saveCashflow(all);
+  cfRenderSummary(all);
+}
+
+function delCf(kind, id) {
+  const all = loadCashflow();
+  const m = cfGetMonth(all, cfMonth);
+  const row = m[kind].find(r => r.id === id);
+  const hasContent = row && (row.amount || row.name || row.account || row.purpose);
+  if (hasContent && !confirm('이 줄을 지울까요?')) return;
+  m[kind] = m[kind].filter(r => r.id !== id);
+  saveCashflow(all);
+  renderTab7();
+}
+
+// 지난달 목록 복사: 수입·통장·용도·금액은 그대로, 체크는 모두 해제
+function copyCfFromPrev() {
+  const all = loadCashflow();
+  const prev = all.months[cfPrevYM(cfMonth)];
+  if (!prev) return;
+  all.months[cfMonth] = {
+    incomes: prev.incomes.map(r => ({ id: cfId(), name: r.name, amount: r.amount })),
+    items:   prev.items.map(r => ({ id: cfId(), account: r.account, purpose: r.purpose, amount: r.amount, done: false })),
+  };
+  saveCashflow(all);
+  renderTab7();
+}
+
+function cfRenderAccountList(all) {
+  document.getElementById('cfAccountList').innerHTML =
+    all.accounts.map(a => `<option value="${cfEsc(a)}"></option>`).join('');
+}
+
+function cfRenderSummary(all) {
+  const m = cfGetMonth(all, cfMonth);
+  const income = m.incomes.reduce((s, r) => s + (r.amount || 0), 0);
+  const expense = m.items.reduce((s, r) => s + (r.amount || 0), 0);
+  const doneAmt = m.items.filter(r => r.done).reduce((s, r) => s + (r.amount || 0), 0);
+  const doneCnt = m.items.filter(r => r.done).length;
+  const remain = income - expense;
+
+  document.getElementById('cfIncomeTotal').textContent = formatKRW(income);
+  document.getElementById('cfExpenseTotal').textContent = formatKRW(expense);
+  const rEl = document.getElementById('cfRemain');
+  rEl.textContent = formatKRW(remain);
+  rEl.style.color = remain < 0 ? '#f85149' : '';
+  document.getElementById('cfDoneAmt').textContent = formatKRW(doneAmt);
+  document.getElementById('cfLeftAmt').textContent = formatKRW(expense - doneAmt);
+  document.getElementById('cfDoneCount').textContent = doneCnt + '/' + m.items.length;
+  document.getElementById('cfBar').style.width = (expense ? Math.round(doneAmt / expense * 100) : 0) + '%';
+
+  const incT = document.getElementById('cfIncTotalRow');
+  if (incT) incT.textContent = formatKRW(income);
+  const expT = document.getElementById('cfExpTotalRow');
+  if (expT) expT.textContent = formatKRW(expense);
+
+  // 통장별 합계
+  const byAcc = {};
+  m.items.forEach(r => {
+    const k = r.account || '(통장 미입력)';
+    if (!byAcc[k]) byAcc[k] = { total: 0, done: 0 };
+    byAcc[k].total += r.amount || 0;
+    if (r.done) byAcc[k].done += r.amount || 0;
+  });
+  const keys = Object.keys(byAcc);
+  document.getElementById('cfAccCard').style.display = keys.length > 1 ? '' : 'none';
+  document.getElementById('cfAccList').innerHTML = keys.map(k => {
+    const a = byAcc[k];
+    const ok = a.total > 0 && a.done === a.total;
+    return `<div class="cf-acc-sum"><span>${ok ? '✅ ' : ''}${cfEsc(k)}</span><span>${formatKRW(a.total)}</span></div>`;
+  }).join('');
+}
+
+function renderTab7() {
+  const all = loadCashflow();
+  document.getElementById('cfMonthLabel').textContent = getMonthLabel(cfMonth);
+  const m = all.months[cfMonth] || { incomes: [], items: [] };
+  cfRenderAccountList(all);
+
+  document.getElementById('cfIncomeList').innerHTML = m.incomes.length
+    ? m.incomes.map(r => `
+      <div class="cf-row inc">
+        <input type="text" placeholder="예: 월급" value="${cfEsc(r.name)}" onchange="updateCf('incomes','${r.id}','name',this)">
+        <input type="text" class="cf-amt" inputmode="numeric" placeholder="금액" value="${cfFmt(r.amount)}" onchange="updateCf('incomes','${r.id}','amount',this)">
+        <button class="cf-del" onclick="delCf('incomes','${r.id}')">✕</button>
+      </div>`).join('') + `<div class="cf-total"><span>수입 합계</span><span id="cfIncTotalRow" style="color:#3fb950"></span></div>`
+    : `<div class="cf-empty">+ 버튼을 눌러 이달 수입을 적어주세요</div>`;
+
+  document.getElementById('cfItemList').innerHTML = m.items.length
+    ? m.items.map(r => `
+      <div class="cf-row exp${r.done ? ' done' : ''}">
+        <input type="checkbox" class="cf-check" ${r.done ? 'checked' : ''} onchange="updateCf('items','${r.id}','done',this)" title="돈 넣었으면 체크">
+        <input type="text" list="cfAccountList" placeholder="통장" value="${cfEsc(r.account)}" onchange="updateCf('items','${r.id}','account',this)">
+        <input type="text" placeholder="용도" value="${cfEsc(r.purpose)}" onchange="updateCf('items','${r.id}','purpose',this)">
+        <input type="text" class="cf-amt" inputmode="numeric" placeholder="금액" value="${cfFmt(r.amount)}" onchange="updateCf('items','${r.id}','amount',this)">
+        <button class="cf-del" onclick="delCf('items','${r.id}')">✕</button>
+      </div>`).join('') + `<div class="cf-total"><span>보낼 돈 합계</span><span id="cfExpTotalRow" style="color:#f85149"></span></div>`
+    : `<div class="cf-empty">+ 버튼을 눌러 어느 통장에 얼마, 무슨 용도인지 적어주세요</div>`;
+
+  // 이번 달이 비어 있고 지난달 기록이 있으면 복사 버튼
+  const prevYM = cfPrevYM(cfMonth);
+  document.getElementById('cfCopyArea').innerHTML =
+    (!cfHasData(all, cfMonth) && cfHasData(all, prevYM))
+      ? `<button class="cf-copy-btn" onclick="copyCfFromPrev()">📋 ${getMonthLabel(prevYM)} 목록 그대로 가져오기 (체크는 해제)</button>`
+      : '';
+
+  cfRenderSummary(all);
+}
+
 
 </script>
 

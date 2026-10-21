@@ -70,6 +70,7 @@ def do_sync(commit_msg):
         ("hanna_sub_auto_month",       "my_sub_auto_month"),
         ("hanna_formula_man_migrated", "my_formula_man_migrated"),
         ("hanna_undo_backup",          "my_undo_backup"),
+        ("hanna_cashflow",             "my_cashflow"),
     ]
     replaced = 0
     for old, new in KEY_MAP:
