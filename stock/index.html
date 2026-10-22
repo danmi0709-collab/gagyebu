@@ -192,6 +192,7 @@ input,select{font-family:inherit;font-size:16px;color:var(--text);background:var
 .itemedit.moved{animation:moved .6s}
 @keyframes moved{0%{background:var(--goldbg)}100%{background:transparent}}
 .endbtn{flex-shrink:0;padding:0 10px;border-radius:10px;background:var(--card2);color:var(--text2);font-size:13px;font-weight:600;white-space:nowrap}
+.endbtn.pending{background:var(--goldbg);color:var(--gold)}
 .endedlist{margin-top:8px;padding:6px 10px;border-radius:12px;background:var(--card2)}
 .endedlist .li{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px;color:var(--text2)}
 .restore{font-size:12px;font-weight:600;color:var(--down);flex-shrink:0}
@@ -288,11 +289,19 @@ function load() {
   try { const raw = localStorage.getItem(KEY); if (raw) { S = Object.assign(defaults(), JSON.parse(raw)); S.settings = Object.assign(defaults().settings, S.settings); return; } } catch (e) {}
   S = defaults();
 }
+function migrateEnded() {
+  const t = today(), fix = x => { if (x.ended === t && !x.endedOn) { x.endedOn = t; x.ended = addD(t, 1); } };
+  S.sectors.forEach(s => { fix(s); s.items.forEach(fix); });
+}
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('저장 실패: 저장 공간을 확인해 줘'); } }
 
 /* ---------- 계산 ---------- */
 // 항목·사업부는 지우지 않고 '완료(ended)' 날짜만 붙인다 → 지난 기록의 이름·사업부가 그대로 남는다
 const allItems = () => S.sectors.flatMap(s => s.items.map(i => ({ ...i, sec: s })));
+// ended = 체크 목록에서 빠지는 첫날(완료한 다음 날), endedOn = 완료를 누른 날
+const gone = x => !!x.ended && x.ended <= today();          // 이미 목록에서 빠짐 → 되살리기 칸
+const pendingEnd = x => !!x.ended && x.ended > today();    // 오늘 완료함 → 오늘까지는 남아 있음
+const doneDay = x => x.endedOn || x.ended;
 const endOf = (s, i) => [s.ended, i && i.ended].filter(Boolean).sort()[0] || null;
 const activeOn = (s, i, d) => { const e = endOf(s, i); return !e || d < e; };
 const maxPts = () => allItems().filter(i => activeOn(i.sec, i, today())).reduce((a, i) => a + i.pts, 0);
@@ -451,7 +460,7 @@ function viewToday(C) {
     if (!its.length) return '';
     return `<div class="card"><h3>${esc(s.emoji)} ${esc(s.name)} 사업부</h3>
     ${its.map(i => `<button class="item ${done[i.id] ? 'done' : ''}" data-item="${i.id}" ${rec.off ? 'disabled style="opacity:.4"' : ''}>
-      <span class="check">✓</span><span class="t">${esc(i.name)}${activeOn(s, i, EDIT_DAY) ? '' : ' <span class="muted small">(완료된 항목)</span>'}</span><span class="p">+${done[i.id] || i.pts}점</span></button>`).join('')}
+      <span class="check">✓</span><span class="t">${esc(i.name)}${!activeOn(s, i, EDIT_DAY) ? ' <span class="muted small">(완료된 항목)</span>' : endOf(s, i) === addD(EDIT_DAY, 1) ? ` <span class="muted small">🏁 ${EDIT_DAY === today() ? '오늘' : '이날'} 완료</span>` : ''}</span><span class="p">+${done[i.id] || i.pts}점</span></button>`).join('')}
   </div>`;
   }).join('');
   return `<div class="wrap">
@@ -654,18 +663,18 @@ function openSettings(keepScroll) {
   const prevTop = $('#sheet').scrollTop;
   const st = S.settings;
   const f = (k, label, hint, attrs = '') => `<label class="field"><span>${label}${hint ? `<span class="hint">${hint}</span>` : ''}</span><input data-set="${k}" type="number" inputmode="decimal" value="${st[k]}" ${attrs}></label>`;
-  const actSec = S.sectors.map((x, j) => x.ended ? -1 : j).filter(j => j >= 0);
-  const secs = S.sectors.map((s, si) => s.ended ? '' : `<div class="secedit" data-secrow="${si}">
-    <div class="head"><span class="mover"><button data-movesec="${si}:-1" ${actSec.indexOf(si) === 0 ? 'disabled' : ''} aria-label="사업부 위로">▲</button><button data-movesec="${si}:1" ${actSec.indexOf(si) === actSec.length - 1 ? 'disabled' : ''} aria-label="사업부 아래로">▼</button></span><input data-sec="${si}" data-f="emoji" value="${esc(s.emoji)}"><input data-sec="${si}" data-f="name" value="${esc(s.name)}"><button class="endbtn" data-endsec="${si}">사업부 완료</button></div>
-    ${s.items.map((it, ii) => { if (it.ended) return '';
-      const act = s.items.map((x, j) => x.ended ? -1 : j).filter(j => j >= 0), pos = act.indexOf(ii);
+  const actSec = S.sectors.map((x, j) => gone(x) ? -1 : j).filter(j => j >= 0);
+  const secs = S.sectors.map((s, si) => gone(s) ? '' : `<div class="secedit" data-secrow="${si}">
+    <div class="head"><span class="mover"><button data-movesec="${si}:-1" ${actSec.indexOf(si) === 0 ? 'disabled' : ''} aria-label="사업부 위로">▲</button><button data-movesec="${si}:1" ${actSec.indexOf(si) === actSec.length - 1 ? 'disabled' : ''} aria-label="사업부 아래로">▼</button></span><input data-sec="${si}" data-f="emoji" value="${esc(s.emoji)}"><input data-sec="${si}" data-f="name" value="${esc(s.name)}">${pendingEnd(s) ? `<button class="endbtn pending" data-undoendsec="${si}">완료됨 ↩</button>` : `<button class="endbtn" data-endsec="${si}">사업부 완료</button>`}</div>
+    ${s.items.map((it, ii) => { if (gone(it)) return '';
+      const act = s.items.map((x, j) => gone(x) ? -1 : j).filter(j => j >= 0), pos = act.indexOf(ii);
       return `<div class="itemedit" data-row="${si}:${ii}"><span class="mover"><button data-move="${si}:${ii}:-1" ${pos === 0 ? 'disabled' : ''} aria-label="위로">▲</button><button data-move="${si}:${ii}:1" ${pos === act.length - 1 ? 'disabled' : ''} aria-label="아래로">▼</button></span><input data-sec="${si}" data-it="${ii}" data-f="name" value="${esc(it.name)}">
       <select data-sec="${si}" data-it="${ii}" data-f="pts">${[1, 2, 3, 4, 5].map(n => `<option value="${n}" ${it.pts === n ? 'selected' : ''}>${n}점</option>`).join('')}</select>
-      <button class="endbtn" data-enditem="${si}:${ii}">완료</button></div>`; }).join('')}
+      ${pendingEnd(it) ? `<button class="endbtn pending" data-undoenditem="${si}:${ii}">완료됨 ↩</button>` : `<button class="endbtn" data-enditem="${si}:${ii}">완료</button>`}</div>`; }).join('')}
     <button class="btn ghost small" data-additem="${si}" style="margin-top:4px">+ 항목</button>
-    ${s.items.some(it => it.ended) ? `<div class="endedlist">${s.items.map((it, ii) => it.ended ? `<div class="li"><span class="grow">✓ ${esc(it.name)} <span class="muted small">· ${md(it.ended)} 완료</span></span><button class="restore" data-restoreitem="${si}:${ii}">되살리기</button></div>` : '').join('')}</div>` : ''}
+    ${s.items.some(gone) ? `<div class="endedlist">${s.items.map((it, ii) => gone(it) ? `<div class="li"><span class="grow">✓ ${esc(it.name)} <span class="muted small">· ${md(doneDay(it))} 완료</span></span><button class="restore" data-restoreitem="${si}:${ii}">되살리기</button></div>` : '').join('')}</div>` : ''}
   </div>`).join('');
-  const endedSecs = S.sectors.map((s, si) => s.ended ? `<div class="li"><span class="grow">✓ ${esc(s.emoji)} ${esc(s.name)} <span class="muted small">· ${md(s.ended)} 완료</span></span><button class="restore" data-restoresec="${si}">되살리기</button></div>` : '').join('');
+  const endedSecs = S.sectors.map((s, si) => gone(s) ? `<div class="li"><span class="grow">✓ ${esc(s.emoji)} ${esc(s.name)} <span class="muted small">· ${md(doneDay(s))} 완료</span></span><button class="restore" data-restoresec="${si}">되살리기</button></div>` : '').join('');
   $('#sheet').innerHTML = `<div class="wrap">
   <div class="top"><span class="name">설정</span><button class="btn" data-act="closeSettings">완료</button></div>
   <div class="card"><h3>종목</h3>
@@ -685,7 +694,7 @@ function openSettings(keepScroll) {
   </div>
   <div class="card"><h3>사업부 · 하루 체크 항목 <span class="sub">사업부당 3개 이하 추천</span></h3>${secs}
     <button class="btn ghost" data-act="addsec" style="width:100%;margin-top:8px">+ 사업부 추가</button>
-    <p class="muted small" style="margin-top:8px">다 끝낸 항목은 '완료'를 눌러. 오늘부터 체크 목록에서 빠지고, 지난 기록·주가·리포트에는 이름 그대로 남아.</p>
+    <p class="muted small" style="margin-top:8px">다 끝낸 항목은 '완료'를 눌러. 오늘까지는 체크 목록에 남고 내일부터 빠져서 아래 되살리기 칸으로 가. 지난 기록·주가·리포트에는 이름 그대로 남아.</p>
     ${endedSecs ? `<div class="endedlist" style="margin-top:10px"><div class="small" style="font-weight:700;margin-bottom:4px">완료한 사업부</div>${endedSecs}</div>` : ''}</div>
   <div class="card"><h3>결과 목표</h3>
     <label class="field"><span>목표 체중 (kg)</span><input data-wg="target" type="number" step="0.1" value="${esc(S.weightGoal.target)}"></label>
@@ -763,14 +772,15 @@ document.addEventListener('click', e => {
   }
   if (d.use) { S.usedCoupons[d.use] = today(); save(); render(); toast('🎁 배당 사용! 제대로 누려.'); return; }
   if (d.delr !== undefined) { S.rewards.splice(+d.delr, 1); save(); render(); return; }
-  if (d.endsec !== undefined) { const sc = S.sectors[+d.endsec]; if (confirm(`'${sc.name}' 사업부를 완료할까?\n오늘부터 체크 목록에서 빠지고, 지난 기록은 그대로 남아.`)) { sc.ended = today(); save(); openSettings(true); } return; }
+  if (d.endsec !== undefined) { const sc = S.sectors[+d.endsec]; if (confirm(`'${sc.name}' 사업부를 완료할까?\n오늘까지는 체크 목록에 남고, 내일부터 빠져. 지난 기록은 그대로 남아.`)) { sc.endedOn = today(); sc.ended = addD(today(), 1); save(); openSettings(true); } return; }
   if (d.enditem) { const [si, ii] = d.enditem.split(':').map(Number), it = S.sectors[si].items[ii];
-    if (confirm(`'${it.name}' 항목을 완료할까?\n오늘부터 체크 목록에서 빠지고, 지난 기록·리포트에는 이름 그대로 남아.`)) { it.ended = today(); save(); openSettings(true); toast(`✓ ${it.name} 완료!`); } return; }
-  if (d.restoreitem) { const [si, ii] = d.restoreitem.split(':').map(Number); delete S.sectors[si].items[ii].ended; save(); openSettings(true); return; }
-  if (d.restoresec !== undefined) { delete S.sectors[+d.restoresec].ended; save(); openSettings(true); return; }
+    if (confirm(`'${it.name}' 항목을 완료할까?\n오늘까지는 체크 목록에 남고, 내일부터 빠져. 지난 기록·리포트에는 이름 그대로 남아.`)) { it.endedOn = today(); it.ended = addD(today(), 1); save(); openSettings(true); toast(`✓ ${it.name} 완료!`); } return; }
+  const unEnd = x => { delete x.ended; delete x.endedOn; save(); openSettings(true); };
+  if (d.restoreitem || d.undoenditem) { const [si, ii] = (d.restoreitem || d.undoenditem).split(':').map(Number); unEnd(S.sectors[si].items[ii]); return; }
+  if (d.restoresec !== undefined || d.undoendsec !== undefined) { unEnd(S.sectors[+(d.restoresec ?? d.undoendsec)]); return; }
   if (d.movesec) {
     const [si, dir] = d.movesec.split(':').map(Number), secs = S.sectors;
-    let j = si + dir; while (j >= 0 && j < secs.length && secs[j].ended) j += dir;
+    let j = si + dir; while (j >= 0 && j < secs.length && gone(secs[j])) j += dir;
     if (j < 0 || j >= secs.length) return;
     [secs[si], secs[j]] = [secs[j], secs[si]]; save(); openSettings(true);
     const row = document.querySelector(`#sheet [data-secrow="${j}"]`);
@@ -779,7 +789,7 @@ document.addEventListener('click', e => {
   }
   if (d.move) {
     const [si, ii, dir] = d.move.split(':').map(Number), items = S.sectors[si].items;
-    let j = ii + dir; while (j >= 0 && j < items.length && items[j].ended) j += dir;
+    let j = ii + dir; while (j >= 0 && j < items.length && gone(items[j])) j += dir;
     if (j < 0 || j >= items.length) return;
     [items[ii], items[j]] = [items[j], items[ii]]; save(); openSettings(true);
     const row = document.querySelector(`#sheet [data-row="${si}:${j}"]`);
@@ -847,7 +857,7 @@ document.addEventListener('click', e => {
 });
 // 완독 공시: 책 제목만 물어보고(비워도 됨) 바로 공시. 최근 7일 안에 완료한 [독서] 항목이 있으면 제목을 미리 채워 둔다
 function addBookDisc(pct) {
-  const recent = allItems().filter(i => i.ended && diffD(i.ended, today()) <= 7 && /^\s*\[독서\]/.test(i.name)).sort((a, b) => b.ended.localeCompare(a.ended))[0];
+  const recent = allItems().filter(i => i.ended && diffD(doneDay(i), today()) <= 7 && /^\s*\[독서\]/.test(i.name)).sort((a, b) => doneDay(b).localeCompare(doneDay(a)))[0];
   const guess = recent ? recent.name.replace(/^\s*\[독서\]\s*/, '') : '';
   const name = prompt(`📚 완독 공시 (+${pct}%)\n어떤 책을 다 읽었어? (비워도 돼)`, guess);
   if (name === null) return;
@@ -891,7 +901,7 @@ setInterval(() => { if (today() !== lastDay) { lastDay = today(); EDIT_DAY = nul
 document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
 window.addEventListener('resize', () => { if (TAB === 'home') render(); });
 
-load(); applyTheme(); lastDay = today(); render();
+load(); migrateEnded(); applyTheme(); lastDay = today(); render();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
