@@ -185,6 +185,11 @@ input,select{font-family:inherit;font-size:16px;color:var(--text);background:var
 .itemedit{display:flex;gap:6px;margin:6px 0}
 .itemedit input{flex:1}
 .itemedit select{width:62px;padding:9px 4px}
+.mover{display:flex;flex-direction:column;justify-content:center;gap:2px;flex-shrink:0}
+.mover button{width:28px;height:19px;border-radius:6px;background:var(--card2);color:var(--text2);font-size:10px;line-height:1}
+.mover button:disabled{opacity:.25}
+.itemedit.moved{animation:moved .6s}
+@keyframes moved{0%{background:var(--goldbg)}100%{background:transparent}}
 .endbtn{flex-shrink:0;padding:0 10px;border-radius:10px;background:var(--card2);color:var(--text2);font-size:13px;font-weight:600;white-space:nowrap}
 .endedlist{margin-top:8px;padding:6px 10px;border-radius:12px;background:var(--card2)}
 .endedlist .li{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px;color:var(--text2)}
@@ -650,9 +655,11 @@ function openSettings(keepScroll) {
   const f = (k, label, hint, attrs = '') => `<label class="field"><span>${label}${hint ? `<span class="hint">${hint}</span>` : ''}</span><input data-set="${k}" type="number" inputmode="decimal" value="${st[k]}" ${attrs}></label>`;
   const secs = S.sectors.map((s, si) => s.ended ? '' : `<div class="secedit">
     <div class="head"><input data-sec="${si}" data-f="emoji" value="${esc(s.emoji)}"><input data-sec="${si}" data-f="name" value="${esc(s.name)}"><button class="endbtn" data-endsec="${si}">사업부 완료</button></div>
-    ${s.items.map((it, ii) => it.ended ? '' : `<div class="itemedit"><input data-sec="${si}" data-it="${ii}" data-f="name" value="${esc(it.name)}">
+    ${s.items.map((it, ii) => { if (it.ended) return '';
+      const act = s.items.map((x, j) => x.ended ? -1 : j).filter(j => j >= 0), pos = act.indexOf(ii);
+      return `<div class="itemedit" data-row="${si}:${ii}"><span class="mover"><button data-move="${si}:${ii}:-1" ${pos === 0 ? 'disabled' : ''} aria-label="위로">▲</button><button data-move="${si}:${ii}:1" ${pos === act.length - 1 ? 'disabled' : ''} aria-label="아래로">▼</button></span><input data-sec="${si}" data-it="${ii}" data-f="name" value="${esc(it.name)}">
       <select data-sec="${si}" data-it="${ii}" data-f="pts">${[1, 2, 3, 4, 5].map(n => `<option value="${n}" ${it.pts === n ? 'selected' : ''}>${n}점</option>`).join('')}</select>
-      <button class="endbtn" data-enditem="${si}:${ii}">완료</button></div>`).join('')}
+      <button class="endbtn" data-enditem="${si}:${ii}">완료</button></div>`; }).join('')}
     <button class="btn ghost small" data-additem="${si}" style="margin-top:4px">+ 항목</button>
     ${s.items.some(it => it.ended) ? `<div class="endedlist">${s.items.map((it, ii) => it.ended ? `<div class="li"><span class="grow">✓ ${esc(it.name)} <span class="muted small">· ${md(it.ended)} 완료</span></span><button class="restore" data-restoreitem="${si}:${ii}">되살리기</button></div>` : '').join('')}</div>` : ''}
   </div>`).join('');
@@ -759,6 +766,15 @@ document.addEventListener('click', e => {
     if (confirm(`'${it.name}' 항목을 완료할까?\n오늘부터 체크 목록에서 빠지고, 지난 기록·리포트에는 이름 그대로 남아.`)) { it.ended = today(); save(); openSettings(true); toast(`✓ ${it.name} 완료!`); } return; }
   if (d.restoreitem) { const [si, ii] = d.restoreitem.split(':').map(Number); delete S.sectors[si].items[ii].ended; save(); openSettings(true); return; }
   if (d.restoresec !== undefined) { delete S.sectors[+d.restoresec].ended; save(); openSettings(true); return; }
+  if (d.move) {
+    const [si, ii, dir] = d.move.split(':').map(Number), items = S.sectors[si].items;
+    let j = ii + dir; while (j >= 0 && j < items.length && items[j].ended) j += dir;
+    if (j < 0 || j >= items.length) return;
+    [items[ii], items[j]] = [items[j], items[ii]]; save(); openSettings(true);
+    const row = document.querySelector(`#sheet [data-row="${si}:${j}"]`);
+    if (row) { row.classList.add('moved'); row.scrollIntoView({ block: 'nearest' }); }
+    return;
+  }
   if (d.additem !== undefined) {
     const si = +d.additem; S.sectors[si].items.push({ id: uid(), name: '새 항목', pts: 1 }); save(); openSettings(true);
     focusNew(`[data-sec="${si}"][data-it="${S.sectors[si].items.length - 1}"][data-f="name"]`); return;
