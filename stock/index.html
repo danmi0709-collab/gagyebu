@@ -643,7 +643,9 @@ function drawChart(C) {
 }
 
 /* ---------- 설정 ---------- */
-function openSettings() {
+// keepScroll: 설정 안에서 항목을 추가·완료할 때는 보던 위치를 그대로 유지 (톱니로 처음 열 때만 맨 위)
+function openSettings(keepScroll) {
+  const prevTop = $('#sheet').scrollTop;
   const st = S.settings;
   const f = (k, label, hint, attrs = '') => `<label class="field"><span>${label}${hint ? `<span class="hint">${hint}</span>` : ''}</span><input data-set="${k}" type="number" inputmode="decimal" value="${st[k]}" ${attrs}></label>`;
   const secs = S.sectors.map((s, si) => s.ended ? '' : `<div class="secedit">
@@ -696,7 +698,13 @@ function openSettings() {
     <button class="btn red" data-act="reset">전체 초기화</button></div>
   </div>`;
   $('#sheet').classList.add('open');
-  $('#sheet').scrollTop = 0;
+  $('#sheet').scrollTop = keepScroll ? prevTop : 0;
+}
+
+function focusNew(sel) {
+  const el = document.querySelector('#sheet ' + sel); if (!el) return;
+  el.focus({ preventScroll: true }); el.select();
+  el.scrollIntoView({ block: 'nearest' });
 }
 
 function applyTheme() {
@@ -746,16 +754,19 @@ document.addEventListener('click', e => {
   }
   if (d.use) { S.usedCoupons[d.use] = today(); save(); render(); toast('🎁 배당 사용! 제대로 누려.'); return; }
   if (d.delr !== undefined) { S.rewards.splice(+d.delr, 1); save(); render(); return; }
-  if (d.endsec !== undefined) { const sc = S.sectors[+d.endsec]; if (confirm(`'${sc.name}' 사업부를 완료할까?\n오늘부터 체크 목록에서 빠지고, 지난 기록은 그대로 남아.`)) { sc.ended = today(); save(); openSettings(); } return; }
+  if (d.endsec !== undefined) { const sc = S.sectors[+d.endsec]; if (confirm(`'${sc.name}' 사업부를 완료할까?\n오늘부터 체크 목록에서 빠지고, 지난 기록은 그대로 남아.`)) { sc.ended = today(); save(); openSettings(true); } return; }
   if (d.enditem) { const [si, ii] = d.enditem.split(':').map(Number), it = S.sectors[si].items[ii];
-    if (confirm(`'${it.name}' 항목을 완료할까?\n오늘부터 체크 목록에서 빠지고, 지난 기록·리포트에는 이름 그대로 남아.`)) { it.ended = today(); save(); openSettings(); toast(`✓ ${it.name} 완료!`); } return; }
-  if (d.restoreitem) { const [si, ii] = d.restoreitem.split(':').map(Number); delete S.sectors[si].items[ii].ended; save(); openSettings(); return; }
-  if (d.restoresec !== undefined) { delete S.sectors[+d.restoresec].ended; save(); openSettings(); return; }
-  if (d.additem !== undefined) { S.sectors[+d.additem].items.push({ id: uid(), name: '새 항목', pts: 1 }); save(); openSettings(); return; }
+    if (confirm(`'${it.name}' 항목을 완료할까?\n오늘부터 체크 목록에서 빠지고, 지난 기록·리포트에는 이름 그대로 남아.`)) { it.ended = today(); save(); openSettings(true); toast(`✓ ${it.name} 완료!`); } return; }
+  if (d.restoreitem) { const [si, ii] = d.restoreitem.split(':').map(Number); delete S.sectors[si].items[ii].ended; save(); openSettings(true); return; }
+  if (d.restoresec !== undefined) { delete S.sectors[+d.restoresec].ended; save(); openSettings(true); return; }
+  if (d.additem !== undefined) {
+    const si = +d.additem; S.sectors[si].items.push({ id: uid(), name: '새 항목', pts: 1 }); save(); openSettings(true);
+    focusNew(`[data-sec="${si}"][data-it="${S.sectors[si].items.length - 1}"][data-f="name"]`); return;
+  }
   switch (d.act) {
     case 'settings': openSettings(); break;
     case 'closeSettings': $('#sheet').classList.remove('open'); render(); break;
-    case 'addsec': S.sectors.push({ id: uid(), emoji: '⭐', name: '새 사업부', items: [{ id: uid(), name: '새 항목', pts: 1 }] }); save(); openSettings(); break;
+    case 'addsec': S.sectors.push({ id: uid(), emoji: '⭐', name: '새 사업부', items: [{ id: uid(), name: '새 항목', pts: 1 }] }); save(); openSettings(true); focusNew(`[data-sec="${S.sectors.length - 1}"][data-f="name"]:not([data-it])`); break;
     case 'off': {
       const rec = S.days[EDIT_DAY] = S.days[EDIT_DAY] || { done: {} };
       if (!rec.off) {
