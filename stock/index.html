@@ -140,11 +140,16 @@ input,select{font-family:inherit;font-size:16px;color:var(--text);background:var
 .list .li .grow{flex:1}
 .x{color:var(--text3);font-size:18px;padding:0 4px}
 textarea{font-family:inherit;font-size:16px;color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;resize:vertical;line-height:1.5}
-.memo{position:relative;padding:10px 28px 10px 0;border-top:1px solid var(--line)}
+.memo{position:relative;padding:10px 62px 10px 0;border-top:1px solid var(--line)}
+.memo.pinned{background:var(--goldbg);margin:0 -10px 6px;padding-left:10px;padding-right:72px;border-radius:12px;border-top-color:transparent}
+.memo.pinned + .memo{border-top-color:transparent}
 .memo:first-child{border-top:none}
 .memo .mt{font-size:12px;color:var(--text3);margin-bottom:2px}
 .memo .mb{font-size:15px;white-space:pre-wrap;word-break:break-word;user-select:text}
-.memo .x{position:absolute;right:0;top:8px}
+.memo .ma{position:absolute;right:0;top:6px;display:flex;gap:4px;align-items:center}
+.memo.pinned .ma{right:10px}
+.memo .pin{font-size:15px;filter:grayscale(1);opacity:.35;padding:2px 4px}
+.memo .pin.on{filter:none;opacity:1}
 .principle{font-size:14px;line-height:1.6}
 .principle b{font-weight:700}
 .pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px}
@@ -279,7 +284,7 @@ function defaults() {
     rewards: ['좋아하는 카페 음료 한 잔', '읽고 싶던 책 한 권 사기', '혼자만의 2시간 (카페·산책)', '먹고 싶던 디저트 하나'],
     usedCoupons: {},
     relayUrl: '',      // 노션 자동 전송(Apps Script) 주소
-    memos: [],         // { id, text, at:'YYYY-MM-DDTHH:MM' }
+    memos: [],         // { id, text, at:'YYYY-MM-DDTHH:MM', pinned }
     sentWeeks: {},     // 'YYYY-MM-DD(월)': 보낸 날짜
   };
 }
@@ -606,16 +611,17 @@ function viewPerf(C) {
 
 let MEMO_DRAFT = '';   // 쓰다가 앱을 오가도 입력 중인 글이 지워지지 않게
 const memoStamp = at => { const d = pd(at.slice(0, 10)); return `${d.getMonth() + 1}/${d.getDate()}(${WD[d.getDay()]}) ${at.slice(11, 16)}`; };
+const memoOrder = () => { const r = [...(S.memos || [])].reverse(); return [...r.filter(m => m.pinned), ...r.filter(m => !m.pinned)]; };
 function viewMemo() {
-  const ms = [...(S.memos || [])].reverse();
+  const ms = memoOrder();
   return `<div class="wrap">${header()}
   <div class="card">
     <textarea id="memoIn" rows="4" placeholder="메모를 적어 줘">${esc(MEMO_DRAFT)}</textarea>
     <div class="row2" style="margin-top:8px"><button class="btn" data-act="memoAdd" style="flex:1">저장</button>
       <button class="btn ghost" data-act="memoCopy" style="flex:1" ${ms.length ? '' : 'disabled'}>📋 전체 복사 (${ms.length})</button></div>
   </div>
-  <div class="card">${ms.length ? ms.map(m => `<div class="memo"><div class="mt">${esc(memoStamp(m.at))}</div>
-    <div class="mb">${esc(m.text)}</div><button class="x" data-delmemo="${m.id}" aria-label="삭제">×</button></div>`).join('')
+  <div class="card">${ms.length ? ms.map(m => `<div class="memo ${m.pinned ? 'pinned' : ''}"><div class="mt">${m.pinned ? '📌 고정 · ' : ''}${esc(memoStamp(m.at))}</div>
+    <div class="mb">${esc(m.text)}</div><span class="ma"><button class="pin ${m.pinned ? 'on' : ''}" data-pinmemo="${m.id}" aria-label="${m.pinned ? '고정 풀기' : '맨 위에 고정'}">📌</button><button class="x" data-delmemo="${m.id}" aria-label="삭제">×</button></span></div>`).join('')
     : '<div class="muted small">아직 메모가 없어.</div>'}</div>
   </div>`;
 }
@@ -786,6 +792,7 @@ document.addEventListener('click', e => {
     });
     return;
   }
+  if (d.pinmemo) { const m = S.memos.find(x => x.id === d.pinmemo); if (m) { m.pinned = !m.pinned; save(); render(); toast(m.pinned ? '📌 맨 위에 고정했어' : '고정을 풀었어'); } return; }
   if (d.delmemo) { if (confirm('이 메모를 지울까?')) { S.memos = S.memos.filter(m => m.id !== d.delmemo); save(); render(); } return; }
   if (d.copyweek) {
     const txt = weekReport(compute(), d.copyweek);
@@ -867,7 +874,7 @@ document.addEventListener('click', e => {
       MEMO_DRAFT = ''; save(); render(); toast('📝 저장했어'); break;
     }
     case 'memoCopy': {
-      const txt = [...S.memos].reverse().map(m => `[${memoStamp(m.at)}]\n${m.text}`).join('\n\n');
+      const txt = memoOrder().map(m => `[${m.pinned ? '📌 ' : ''}${memoStamp(m.at)}]\n${m.text}`).join('\n\n');
       copyText(txt).then(ok => ok ? toast(`📋 메모 ${S.memos.length}개를 복사했어`) : window.prompt('여기서 직접 복사해 줘', txt));
       break;
     }
