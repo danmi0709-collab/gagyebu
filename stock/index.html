@@ -726,7 +726,7 @@ document.addEventListener('click', e => {
   if (d.delw) { S.weights = S.weights.filter(x => x.date !== d.delw); save(); render(); return; }
   if (d.dels) { S.savings = S.savings.filter(x => x.month !== d.dels); save(); render(); return; }
   if (d.sendweek) {
-    if (S.sentWeeks[d.sendweek] && !confirm('이 주는 이미 보냈어. 다시 보낼까?\n(노션에 같은 주가 있으면 덧붙이지 않고, 코멘트가 없을 때만 달아)')) return;
+    if (S.sentWeeks[d.sendweek] && !confirm('이 주는 이미 보냈어. 다시 보낼까?\n(노션에 있던 이 주 리포트와 코멘트는 지워지고, 지금 보내는 최신 내용으로 바뀌어)')) return;
     const txt = weekReport(compute(), d.sendweek);
     b.disabled = true; b.textContent = '보내는 중…';
     relayPost({ report: txt }).then(r => {
