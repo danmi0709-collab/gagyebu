@@ -575,7 +575,7 @@ function viewPerf(C) {
     <div class="list" style="margin-top:6px">${sv.map(s => `<div class="li"><span class="muted small">${s.month}</span><span class="grow num">${won(s.val)}원</span><span class="small ${+s.val >= +S.savingGoal ? 'up' : 'muted'}">${+s.val >= +S.savingGoal ? '달성' : '미달'}</span><button class="x" data-dels="${s.month}">×</button></div>`).join('')}</div>
   </div>
   <div class="card"><h3>🗓️ 주간 리포트 <span class="sub">노력과 결과 나란히 보기</span></h3>
-    <p class="muted small" style="margin-bottom:6px">${S.relayUrl ? '📮 를 누르면 1~2분 안에 노션에 리포트와 미래의 한나 코멘트가 올라가.' : '일요일 밤에 이번 주를 복사해서 노션 리포트 페이지 맨 아래에 붙여넣어. 월요일 아침에 미래의 한나가 코멘트를 달아 줘. (설정에서 노션 자동 전송을 연결하면 버튼 하나로 끝나)'}</p>
+    <p class="muted small" style="margin-bottom:6px">${S.relayUrl ? '📮 를 누르면 1~2분 안에 노션에 리포트와 미래의 한나 코멘트가 올라가.' : '일요일 밤에 이번 주를 복사해서 노션 리포트 페이지의 구분선 바로 아래(맨 위)에 붙여넣어. 월요일 아침에 미래의 한나가 코멘트를 달아 줘. (설정에서 노션 자동 전송을 연결하면 버튼 하나로 끝나)'}</p>
     <a class="btn ghost small notionlink" href="${NOTION_URL}" target="_blank" rel="noopener">노션 리포트 페이지 열기 ↗</a>
     ${weeks.join('') || '<div class="muted small">첫 주가 끝나면 쌓여.</div>'}</div>
   </div>`;
@@ -739,7 +739,7 @@ document.addEventListener('click', e => {
   if (d.copyweek) {
     const txt = weekReport(compute(), d.copyweek);
     copyText(txt, reportHtml(txt)).then(ok => {
-      if (ok) { toast('📋 복사했어! 노션 페이지 맨 아래에 붙여넣어'); b.textContent = '✅ 복사됨'; setTimeout(() => { b.textContent = '📋 노션용 복사'; }, 2000); }
+      if (ok) { toast('📋 복사했어! 노션 페이지 구분선 바로 아래(맨 위)에 붙여넣어'); b.textContent = '✅ 복사됨'; setTimeout(() => { b.textContent = '📋 노션용 복사'; }, 2000); }
       else { window.prompt('자동 복사가 안 돼서 여기서 직접 복사해 줘', txt); }
     });
     return;
