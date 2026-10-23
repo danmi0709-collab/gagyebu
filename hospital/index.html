@@ -122,6 +122,76 @@ h2{font-size:26px;margin:4px 0 10px;text-align:center;color:var(--red)}
 .bk .n{position:absolute;right:-6px;bottom:-4px;background:var(--red);color:#fff;font-size:15px;line-height:1;padding:4px 7px;border-radius:12px}
 .fall{position:fixed;top:-60px;font-size:36px;z-index:40;pointer-events:none;animation:fall 2.2s linear forwards}
 
+/* 새 아픈 곳 모습 */
+.spot.eyered{background:radial-gradient(circle,rgba(255,70,70,.55) 0 22%,rgba(255,70,70,0) 52%)}
+.spot.eyered:after{content:"";width:7px;height:7px;border-radius:50%;background:#6b4a2a;animation:wob .8s infinite}
+.spot.sting{background:radial-gradient(circle,#ff5c6c 0 20%,#ffb0b8 38%,rgba(255,176,184,0) 60%)}
+.spot.sting:after{content:"";width:3px;height:14px;background:#222;border-radius:2px;transform:rotate(20deg)}
+.spot.swell{background:radial-gradient(circle,#ff8f9b 0 24%,#ffc4ca 40%,rgba(255,196,202,0) 62%)}
+.spot.burn{background:radial-gradient(circle,#ff3b1f 0 22%,#ff9b6b 40%,rgba(255,155,107,0) 62%);animation:pulse 1s infinite}
+.spot.wet:after{content:"💦";font-size:34px;animation:wob .8s infinite}
+.spot.cream{background:radial-gradient(circle,#fff 0 26%,rgba(255,255,255,.7) 40%,rgba(255,255,255,0) 60%)}
+.spot.cream:after{content:"✨";font-size:22px}
+.spot.blood:after{content:"🩸";font-size:22px;position:absolute;top:34px;animation:drip 1.2s infinite}
+.spot.hiccup:after{content:"딸꾹!";font-size:20px;color:#e8505b;background:#fff;border-radius:12px;padding:2px 8px;animation:wob .5s infinite}
+.spot.itch{background:radial-gradient(circle at 35% 40%,#ff7f8f 0 10%,transparent 18%),radial-gradient(circle at 65% 60%,#ff7f8f 0 10%,transparent 18%),radial-gradient(circle,rgba(255,150,160,.5) 0 30%,transparent 60%)}
+.spot.itch:before{content:"🦟";font-size:22px;position:absolute;top:-24px;right:-4px;animation:wob .4s infinite}
+
+/* 우리 병원 로비 */
+.lobby{position:relative;width:100%;aspect-ratio:4/3;border-radius:22px;overflow:hidden;box-shadow:var(--shadow);container-type:inline-size;background:#fff}
+.lobby.mini{aspect-ratio:2/1;margin-bottom:12px}
+.lobby .wall{position:absolute;left:0;right:0;top:0;height:62%;background:linear-gradient(#fff3d6,#ffe9c2)}
+.lobby .wall.rainbow{background:linear-gradient(180deg,#ffd6d6,#ffe9c7,#fff8c2,#d9f7c9,#cfe8ff,#e6d8ff)}
+.lobby .wall.stars{background:radial-gradient(circle at 20% 30%,#fff 0 2%,transparent 3%),radial-gradient(circle at 70% 20%,#fff 0 2%,transparent 3%),radial-gradient(circle at 45% 60%,#fff 0 1.5%,transparent 2.5%),radial-gradient(circle at 85% 55%,#fff 0 2%,transparent 3%),linear-gradient(#2c3e8f,#5b6fd1)}
+.lobby .wall.mint{background:repeating-linear-gradient(90deg,#d8f5ec 0 6%,#c3efe0 6% 12%)}
+.lobby .floor{position:absolute;left:0;right:0;bottom:0;height:38%;background:repeating-conic-gradient(#f6d9b8 0 25%,#ecc79f 0 50%) 0 0/12cqw 12cqw}
+.lobby .floor.grass{background:linear-gradient(#a6e27a,#7fcf55)}
+.lobby .floor.blue{background:repeating-conic-gradient(#cfe8ff 0 25%,#b4d8ff 0 50%) 0 0/12cqw 12cqw}
+.lobby .sign{position:absolute;left:50%;top:4%;transform:translateX(-50%);background:var(--red);color:#fff;font-size:4.2cqw;padding:.6cqw 3cqw;border-radius:3cqw;white-space:nowrap;z-index:2}
+.lobby .desk{position:absolute;left:36%;width:28%;top:48%;height:20%;background:#fff;border-radius:2cqw 2cqw 0 0;box-shadow:inset 0 -2cqw 0 #ffd0d4;z-index:3;font-size:3.4cqw;text-align:center;padding-top:7%;color:#c03a44}
+.lobby .doc{position:absolute;left:50%;top:33%;transform:translateX(-50%);font-size:12cqw;line-height:1;z-index:2}
+.lobby .it{position:absolute;line-height:1;z-index:4;transform:translate(-50%,-50%)}
+.lobby .it.fish{background:rgba(140,210,255,.75);border:1cqw solid #fff;border-radius:2cqw;padding:1cqw 2cqw;font-size:5cqw;white-space:nowrap}
+.lobby .it.bob{animation:bob 2s ease-in-out infinite}
+.lobby .empty{position:absolute;left:0;right:0;bottom:4%;text-align:center;font-size:3.6cqw;color:#9a7b5a;z-index:5}
+.shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px;margin-top:14px}
+.shopit{background:#fff;border-radius:18px;padding:10px 4px;text-align:center;box-shadow:var(--shadow);font-size:16px;line-height:1.3}
+.shopit .e{font-size:40px;display:block;line-height:1.2}
+.shopit .price{display:inline-block;margin-top:4px;background:#fff3c4;border-radius:10px;padding:2px 8px}
+.shopit.own{background:var(--mint)}
+.shopit.own .price{background:#fff}
+.shopit.off{opacity:.55}
+.shopit.cant .price{color:#aaa}
+.shoptabs{display:flex;gap:8px;justify-content:center;margin-top:12px}
+.shoptabs .btn.on{background:var(--red);color:#fff}
+
+/* 응급 전화 카드 */
+.emcard{display:block;width:100%;background:#fff;border:5px solid var(--red);border-radius:22px;padding:12px;margin-bottom:12px;font-size:21px;line-height:1.4;box-shadow:var(--shadow);animation:alarm 1s infinite}
+.emcard .ani{font-size:54px;line-height:1;display:block}
+@keyframes alarm{50%{border-color:#3a7bd5}}
+
+/* 구급차 출동 */
+#amb{position:fixed;inset:0;z-index:35;display:none;flex-direction:column;background:#bfe6ff}
+#amb.on{display:flex}
+#amb .say{margin:14px 16px 0}
+#amb .street{position:relative;flex:1;background:linear-gradient(#bfe6ff 0 50%,#9fd77f 50% 58%,#555c66 58% 84%,#9fd77f 84%)}
+#amb .bld{position:absolute;top:51%;font-size:58px;line-height:1;transform:translateY(-100%)}
+#amb .lane{position:absolute;left:0;right:0;top:78%;height:6px;background:repeating-linear-gradient(90deg,#fff 0 30px,transparent 30px 60px)}
+#amb .car{position:absolute;top:68%;left:4%;font-size:86px;line-height:1;transform:translateY(-50%);transition:left 3s ease-in-out;z-index:3}
+#amb .car .face{display:inline-block}
+#amb .car.right .face{transform:scaleX(-1)}
+#amb .car .siren{position:absolute;left:50%;top:-18px;transform:translateX(-50%);font-size:30px;animation:pulse .3s infinite}
+#amb .car.drive .face{animation:rumble .25s infinite}
+#amb .pt{position:absolute;top:50%;left:82%;font-size:64px;line-height:1;transform:translate(-50%,-50%);transition:all .8s ease;z-index:4;cursor:pointer}
+#amb .pt .m{position:absolute;right:-20px;top:-20px;font-size:32px}
+#amb .pt.in{left:var(--carx);transform:translate(-50%,-50%) scale(.2);opacity:0}
+#amb .ptap{position:absolute;top:36%;left:76%;transform:translateX(-50%);background:var(--red);color:#fff;font-size:18px;padding:4px 10px;border-radius:12px;white-space:nowrap;animation:hop 1s infinite;z-index:5}
+#amb .ctrl{padding:14px 16px 24px;text-align:center}
+@keyframes rumble{50%{transform:translateY(-3px)}}
+#amb .car.right.drive .face{animation:rumbleR .25s infinite}
+@keyframes rumbleR{0%,100%{transform:scaleX(-1)}50%{transform:scaleX(-1) translateY(-3px)}}
+@keyframes bob{50%{transform:translate(-50%,-62%)}}
+
 @keyframes pulse{50%{opacity:.55}}
 @keyframes wob{50%{transform:rotate(12deg) scale(1.1)}}
 @keyframes drip{0%{transform:translateY(-6px)}100%{transform:translateY(10px);opacity:.3}}
@@ -152,6 +222,7 @@ h2{font-size:26px;margin:4px 0 10px;text-align:center;color:var(--red)}
   </div>
   <div class="badge" id="rank"></div>
   <div class="row">
+    <button class="btn" id="goDeco">🏥 병원 꾸미기</button>
     <button class="btn" id="goBook">📒 스티커북</button>
     <button class="btn" id="voiceBtn">🔊 소리 켜짐</button>
   </div>
@@ -163,6 +234,8 @@ h2{font-size:26px;margin:4px 0 10px;text-align:center;color:var(--red)}
     <button class="btn small" data-go="home">🏠 처음</button>
     <span class="pill" id="waitCount"></span>
   </div>
+  <div class="lobby mini" id="miniLobby"></div>
+  <div id="emSlot"></div>
   <h2>🪑 대기실</h2>
   <p class="sub">어떤 친구부터 치료해 줄까요? 눌러 보세요!</p>
   <div class="waits" id="waits"></div>
@@ -189,6 +262,39 @@ h2{font-size:26px;margin:4px 0 10px;text-align:center;color:var(--red)}
   <div class="tray" id="tray"></div>
 </section>
 
+<!-- 병원 꾸미기 -->
+<section class="screen" id="deco">
+  <div class="top">
+    <button class="btn small" data-go="home">🏠 처음</button>
+    <span class="pill" id="decoStars"></span>
+  </div>
+  <h2>🏥 우리 병원 꾸미기</h2>
+  <p class="sub">⭐ 칭찬 스티커로 병원을 예쁘게 꾸며요</p>
+  <div class="lobby" id="bigLobby"></div>
+  <div class="shoptabs">
+    <button class="btn small on" data-tab="item">🧸 물건</button>
+    <button class="btn small" data-tab="wall">🎨 벽지</button>
+    <button class="btn small" data-tab="floor">🟫 바닥</button>
+  </div>
+  <div class="shop" id="shop"></div>
+  <p class="sub" style="margin-top:14px">산 물건을 한 번 더 누르면 넣었다 꺼냈다 할 수 있어요</p>
+</section>
+
+<!-- 구급차 출동 -->
+<div id="amb">
+  <div class="say" id="ambSay"></div>
+  <div class="street" id="street">
+    <div class="bld" style="left:2%">🏥</div>
+    <div class="bld" style="left:30%;font-size:48px">🏫</div>
+    <div class="bld" style="left:50%;font-size:44px">🌳</div>
+    <div class="bld" style="left:64%;font-size:48px">🏠</div>
+    <div class="lane"></div>
+    <div class="car" id="car"><span class="siren">🚨</span><span class="face">🚑</span></div>
+    <div class="pt" id="ambPt"></div>
+  </div>
+  <div class="ctrl"><button class="btn big red" id="ambBtn">🚑 출동!</button></div>
+</div>
+
 <!-- 스티커북 -->
 <section class="screen" id="bookScr">
   <div class="top">
@@ -206,9 +312,10 @@ h2{font-size:26px;margin:4px 0 10px;text-align:center;color:var(--red)}
     <div class="big" id="doneAni"></div>
     <p id="doneMsg"></p>
     <div class="sticker" id="doneSticker"></div>
-    <p style="font-size:17px;color:#666">스티커를 받았어요!</p>
+    <p style="font-size:17px;color:#666" id="doneGot">스티커를 받았어요!</p>
     <div class="row">
       <button class="btn red" id="nextBtn">다음 환자 들어오세요!</button>
+      <button class="btn" id="decoBtn">🏥 꾸미러 가기</button>
     </div>
   </div>
 </div>
@@ -216,9 +323,14 @@ h2{font-size:26px;margin:4px 0 10px;text-align:center;color:var(--red)}
 <script>
 // ───────── 저장 ─────────
 const SAVE_KEY = "kids_hospital_v1";
+const FRESH = () => ({ name: "하리", cured: 0, stickers: {}, queue: [], voice: true,
+  stars: 0, own: [], hide: [], wall: "", floor: "", emerg: null, since: 0 });
 function load() {
-  try { return Object.assign({ name: "하리", cured: 0, stickers: {}, queue: [], voice: true }, JSON.parse(localStorage.getItem(SAVE_KEY) || "{}")); }
-  catch (e) { return { name: "하리", cured: 0, stickers: {}, queue: [], voice: true }; }
+  let d;
+  try { d = JSON.parse(localStorage.getItem(SAVE_KEY) || "{}"); } catch (e) { d = {}; }
+  // 꾸미기가 생기기 전에 치료한 만큼 칭찬 스티커를 챙겨 줌
+  if (d.stars === undefined && d.cured) d.stars = d.cured * 2;
+  return Object.assign(FRESH(), d);
 }
 const S = load();
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
@@ -240,11 +352,19 @@ const ANIMALS = {
   penguin: { e: "🐧", name: "펭귄",    skin: "#4a4f5c" },
   chick:   { e: "🐥", name: "삐약이",  skin: "#ffe066" },
   unicorn: { e: "🦄", name: "유니콘",  skin: "#f6e6ff" },
+  mouse:   { e: "🐭", name: "찍찍이",  skin: "#d9d9e0" },
+  cow:     { e: "🐮", name: "음매",    skin: "#f4f4f4" },
+  hamster: { e: "🐹", name: "햄찌",    skin: "#f2c38f" },
+  wolf:    { e: "🐺", name: "늑대",    skin: "#9aa3b0" },
+  hen:     { e: "🐔", name: "꼬꼬",    skin: "#ffe7a0" },
+  raccoon: { e: "🦝", name: "너구리",  skin: "#8f8a85" },
+  dragon:  { e: "🐲", name: "꼬마 용",  skin: "#7ed36b" },
 };
 
 // ───────── 도구 ─────────
 const BANDAGE_SVG = `<svg width="38" height="38" viewBox="0 0 40 40"><rect x="6" y="10" width="28" height="22" rx="11" fill="#fff" stroke="#bbb" stroke-width="2"/><path d="M12 12v18M18 11v20M24 11v20" stroke="#ddd" stroke-width="2"/><path d="M30 22h8v8h-8z" fill="#fff" stroke="#bbb" stroke-width="2"/></svg>`;
 const TWEEZER_SVG = `<svg width="38" height="38" viewBox="0 0 40 40"><path d="M8 4 L22 34 L20 36 L6 6Z" fill="#9aa4b2"/><path d="M14 4 L23 34 L21 35 L11 5Z" fill="#c4ccd6"/><circle cx="10" cy="5" r="4" fill="#7b8594"/></svg>`;
+const CREAM_SVG = `<svg width="38" height="38" viewBox="0 0 40 40"><path d="M6 14h22l6 4v4l-6 4H6z" fill="#fff" stroke="#9aa4b2" stroke-width="2"/><rect x="2" y="14" width="5" height="12" rx="1" fill="#e8505b"/><rect x="34" y="17" width="5" height="6" fill="#9aa4b2"/><path d="M11 20h12" stroke="#e8505b" stroke-width="3"/></svg>`;
 const TOOLS = {
   thermo:   { e: "🌡️", name: "체온계" },
   stetho:   { e: "🩺", name: "청진기" },
@@ -261,9 +381,14 @@ const TOOLS = {
   brush:    { e: "🪥", name: "칫솔" },
   tissue:   { e: "🧻", name: "휴지" },
   shot:     { e: "💉", name: "주사" },
+  eyedrop:  { e: "💧", name: "안약" },
+  water:    { e: "🥛", name: "물 한 컵" },
+  shower:   { e: "🚿", name: "찬물" },
+  cream:    { svg: CREAM_SVG, name: "연고" },
 };
 const toolIcon = id => TOOLS[id].svg || TOOLS[id].e;
 // '체온계로', '붕대로', '손전등으로' 처럼 받침에 맞춰 붙이기
+function jo(w, a, b) { const c = w.charCodeAt(w.length - 1) - 0xAC00; return w + (c >= 0 && c < 11172 && c % 28 ? a : b); }
 function ro(w) { const c = w.charCodeAt(w.length - 1) - 0xAC00, j = c % 28; return w + (c >= 0 && c < 11172 && j && j !== 8 ? "으로" : "로"); }
 
 // 틀린 도구를 골랐을 때 환자의 재미있는 대답
@@ -281,7 +406,7 @@ const WRONG_ANY = ["음… 그건 지금 아니에요", "다른 도구를 골라
 // ───────── 아픈 곳 ─────────
 // 위치: 진료실 그림(260×372) 안의 좌표
 const SPOTS = {
-  forehead: [130, 40], nose: [130, 78], mouth: [130, 104],
+  forehead: [130, 40], nose: [130, 78], mouth: [130, 104], eye: [106, 60],
   chest: [130, 180], tummy: [130, 240], arm: [210, 205], hand: [210, 270], knee: [100, 324],
 };
 
@@ -365,6 +490,92 @@ const ILLS = {
   },
 };
 
+Object.assign(ILLS, {
+  eye: {
+    sym: "눈에 먼지가 들어갔어요", mood: "😖", spot: "eye", state: "eyered",
+    intro: "바람이 휭 불었는데 눈이 따끔따끔해요. 눈을 못 뜨겠어요.",
+    steps: [
+      { tool: "light", hint: "눈 속을 환하게 비춰서 살펴봐요", pop: "작은 먼지 발견! 👀", say: "눈을 크게 떠 볼게요." },
+      { tool: "eyedrop", hint: "눈물 같은 약을 똑똑 넣어서 먼지를 씻어요", state: "none", say: "깜빡깜빡! 이제 잘 보여요.", sfx: "drop" },
+    ],
+  },
+  sting: {
+    sym: "벌에 쏘였어요", mood: "😫", spot: "arm", state: "sting", emerg: true,
+    intro: "꽃밭에서 놀다가 벌이 팔을 콕 쏘았어요. 퉁퉁 부었어요.",
+    steps: [
+      { tool: "magnify", hint: "쏘인 곳을 크게 보이게 해서 살펴봐요", pop: "벌침이 콕! 🐝<br>박혀 있어요", say: "거기가 제일 아파요." },
+      { tool: "tweezer", hint: "박혀 있는 벌침을 집어서 빼요", state: "swell", say: "쏙! 침이 빠졌어요.", sfx: "pop" },
+      { tool: "ice", hint: "부은 곳을 차갑게 해서 가라앉혀요", state: "cool", say: "부기가 쏙 빠졌어요!" },
+    ],
+  },
+  burn: {
+    sym: "손을 데었어요", mood: "😭", spot: "hand", state: "burn", emerg: true,
+    intro: "뜨거운 냄비를 만졌어요. 손이 화끈화끈해요!",
+    steps: [
+      { tool: "shower", hint: "뜨거운 곳을 시원한 물로 오래오래 식혀요", state: "wet", say: "쏴아~ 시원해요.", sfx: "spray" },
+      { tool: "cream", hint: "데인 곳에 약을 살살 발라요", state: "cream", say: "살살 발라 주니까 덜 아파요." },
+      { tool: "bandage", hint: "깨끗한 천으로 감아서 보호해요", state: "cast", say: "이제 뜨거운 건 조심할게요!" },
+    ],
+  },
+  nosebleed: {
+    sym: "코피가 나요", mood: "😨", spot: "nose", state: "blood",
+    intro: "코를 콕 부딪혔더니 코피가 주르륵 나요.",
+    steps: [
+      { tool: "tissue", hint: "고개를 살짝 숙이고 코를 꾹 눌러 줘요", say: "꾹~ 누르고 있을게요." },
+      { tool: "ice", hint: "콧등을 차갑게 해 줘요", state: "cool", say: "코피가 멈췄어요!" },
+    ],
+  },
+  hiccup: {
+    sym: "딸꾹질이 안 멈춰요", mood: "😵‍💫", spot: "chest", state: "hiccup",
+    intro: "딸꾹! 선생님, 딸꾹! 딸꾹질이 안 멈춰요. 딸꾹!",
+    steps: [
+      { tool: "stetho", hint: "가슴에서 무슨 소리가 나는지 들어 봐요", pop: "딸꾹! 딸꾹!<br>깜짝 놀랐어요", say: "딸꾹!", sfx: "hic" },
+      { tool: "water", hint: "물을 천천히 꿀꺽꿀꺽 마시게 해요", state: "none", say: "꿀꺽꿀꺽… 어? 딸꾹질이 멈췄어요!" },
+    ],
+  },
+  bite: {
+    sym: "모기에 물렸어요", mood: "😣", spot: "knee", state: "itch",
+    intro: "캠핑 갔다가 모기한테 물렸어요. 너무너무 간지러워요!",
+    steps: [
+      { tool: "magnify", hint: "간지러운 곳을 크게 보이게 해서 살펴봐요", pop: "볼록볼록!<br>모기 물린 자국", say: "긁고 싶어요…" },
+      { tool: "cream", hint: "가려움을 멈추는 약을 발라요", state: "none", say: "이제 하나도 안 간지러워요!" },
+    ],
+  },
+});
+["scrape", "arm", "bump"].forEach(k => ILLS[k].emerg = true);
+
+// 병원 꾸미기 물건: x,y 는 로비 그림 안 위치(%), z 는 크기(그림 폭의 %)
+const DECO = {
+  plant:   { e: "🪴", name: "화분",      price: 3,  x: 7,  y: 66, z: 13 },
+  clock:   { e: "🕰️", name: "벽시계",    price: 3,  x: 12, y: 20, z: 9 },
+  balloon: { e: "🎈", name: "풍선",      price: 3,  x: 90, y: 16, z: 10, bob: 1 },
+  frame:   { e: "🖼️", name: "그림 액자",  price: 4,  x: 28, y: 24, z: 11 },
+  teddy:   { e: "🧸", name: "곰 인형",    price: 4,  x: 22, y: 62, z: 9 },
+  candy:   { e: "🍭", name: "사탕 바구니", price: 4,  x: 58, y: 46, z: 7 },
+  puzzle:  { e: "🧩", name: "퍼즐",      price: 4,  x: 44, y: 88, z: 8 },
+  lamp:    { e: "💡", name: "반짝 전등",  price: 5,  x: 70, y: 8,  z: 8, bob: 1 },
+  books:   { e: "📚", name: "그림책",    price: 5,  x: 72, y: 46, z: 10 },
+  dino:    { e: "🦖", name: "공룡 인형",  price: 5,  x: 66, y: 80, z: 13 },
+  trophy:  { e: "🏆", name: "최고 병원 상", price: 6, x: 84, y: 30, z: 8 },
+  fish:    { e: "🐠 🐟", name: "어항",    price: 6,  x: 84, y: 48, z: 0, cls: "fish" },
+  sofa:    { e: "🛋️", name: "소파",      price: 8,  x: 20, y: 72, z: 18 },
+  robot:   { e: "🤖", name: "로봇 간호사", price: 8, x: 88, y: 76, z: 13 },
+  rainbow: { e: "🌈", name: "무지개",    price: 10, x: 50, y: 16, z: 18 },
+  castle:  { e: "🏰", name: "장난감 성",  price: 12, x: 32, y: 88, z: 14 },
+};
+const WALLS = {
+  "":      { e: "🟨", name: "기본 벽",    price: 0 },
+  mint:    { e: "🟩", name: "민트 줄무늬", price: 6 },
+  rainbow: { e: "🌈", name: "무지개 벽",   price: 10 },
+  stars:   { e: "🌌", name: "밤하늘 벽",   price: 12 },
+};
+const FLOORS = {
+  "":    { e: "🟫", name: "나무 바닥",  price: 0 },
+  blue:  { e: "🟦", name: "하늘 타일",  price: 6 },
+  grass: { e: "🌱", name: "잔디 바닥",  price: 8 },
+};
+const STAR_NORMAL = 2, STAR_EMERG = 5;
+
 const RANKS = [
   [0, "🐣 새내기 의사"], [3, "🩹 반창고 의사"], [8, "🩺 꼬마 의사"],
   [15, "⭐ 멋진 의사"], [30, "🏅 최고 의사"], [50, "👑 병원장님"],
@@ -401,6 +612,10 @@ const SFX = {
   pop: () => tone(400, .12, "sine", .3, 0, 900),
   gurgle: () => { for (let i = 0; i < 5; i++) tone(120 + Math.random() * 80, .15, "sine", .3, i * .13, 60 + Math.random() * 60); },
   fart: () => { tone(110, .7, "sawtooth", .25, .2, 55); noise(.6, .1, .2, 200); },
+  drop: () => { tone(1200, .08, "sine", .2, 0, 600); tone(1200, .08, "sine", .2, .3, 600); },
+  hic: () => { tone(500, .1, "square", .1, 0, 900); tone(500, .1, "square", .1, .5, 900); },
+  siren: () => { for (let i = 0; i < 4; i++) { tone(700, .35, "triangle", .12, i * .7, 950); tone(950, .35, "triangle", .12, i * .7 + .35, 700); } },
+  buy: () => [880, 1175, 1568].forEach((f, i) => tone(f, .15, "triangle", .2, i * .08)),
   cheer: () => [523, 659, 784, 1046].forEach((f, i) => tone(f, .25, "triangle", .2, i * .12)),
 };
 function sfx(name) { if (SFX[name]) SFX[name](); }
@@ -424,6 +639,7 @@ function show(id) {
   if (id === "home") drawHome();
   if (id === "wait") drawWait();
   if (id === "bookScr") drawBook();
+  if (id === "deco") drawDeco();
 }
 document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { sfx("pick"); show(b.dataset.go); });
 
@@ -431,7 +647,7 @@ function rankOf(n) { let r = RANKS[0]; RANKS.forEach(x => { if (n >= x[0]) r = x
 function drawHome() {
   $("docName").value = S.name;
   const r = rankOf(S.cured), next = RANKS.find(x => x[0] > S.cured);
-  $("rank").innerHTML = `지금까지 <b>${S.cured}명</b> 치료했어요<br>${r[1]}` +
+  $("rank").innerHTML = `지금까지 <b>${S.cured}명</b> 치료했어요 · ⭐ ${S.stars}장<br>${r[1]}` +
     (next ? `<br><span style="font-size:16px;color:#777">${next[0] - S.cured}명 더 치료하면 ${next[1]}</span>` : "");
   $("voiceBtn").textContent = S.voice ? "🔊 소리 켜짐" : "🔇 소리 꺼짐";
 }
@@ -439,13 +655,15 @@ $("docName").addEventListener("input", e => { S.name = e.target.value.trim() || 
 $("voiceBtn").onclick = () => { S.voice = !S.voice; save(); drawHome(); speak("소리를 켰어요"); };
 $("goWait").onclick = () => { sfx("pick"); ac(); show("wait"); speak("대기실이에요. 어떤 친구부터 치료해 줄까요?"); };
 $("goBook").onclick = () => { sfx("pick"); show("bookScr"); };
+$("goDeco").onclick = () => { sfx("pick"); show("deco"); };
 
 // ───────── 대기실 ─────────
 const rand = a => a[Math.floor(Math.random() * a.length)];
-function newPatient() {
-  const used = S.queue.map(p => p.a), usedI = S.queue.map(p => p.i);
+function newPatient(emerg) {
+  const others = S.queue.concat(S.emerg ? [S.emerg] : []);
+  const used = others.map(p => p.a), usedI = others.map(p => p.i);
   const ani = Object.keys(ANIMALS).filter(k => !used.includes(k));
-  const ill = Object.keys(ILLS).filter(k => !usedI.includes(k));
+  const ill = Object.keys(ILLS).filter(k => !usedI.includes(k) && (!emerg || ILLS[k].emerg));
   return { a: rand(ani), i: rand(ill) };
 }
 function fillQueue() {
@@ -455,12 +673,20 @@ function fillQueue() {
 }
 function drawWait() {
   fillQueue();
-  $("waitCount").textContent = `${S.name} 선생님 · 치료 ${S.cured}명`;
+  $("waitCount").textContent = `${S.name} 선생님 · ⭐ ${S.stars}`;
+  drawLobby($("miniLobby"));
+  if (S.emerg && ANIMALS[S.emerg.a] && ILLS[S.emerg.i]) {
+    const A = ANIMALS[S.emerg.a], I = ILLS[S.emerg.i];
+    $("emSlot").innerHTML = `<button class="emcard" id="emBtn"><span class="ani">🚨 ${A.e}</span>응급 전화! ${jo(A.name, "이", "가")} ${I.sym}!<br><b style="color:#e8505b">구급차 출동하기 (⭐ ${STAR_EMERG}장)</b></button>`;
+    $("emBtn").onclick = startAmb;
+  } else { S.emerg = null; $("emSlot").innerHTML = ""; }
   $("waits").innerHTML = S.queue.map((p, k) => {
     const A = ANIMALS[p.a], I = ILLS[p.i];
     return `<button class="wcard" data-k="${k}"><span class="mood">${I.mood}</span><span class="ani">${A.e}</span>${A.name}<br><span class="sym">${I.sym}</span></button>`;
   }).join("");
   $("waits").querySelectorAll(".wcard").forEach(b => b.onclick = () => startTreat(+b.dataset.k));
+  // 대기실 첫 방문에 응급 전화 안내
+  if (S.emerg) setTimeout(() => { if ($("wait").classList.contains("on")) speak(`응급 전화예요! ${jo(ANIMALS[S.emerg.a].name, "이", "가")} ${ILLS[S.emerg.i].sym}. 구급차 출동!`); }, 1800);
 }
 $("backWait").onclick = () => { sfx("pick"); if (window.speechSynthesis) speechSynthesis.cancel(); show("wait"); };
 
@@ -483,10 +709,10 @@ function bodySVG(skin) {
 }
 
 function startTreat(k) {
-  const p = S.queue[k], A = ANIMALS[p.a], I = ILLS[p.i];
-  T = { k, p, A, I, step: 0, wrong: 0, picked: null, busy: false };
+  const em = k === "emerg", p = em ? S.emerg : S.queue[k], A = ANIMALS[p.a], I = ILLS[p.i];
+  T = { k, em, p, A, I, step: 0, wrong: 0, picked: null, busy: false };
   sfx("pick");
-  $("patientName").textContent = `${A.e} ${A.name} · ${I.sym}`;
+  $("patientName").textContent = `${em ? "🚑 " : ""}${A.e} ${A.name} · ${I.sym}`;
   const [x, y] = SPOTS[I.spot];
   $("fig").innerHTML = `<div class="head" id="head">${A.e}</div><div class="moodbadge" id="mood">${I.mood}</div>${bodySVG(A.skin)}
     <div class="spot ${I.state}" id="spot" style="left:${x}px;top:${y}px"></div>`;
@@ -592,7 +818,15 @@ function cured() {
   confetti();
   S.cured++;
   S.stickers[T.p.a] = (S.stickers[T.p.a] || 0) + 1;
-  S.queue.splice(T.k, 1);
+  const got = T.em ? STAR_EMERG : STAR_NORMAL;
+  S.stars += got;
+  if (T.em) { S.emerg = null; S.since = 0; }
+  else {
+    S.queue.splice(T.k, 1);
+    S.since++;
+    // 응급 전화: 가끔 오고, 세 명 치료하는 동안 안 왔으면 꼭 옴
+    if (!S.emerg && (S.since >= 3 || Math.random() < .3)) { S.emerg = newPatient(true); }
+  }
   save();
   const before = rankOf(S.cured - 1)[1], now = rankOf(S.cured)[1];
   setTimeout(() => {
@@ -600,10 +834,12 @@ function cured() {
     const msg = `${S.name} 선생님, 고마워요!<br>이제 하나도 안 아파요!` + (before !== now ? `<br><b style="color:#e8505b">새 칭호: ${now}</b>` : "");
     $("doneMsg").innerHTML = msg;
     $("doneSticker").textContent = T.A.e;
+    $("doneGot").innerHTML = `${T.A.name} 스티커 + <b>⭐ 칭찬 스티커 ${got}장</b>을 받았어요!` + (T.em ? "<br>🚑 응급 환자를 구해서 더 많이 받았어요!" : "");
     $("done").classList.add("on");
     speak(`${S.name} 선생님, 고마워요! 이제 하나도 안 아파요!` + (before !== now ? ` 새 칭호를 받았어요. ${now}` : ""));
   }, 1300);
 }
+$("decoBtn").onclick = () => { $("done").classList.remove("on"); T = null; sfx("pick"); show("deco"); };
 $("nextBtn").onclick = () => { $("done").classList.remove("on"); T = null; sfx("pick"); show("wait"); speak("다음 환자 들어오세요!"); };
 
 function confetti() {
@@ -617,6 +853,113 @@ function confetti() {
     setTimeout(() => f.remove(), 3200);
   }
 }
+
+// ───────── 우리 병원 꾸미기 ─────────
+function drawLobby(el) {
+  const items = S.own.filter(k => DECO[k] && !S.hide.includes(k));
+  el.innerHTML = `<div class="wall ${S.wall}"></div><div class="floor ${S.floor}"></div>
+    <div class="sign">🏥 ${S.name} 병원</div><div class="doc">🧑‍⚕️</div><div class="desk">접수</div>` +
+    items.map(k => { const d = DECO[k];
+      return `<div class="it ${d.cls || ""} ${d.bob ? "bob" : ""}" style="left:${d.x}%;top:${d.y}%;${d.z ? `font-size:${d.z}cqw` : ""}">${d.e}</div>`; }).join("") +
+    (items.length ? "" : `<div class="empty">⭐ 칭찬 스티커로 물건을 사서 꾸며 보세요!</div>`);
+}
+let decoTab = "item";
+document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => {
+  decoTab = b.dataset.tab; sfx("pick");
+  document.querySelectorAll("[data-tab]").forEach(x => x.classList.toggle("on", x === b));
+  drawDeco();
+});
+function drawDeco() {
+  $("decoStars").textContent = `⭐ 칭찬 스티커 ${S.stars}장`;
+  drawLobby($("bigLobby"));
+  const list = decoTab === "item" ? DECO : decoTab === "wall" ? WALLS : FLOORS;
+  $("shop").innerHTML = Object.entries(list).map(([k, d]) => {
+    let own, label;
+    if (decoTab === "item") { own = S.own.includes(k); label = own ? (S.hide.includes(k) ? "넣어 둠" : "놓여 있음") : `⭐ ${d.price}`; }
+    else { const cur = decoTab === "wall" ? S.wall : S.floor; own = !d.price || S.own.includes(decoTab + ":" + k); label = cur === k ? "쓰는 중" : own ? "바꾸기" : `⭐ ${d.price}`; }
+    const off = decoTab === "item" && own && S.hide.includes(k);
+    return `<button class="shopit ${own ? "own" : ""} ${off ? "off" : ""} ${!own && S.stars < d.price ? "cant" : ""}" data-k="${k}">
+      <span class="e">${d.e.split(" ")[0]}</span>${d.name}<br><span class="price">${label}</span></button>`;
+  }).join("");
+  $("shop").querySelectorAll(".shopit").forEach(b => b.onclick = () => buy(b.dataset.k));
+}
+function buy(k) {
+  const isItem = decoTab === "item", list = isItem ? DECO : decoTab === "wall" ? WALLS : FLOORS, d = list[k];
+  const key = isItem ? k : decoTab + ":" + k, own = !d.price || S.own.includes(key);
+  if (own) {
+    sfx("pick");
+    if (isItem) { S.hide = S.hide.includes(k) ? S.hide.filter(x => x !== k) : S.hide.concat(k); }
+    else if (decoTab === "wall") S.wall = k; else S.floor = k;
+  } else if (S.stars < d.price) {
+    sfx("no");
+    const need = d.price - S.stars;
+    speak(`칭찬 스티커가 ${need}장 더 필요해요. 환자를 치료하면 받을 수 있어요!`);
+    return;
+  } else {
+    S.stars -= d.price; S.own.push(key); sfx("buy");
+    if (decoTab === "wall") S.wall = k; if (decoTab === "floor") S.floor = k;
+    speak(`${jo(d.name, "을", "를")} 샀어요! 병원이 더 예뻐졌어요.`);
+  }
+  save(); drawDeco();
+}
+
+// ───────── 구급차 출동 ─────────
+let AMB = null;
+function ambSay(t) { $("ambSay").innerHTML = t; speak(t); }
+function startAmb() {
+  const p = S.emerg; if (!p) return;
+  const A = ANIMALS[p.a], I = ILLS[p.i];
+  AMB = { stage: "call" };
+  sfx("siren");
+  const car = $("car"); car.className = "car"; car.style.transition = "none"; car.style.left = "4%";
+  $("ambPt").className = "pt"; $("ambPt").innerHTML = `${A.e}<span class="m">${I.mood}</span>`;
+  $("street").querySelectorAll(".ptap").forEach(e => e.remove());
+  $("ambBtn").style.display = ""; $("ambBtn").textContent = "🚑 출동!";
+  $("amb").classList.add("on");
+  ambSay(`🚨 응급 전화! "${jo(A.name, "이", "가")} ${I.sym}! 빨리 와 주세요!"`);
+}
+$("ambBtn").onclick = () => {
+  if (!AMB || AMB.stage !== "call") return;
+  AMB.stage = "go";
+  $("ambBtn").style.display = "none";
+  const car = $("car");
+  void car.offsetWidth; car.style.transition = "";
+  car.classList.add("right", "drive");
+  car.style.left = "44%";
+  sfx("siren");
+  ambSay("삐뽀삐뽀! 길을 비켜 주세요~");
+  setTimeout(() => {
+    car.classList.remove("drive");
+    AMB.stage = "pick";
+    const tap = document.createElement("div"); tap.className = "ptap"; tap.textContent = "눌러서 태워요 👆";
+    $("street").appendChild(tap);
+    ambSay(`도착했어요! ${jo(ANIMALS[S.emerg.a].name, "을", "를")} 눌러서 구급차에 태워요.`);
+  }, 3100);
+};
+$("ambPt").onclick = () => {
+  if (!AMB || AMB.stage !== "pick") return;
+  AMB.stage = "back";
+  $("street").querySelectorAll(".ptap").forEach(e => e.remove());
+  const pt = $("ambPt"), car = $("car");
+  pt.style.setProperty("--carx", (parseFloat(car.style.left) + 10) + "%");
+  pt.classList.add("in");
+  sfx("pop");
+  ambSay("조심조심 태웠어요. 병원으로 출발!");
+  setTimeout(() => {
+    car.classList.remove("right"); car.classList.add("drive");
+    car.style.left = "4%";
+    sfx("siren");
+  }, 1100);
+  setTimeout(() => {
+    car.classList.remove("drive");
+    ambSay("병원에 도착! 빨리 진료실로 가요!");
+  }, 4200);
+  setTimeout(() => {
+    $("amb").classList.remove("on");
+    AMB = null;
+    startTreat("emerg");
+  }, 5600);
+};
 
 // ───────── 스티커북 ─────────
 function drawBook() {
