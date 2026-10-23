@@ -1,4 +1,4 @@
-# Ponytail, Graphify, Headroom 설치 스크립트 (윈도우 PowerShell)
+﻿# Ponytail, Graphify, Headroom 설치 스크립트 (윈도우 PowerShell)
 # 이미 설치된 건 건너뛰니까 여러 번 실행해도 괜찮다.
 # 사용법: PowerShell에서  powershell -ExecutionPolicy Bypass -File setup\install-ai-tools.ps1
 
