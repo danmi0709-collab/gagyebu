@@ -1,0 +1,16 @@
+{
+  "name": "꼬마 의사 병원",
+  "short_name": "꼬마 병원",
+  "description": "아픈 동물 친구를 도구로 치료해 주는 병원 놀이",
+  "start_url": "/gagyebu/hospital/",
+  "scope": "/gagyebu/hospital/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffe3e6",
+  "theme_color": "#e8505b",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

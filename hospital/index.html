@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>꼬마 의사 병원</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e8505b">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="꼬마 병원">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#ffe3e6; --bg2:#fffaf0; --ink:#2b2b3a; --card:#ffffff;
+  --red:#e8505b; --blue:#3a7bd5; --green:#2e9e4f; --yellow:#ffc400; --mint:#d8f5ec;
+  --shadow:0 6px 0 rgba(0,0,0,.15);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{margin:0;height:100%;background:var(--bg2)}
+body{margin:0;min-height:100%;font-family:'Jua','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:var(--ink);
+  background:linear-gradient(180deg,var(--bg1),var(--bg2));min-height:100vh;overflow-x:hidden;user-select:none;-webkit-user-select:none}
+button{font-family:inherit;cursor:pointer;border:none;color:var(--ink)}
+.screen{display:none;max-width:760px;margin:0 auto;padding:12px 16px 40px;min-height:100vh}
+.screen.on{display:block}
+h1{font-size:36px;text-align:center;margin:10px 0 4px;color:var(--red);text-shadow:2px 2px 0 #fff,4px 4px 0 rgba(0,0,0,.12);line-height:1.2}
+h2{font-size:26px;margin:4px 0 10px;text-align:center;color:var(--red)}
+.sub{text-align:center;font-size:18px;margin:0 0 14px;color:#666}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.btn{font-size:22px;padding:14px 20px;border-radius:18px;background:#fff;box-shadow:var(--shadow);transition:transform .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.btn.big{font-size:27px;padding:18px 22px;flex:1;min-width:220px}
+.btn.red{background:var(--red);color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.2)}
+.btn.small{font-size:17px;padding:9px 14px;border-radius:14px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.pill{background:#fff;border-radius:999px;padding:6px 14px;font-size:18px;box-shadow:0 3px 0 rgba(0,0,0,.12)}
+
+/* 첫 화면 */
+.building{font-size:110px;text-align:center;line-height:1;margin:6px 0}
+.namebox{display:flex;gap:8px;align-items:center;justify-content:center;margin:12px 0 16px;font-size:21px}
+.namebox input{font-family:inherit;font-size:22px;padding:8px 12px;border-radius:12px;border:3px solid #ffb3b8;width:140px;text-align:center}
+.badge{background:rgba(255,255,255,.8);border-radius:20px;padding:12px;margin:14px 0;text-align:center;font-size:20px;line-height:1.5}
+.badge b{color:var(--red);font-size:24px}
+
+/* 대기실 */
+.waits{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.wcard{background:#fff;border-radius:22px;padding:14px 10px;text-align:center;box-shadow:var(--shadow);position:relative;font-size:19px;line-height:1.35}
+.wcard .ani{font-size:70px;line-height:1;display:block}
+.wcard .mood{position:absolute;top:10px;right:14px;font-size:34px}
+.wcard .sym{display:inline-block;margin-top:6px;background:var(--bg1);border-radius:12px;padding:4px 10px;color:#c03a44}
+.wcard:active{transform:translateY(4px)}
+.bench{height:16px;background:#c98b55;border-radius:8px;margin:10px 0 0;box-shadow:0 4px 0 #8a5a30}
+
+/* 진료실 */
+.say{background:#fff;border-radius:20px;padding:12px 14px;font-size:21px;line-height:1.4;box-shadow:0 4px 0 rgba(0,0,0,.1);position:relative;min-height:58px;text-align:center}
+.say:after{content:"";position:absolute;bottom:-14px;left:50%;margin-left:-10px;border:10px solid transparent;border-top:14px solid #fff;border-bottom:0}
+.room{position:relative;margin:18px auto 6px;width:260px;height:372px}
+.bed{position:absolute;left:-18px;right:-18px;top:30px;bottom:-4px;background:#fff;border-radius:30px 30px 14px 14px;box-shadow:inset 0 -10px 0 #e9eef5,0 6px 0 rgba(0,0,0,.12)}
+.pillow{position:absolute;left:50%;top:14px;width:170px;height:70px;margin-left:-85px;background:#eef6ff;border-radius:40px;box-shadow:0 3px 0 #cfe0f3}
+.fig{position:absolute;inset:0}
+.head{position:absolute;left:0;right:0;top:4px;text-align:center;font-size:118px;line-height:1;z-index:2}
+.moodbadge{position:absolute;right:-6px;top:0;font-size:46px;z-index:4;background:#fff;border-radius:50%;width:66px;height:66px;line-height:66px;text-align:center;box-shadow:0 3px 0 rgba(0,0,0,.12)}
+.body{position:absolute;left:10px;top:126px;width:240px;height:246px;z-index:1}
+.spot{position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;z-index:5;display:flex;align-items:center;justify-content:center;font-size:40px;pointer-events:none}
+.spot.heat{background:radial-gradient(circle,rgba(255,60,60,.65),rgba(255,60,60,0) 70%);animation:pulse 1s infinite}
+.spot.heat:after{content:"♨️";font-size:30px;position:absolute;top:-26px}
+.spot.cool:after{content:"🧊";font-size:44px}
+.spot.scrape{background:radial-gradient(circle at 45% 50%,#d61f2c 0 30%,#ff7b84 42%,rgba(255,123,132,0) 62%)}
+.spot.clean{background:radial-gradient(circle,#ffb3b8 0 34%,rgba(255,179,184,0) 60%)}
+.spot.clean:after{content:"✨";font-size:30px}
+.spot.bandaid:after{content:"";width:62px;height:26px;border-radius:13px;transform:rotate(-12deg);
+  background:radial-gradient(circle at 50% 50%,#f6e0c5 0 9px,transparent 10px),#e7b98b;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.spot.germ:after{content:"🦠";font-size:34px;animation:wob .8s infinite}
+.spot.germ:before{content:"🦠";font-size:24px;position:absolute;left:4px;top:2px;animation:wob .8s infinite reverse}
+.spot.tooth:after{content:"🦷";font-size:30px;filter:sepia(1) saturate(2) hue-rotate(-20deg);animation:wob .8s infinite}
+.spot.sparkle:after{content:"✨";font-size:34px}
+.spot.bruise{background:radial-gradient(circle,#8e44ad 0 22%,rgba(142,68,173,.5) 40%,rgba(142,68,173,0) 62%)}
+.spot.cast:after{content:"";width:40px;height:84px;border-radius:12px;background:repeating-linear-gradient(170deg,#fff 0 10px,#e8e8e8 10px 12px);box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.spot.splinter:after{content:"";width:6px;height:30px;background:#7a4a1c;border-radius:3px;transform:rotate(35deg);box-shadow:0 0 0 6px rgba(255,80,80,.35)}
+.spot.snot:after{content:"💧";font-size:26px;animation:drip 1.2s infinite}
+.spot.bump{background:radial-gradient(circle,#ff6b7a 0 22%,#ffb3bb 36%,rgba(255,179,187,0) 60%)}
+.spot.bump:before{content:"💫";font-size:28px;position:absolute;top:-24px;animation:spin 2s linear infinite}
+.spot.target{pointer-events:auto;cursor:pointer}
+.spot.target:before{content:"";position:absolute;inset:-14px;border:5px dashed var(--red);border-radius:50%;animation:spin 4s linear infinite;z-index:-1}
+.tapme{position:absolute;z-index:6;font-size:18px;background:var(--red);color:#fff;padding:4px 10px;border-radius:12px;white-space:nowrap;transform:translate(-50%,0);pointer-events:none;animation:hop 1s infinite}
+.usetool{position:absolute;z-index:7;font-size:58px;margin:-30px 0 0 -30px;pointer-events:none;animation:usetool 1s ease}
+.pop{position:absolute;left:50%;top:150px;transform:translate(-50%,-50%) scale(.6);background:#fff;border:4px solid var(--red);border-radius:20px;padding:10px 16px;font-size:22px;text-align:center;z-index:9;opacity:0;pointer-events:none;transition:all .25s;min-width:180px;line-height:1.35}
+.pop.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.pop svg{display:block;margin:4px auto 0}
+
+.hintbar{display:flex;align-items:center;gap:8px;justify-content:center;margin:10px 0 6px}
+.steps{display:flex;gap:6px}
+.steps i{width:16px;height:16px;border-radius:50%;background:#ffd0d4;display:block}
+.steps i.done{background:var(--green)}
+.steps i.now{background:var(--red);animation:pulse 1s infinite}
+.hint{font-size:20px;text-align:center;color:#b0303b;min-height:28px;line-height:1.35}
+.tray{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;background:#fff7e6;border-radius:22px;padding:10px;box-shadow:inset 0 0 0 4px #ffe0a8;margin-top:8px}
+.tool{background:#fff;border-radius:16px;padding:6px 2px 4px;box-shadow:0 4px 0 rgba(0,0,0,.12);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:14px;line-height:1.1;min-height:76px;justify-content:center}
+.tool .e{font-size:34px;line-height:1.1;display:flex;align-items:center;justify-content:center;height:40px}
+.tool.sel{background:#ffe066;transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.12)}
+.tool.glow{animation:glow 1s infinite}
+.tool.no{animation:shake .4s}
+.speak{background:#fff;border-radius:50%;width:44px;height:44px;font-size:22px;box-shadow:0 3px 0 rgba(0,0,0,.12)}
+
+/* 다 나았어요 */
+.over{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:30;padding:16px}
+.over.on{display:flex}
+.card{background:#fff;border-radius:26px;padding:22px 18px;max-width:420px;width:100%;text-align:center;box-shadow:0 10px 0 rgba(0,0,0,.2)}
+.card .big{font-size:96px;line-height:1}
+.card p{font-size:21px;margin:10px 0;line-height:1.45}
+.sticker{display:inline-block;background:var(--mint);border:4px dashed #5cc9a7;border-radius:50%;width:110px;height:110px;line-height:100px;font-size:64px;animation:pop .6s ease}
+
+/* 스티커북 */
+.book{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;background:#fff;border-radius:22px;padding:14px;box-shadow:var(--shadow)}
+.bk{text-align:center;font-size:15px;line-height:1.3}
+.bk .s{display:block;width:78px;height:78px;margin:0 auto 4px;border-radius:50%;background:var(--mint);border:3px dashed #5cc9a7;font-size:46px;line-height:72px;position:relative}
+.bk.off .s{background:#eee;border-color:#ccc;filter:grayscale(1);opacity:.35}
+.bk .n{position:absolute;right:-6px;bottom:-4px;background:var(--red);color:#fff;font-size:15px;line-height:1;padding:4px 7px;border-radius:12px}
+.fall{position:fixed;top:-60px;font-size:36px;z-index:40;pointer-events:none;animation:fall 2.2s linear forwards}
+
+@keyframes pulse{50%{opacity:.55}}
+@keyframes wob{50%{transform:rotate(12deg) scale(1.1)}}
+@keyframes drip{0%{transform:translateY(-6px)}100%{transform:translateY(10px);opacity:.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes hop{50%{transform:translate(-50%,-6px)}}
+.head.bounce{animation:hophead .5s ease 3}
+@keyframes hophead{50%{transform:translateY(-16px)}}
+@keyframes usetool{0%{transform:scale(.3) translateY(60px);opacity:0}30%{transform:scale(1.1);opacity:1}50%{transform:rotate(-14deg)}70%{transform:rotate(14deg)}100%{transform:rotate(0);opacity:0}}
+@keyframes glow{50%{background:#ffe066;box-shadow:0 0 0 5px var(--red)}}
+@keyframes shake{20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes pop{0%{transform:scale(.2)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes fall{to{transform:translateY(110vh) rotate(360deg)}}
+@media (max-width:380px){.tool{font-size:12px;min-height:70px}.tool .e{font-size:30px}.say{font-size:19px}}
+</style>
+</head>
+<body>
+
+<!-- 첫 화면 -->
+<section class="screen on" id="home">
+  <h1>꼬마 의사 병원</h1>
+  <p class="sub">아픈 친구들이 기다리고 있어요!</p>
+  <div class="building">🏥</div>
+  <div class="namebox">
+    <span>의사 이름</span><input id="docName" maxlength="6"><span>선생님</span>
+  </div>
+  <div class="row">
+    <button class="btn big red" id="goWait">🩺 진료 시작</button>
+  </div>
+  <div class="badge" id="rank"></div>
+  <div class="row">
+    <button class="btn" id="goBook">📒 스티커북</button>
+    <button class="btn" id="voiceBtn">🔊 소리 켜짐</button>
+  </div>
+</section>
+
+<!-- 대기실 -->
+<section class="screen" id="wait">
+  <div class="top">
+    <button class="btn small" data-go="home">🏠 처음</button>
+    <span class="pill" id="waitCount"></span>
+  </div>
+  <h2>🪑 대기실</h2>
+  <p class="sub">어떤 친구부터 치료해 줄까요? 눌러 보세요!</p>
+  <div class="waits" id="waits"></div>
+  <div class="bench"></div>
+</section>
+
+<!-- 진료실 -->
+<section class="screen" id="treat">
+  <div class="top">
+    <button class="btn small" id="backWait">🪑 대기실</button>
+    <span class="pill" id="patientName"></span>
+  </div>
+  <div class="say" id="say"></div>
+  <div class="room">
+    <div class="bed"><div class="pillow"></div></div>
+    <div class="fig" id="fig"></div>
+    <div class="pop" id="pop"></div>
+  </div>
+  <div class="hintbar">
+    <div class="steps" id="steps"></div>
+    <button class="speak" id="hearHint" aria-label="다시 듣기">🔊</button>
+  </div>
+  <div class="hint" id="hint"></div>
+  <div class="tray" id="tray"></div>
+</section>
+
+<!-- 스티커북 -->
+<section class="screen" id="bookScr">
+  <div class="top">
+    <button class="btn small" data-go="home">🏠 처음</button>
+    <span class="pill" id="bookCount"></span>
+  </div>
+  <h2>📒 고마워요 스티커북</h2>
+  <p class="sub">치료해 준 친구들이 스티커를 주었어요</p>
+  <div class="book" id="book"></div>
+</section>
+
+<!-- 다 나았어요 -->
+<div class="over" id="done">
+  <div class="card">
+    <div class="big" id="doneAni"></div>
+    <p id="doneMsg"></p>
+    <div class="sticker" id="doneSticker"></div>
+    <p style="font-size:17px;color:#666">스티커를 받았어요!</p>
+    <div class="row">
+      <button class="btn red" id="nextBtn">다음 환자 들어오세요!</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ───────── 저장 ─────────
+const SAVE_KEY = "kids_hospital_v1";
+function load() {
+  try { return Object.assign({ name: "하리", cured: 0, stickers: {}, queue: [], voice: true }, JSON.parse(localStorage.getItem(SAVE_KEY) || "{}")); }
+  catch (e) { return { name: "하리", cured: 0, stickers: {}, queue: [], voice: true }; }
+}
+const S = load();
+function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
+
+// ───────── 환자 친구들 ─────────
+const ANIMALS = {
+  dog:     { e: "🐶", name: "멍멍이",  skin: "#e9c39b" },
+  cat:     { e: "🐱", name: "야옹이",  skin: "#f6d27a" },
+  rabbit:  { e: "🐰", name: "깡총이",  skin: "#f3eeee" },
+  bear:    { e: "🐻", name: "곰돌이",  skin: "#b77a4a" },
+  panda:   { e: "🐼", name: "판다",    skin: "#f4f4f4" },
+  fox:     { e: "🦊", name: "여우",    skin: "#f08a3a" },
+  pig:     { e: "🐷", name: "꿀꿀이",  skin: "#ffb6c1" },
+  koala:   { e: "🐨", name: "코알라",  skin: "#b9bec7" },
+  tiger:   { e: "🐯", name: "어흥이",  skin: "#f5a742" },
+  frog:    { e: "🐸", name: "개굴이",  skin: "#8fd16a" },
+  monkey:  { e: "🐵", name: "원숭이",  skin: "#c58b5c" },
+  lion:    { e: "🦁", name: "사자",    skin: "#f2b84b" },
+  penguin: { e: "🐧", name: "펭귄",    skin: "#4a4f5c" },
+  chick:   { e: "🐥", name: "삐약이",  skin: "#ffe066" },
+  unicorn: { e: "🦄", name: "유니콘",  skin: "#f6e6ff" },
+};
+
+// ───────── 도구 ─────────
+const BANDAGE_SVG = `<svg width="38" height="38" viewBox="0 0 40 40"><rect x="6" y="10" width="28" height="22" rx="11" fill="#fff" stroke="#bbb" stroke-width="2"/><path d="M12 12v18M18 11v20M24 11v20" stroke="#ddd" stroke-width="2"/><path d="M30 22h8v8h-8z" fill="#fff" stroke="#bbb" stroke-width="2"/></svg>`;
+const TWEEZER_SVG = `<svg width="38" height="38" viewBox="0 0 40 40"><path d="M8 4 L22 34 L20 36 L6 6Z" fill="#9aa4b2"/><path d="M14 4 L23 34 L21 35 L11 5Z" fill="#c4ccd6"/><circle cx="10" cy="5" r="4" fill="#7b8594"/></svg>`;
+const TOOLS = {
+  thermo:   { e: "🌡️", name: "체온계" },
+  stetho:   { e: "🩺", name: "청진기" },
+  light:    { e: "🔦", name: "손전등" },
+  magnify:  { e: "🔍", name: "돋보기" },
+  xray:     { e: "🩻", name: "엑스레이" },
+  clean:    { e: "🧴", name: "소독약" },
+  bandaid:  { e: "🩹", name: "반창고" },
+  bandage:  { svg: BANDAGE_SVG, name: "붕대" },
+  tweezer:  { svg: TWEEZER_SVG, name: "핀셋" },
+  pill:     { e: "💊", name: "알약" },
+  syrup:    { e: "🥄", name: "물약" },
+  ice:      { e: "🧊", name: "얼음 주머니" },
+  brush:    { e: "🪥", name: "칫솔" },
+  tissue:   { e: "🧻", name: "휴지" },
+  shot:     { e: "💉", name: "주사" },
+};
+const toolIcon = id => TOOLS[id].svg || TOOLS[id].e;
+// '체온계로', '붕대로', '손전등으로' 처럼 받침에 맞춰 붙이기
+function ro(w) { const c = w.charCodeAt(w.length - 1) - 0xAC00, j = c % 28; return w + (c >= 0 && c < 11172 && j && j !== 8 ? "으로" : "로"); }
+
+// 틀린 도구를 골랐을 때 환자의 재미있는 대답
+const WRONG = {
+  shot: ["으앙! 주사는 지금 아니에요~", "주사는 무서워요! 다른 거요!"],
+  brush: ["거기를 칫솔로 닦아요? 간지러워요! 히히", "이는 안 아파요~"],
+  tissue: ["콧물은 안 나와요~", "휴지는 지금 필요 없어요!"],
+  ice: ["으으, 차가워요! 그건 아니에요", "얼음은 지금 말고요~"],
+  xray: ["찰칵! 사진은 나중에 찍어요~", "뼈는 괜찮은 것 같아요"],
+  pill: ["약은 조금 이따가요~", "먼저 다른 걸 해 주세요"],
+  syrup: ["물약은 조금 이따가요~", "먼저 다른 걸 해 주세요"],
+};
+const WRONG_ANY = ["음… 그건 지금 아니에요", "다른 도구를 골라 볼까요?", "선생님, 그걸로는 안 나을 것 같아요"];
+
+// ───────── 아픈 곳 ─────────
+// 위치: 진료실 그림(260×372) 안의 좌표
+const SPOTS = {
+  forehead: [130, 40], nose: [130, 78], mouth: [130, 104],
+  chest: [130, 180], tummy: [130, 240], arm: [210, 205], hand: [210, 270], knee: [100, 324],
+};
+
+// 병 종류: 처음 모습(state), 치료 순서(steps)
+// step: tool 도구, hint 힌트, pop 확인 말풍선, say 환자 대답, state 바뀐 모습, sfx 소리
+const ILLS = {
+  fever: {
+    sym: "열이 나요", mood: "🤒", spot: "forehead", state: "heat",
+    intro: "선생님, 몸이 너무 뜨거워요. 머리가 지끈지끈해요.",
+    steps: [
+      { tool: "thermo", hint: "몸이 뜨거워요. 열이 몇 도인지 재 볼까요?", pop: "🌡️ 38.5도!<br>열이 많이 나요", say: "역시 열이 나는구나…" },
+      { tool: "pill", hint: "열을 내려 주는 약을 먹여 줘요", pop: "꿀꺽! 💊", say: "약 먹었어요. 쓴데 꾹 참았어요!" },
+      { tool: "ice", hint: "뜨거운 이마를 시원하게 해 줘요", state: "cool", say: "아~ 시원해요!" },
+    ],
+  },
+  scrape: {
+    sym: "무릎이 까졌어요", mood: "😢", spot: "knee", state: "scrape",
+    intro: "놀이터에서 넘어졌어요. 무릎에서 피가 나요. 으앙!",
+    steps: [
+      { tool: "clean", hint: "상처에 있는 나쁜 세균을 없애요", state: "clean", say: "칙칙! 따끔하지만 참을게요!", sfx: "spray" },
+      { tool: "bandaid", hint: "상처를 덮어서 보호해 줘요", state: "bandaid", say: "반창고 붙이니까 안 아파요!" },
+    ],
+  },
+  cough: {
+    sym: "기침이 나요", mood: "😷", spot: "chest", state: "germ",
+    intro: "콜록콜록! 기침이 멈추지 않아요.",
+    steps: [
+      { tool: "stetho", hint: "가슴에서 무슨 소리가 나는지 들어 봐요", pop: "쿵쿵… 쌕쌕…<br>콜록! 🫁", say: "숨을 크게 쉬었어요. 후~ 하~", sfx: "beat" },
+      { tool: "syrup", hint: "달콤한 기침약을 숟가락으로 먹여요", state: "none", say: "딸기 맛이에요! 기침이 멈췄어요." },
+    ],
+  },
+  tooth: {
+    sym: "이가 아파요", mood: "😣", spot: "mouth", state: "tooth",
+    intro: "사탕을 많이 먹었더니 이가 욱신욱신해요.",
+    steps: [
+      { tool: "light", hint: "입 안을 환하게 비춰서 봐요. 아~ 해 보세요!", pop: "충치 발견! 🦷<br>까만 점이 있어요", say: "아~~~" },
+      { tool: "brush", hint: "충치균을 깨끗이 닦아 내요", state: "sparkle", say: "치카치카 반짝반짝! 이제 안 아파요.", sfx: "brush" },
+    ],
+  },
+  arm: {
+    sym: "팔을 다쳤어요", mood: "😭", spot: "arm", state: "bruise",
+    intro: "나무에서 떨어졌어요. 팔이 너무 아파요.",
+    steps: [
+      { tool: "xray", hint: "뼈가 괜찮은지 몸속 사진을 찍어요", pop: "XRAY", say: "찰칵! 뼈가 보여요?", sfx: "camera" },
+      { tool: "bandage", hint: "다친 팔을 하얀 천으로 단단히 감아요", state: "cast", say: "튼튼해졌어요! 이제 조심할게요." },
+    ],
+  },
+  splinter: {
+    sym: "가시가 박혔어요", mood: "😖", spot: "hand", state: "splinter",
+    intro: "나무를 만졌는데 손에 뭐가 콕 박혔어요.",
+    steps: [
+      { tool: "magnify", hint: "아주 작아서 잘 안 보여요. 크게 보이게 해 봐요", pop: "찾았다! 🔍<br>작은 나무 가시", say: "거기예요, 거기!" },
+      { tool: "tweezer", hint: "작은 가시를 집어서 쏙 뽑아요", state: "scrape", say: "쏙! 뽑혔다!", sfx: "pop" },
+      { tool: "bandaid", hint: "가시가 있던 자리를 덮어 줘요", state: "bandaid", say: "고마워요, 하나도 안 아파요!" },
+    ],
+  },
+  tummy: {
+    sym: "배가 아파요", mood: "🤢", spot: "tummy", state: "germ",
+    intro: "아이스크림을 세 개나 먹었더니 배가 꾸르륵 아파요.",
+    steps: [
+      { tool: "stetho", hint: "배에서 무슨 소리가 나는지 들어 봐요", pop: "꾸르륵~<br>꾸르르륵~", say: "배가 노래를 해요…", sfx: "gurgle" },
+      { tool: "pill", hint: "배 아픈 것을 낫게 하는 약을 먹여요", state: "none", say: "뿌우웅~! 방귀가 나왔어요! 배가 하나도 안 아파요!", sfx: "fart" },
+    ],
+  },
+  cold: {
+    sym: "감기에 걸렸어요", mood: "🤧", spot: "nose", state: "snot",
+    intro: "에취! 콧물이 줄줄 나와요.",
+    steps: [
+      { tool: "thermo", hint: "열이 나는지 재 봐요", pop: "🌡️ 37.8도<br>조금 뜨거워요", say: "에… 에취!" },
+      { tool: "tissue", hint: "줄줄 나오는 콧물을 닦아 줘요. 흥!", state: "none", say: "흥! 코가 시원해요." },
+      { tool: "shot", hint: "감기를 빨리 낫게 하는 주사를 놓아요. 따끔!", say: "따끔! 그래도 울지 않고 꾹 참았어요!", sfx: "pop" },
+    ],
+  },
+  bump: {
+    sym: "머리에 혹이 났어요", mood: "😵", spot: "forehead", state: "bump",
+    intro: "문에 머리를 쿵 부딪혔어요. 빙글빙글 어지러워요.",
+    steps: [
+      { tool: "light", hint: "눈을 비춰서 괜찮은지 살펴봐요", pop: "눈이 반짝! ✨<br>괜찮아요", say: "눈부셔요! 히히" },
+      { tool: "ice", hint: "볼록 튀어나온 혹을 차갑게 해 줘요", state: "cool", say: "혹이 쏙 들어갔어요!" },
+    ],
+  },
+};
+
+const RANKS = [
+  [0, "🐣 새내기 의사"], [3, "🩹 반창고 의사"], [8, "🩺 꼬마 의사"],
+  [15, "⭐ 멋진 의사"], [30, "🏅 최고 의사"], [50, "👑 병원장님"],
+];
+
+// ───────── 소리 ─────────
+let AC = null;
+function ac() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (AC && AC.state === "suspended") AC.resume(); return AC; }
+function tone(freq, dur, type = "sine", vol = .2, at = 0, slideTo) {
+  const a = ac(); if (!a) return;
+  const t = a.currentTime + at, o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + .02);
+}
+function noise(dur, vol = .15, at = 0, freq = 1500) {
+  const a = ac(); if (!a) return;
+  const b = a.createBuffer(1, a.sampleRate * dur, a.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  const s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain(), t = a.currentTime + at;
+  s.buffer = b; f.type = "bandpass"; f.frequency.value = freq;
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+  s.connect(f).connect(g).connect(a.destination); s.start(t);
+}
+const SFX = {
+  pick: () => tone(660, .08, "triangle", .15),
+  ok: () => { tone(784, .12, "triangle"); tone(1046, .18, "triangle", .2, .1); },
+  no: () => tone(220, .25, "square", .08, 0, 150),
+  spray: () => { noise(.18, .2, 0, 3000); noise(.18, .2, .25, 3000); },
+  beat: () => { for (let i = 0; i < 3; i++) { tone(70, .12, "sine", .5, i * .45); tone(60, .12, "sine", .4, i * .45 + .15); } },
+  brush: () => { for (let i = 0; i < 6; i++) noise(.08, .15, i * .12, 4000); },
+  camera: () => { noise(.06, .3, 0, 2500); tone(1500, .05, "square", .1, .05); },
+  pop: () => tone(400, .12, "sine", .3, 0, 900),
+  gurgle: () => { for (let i = 0; i < 5; i++) tone(120 + Math.random() * 80, .15, "sine", .3, i * .13, 60 + Math.random() * 60); },
+  fart: () => { tone(110, .7, "sawtooth", .25, .2, 55); noise(.6, .1, .2, 200); },
+  cheer: () => [523, 659, 784, 1046].forEach((f, i) => tone(f, .25, "triangle", .2, i * .12)),
+};
+function sfx(name) { if (SFX[name]) SFX[name](); }
+
+// 읽어 주기 (아직 글 읽기가 서툰 아이를 위해)
+function speak(text) {
+  if (!S.voice || !("speechSynthesis" in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text.replace(/<br>/g, " ").replace(/[\u{1F000}-\u{1FFFF}☀-➿️]/gu, ""));
+    u.lang = "ko-KR"; u.rate = 1; u.pitch = 1.15;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+// ───────── 화면 전환 ─────────
+const $ = id => document.getElementById(id);
+function show(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id));
+  window.scrollTo(0, 0);
+  if (id === "home") drawHome();
+  if (id === "wait") drawWait();
+  if (id === "bookScr") drawBook();
+}
+document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { sfx("pick"); show(b.dataset.go); });
+
+function rankOf(n) { let r = RANKS[0]; RANKS.forEach(x => { if (n >= x[0]) r = x; }); return r; }
+function drawHome() {
+  $("docName").value = S.name;
+  const r = rankOf(S.cured), next = RANKS.find(x => x[0] > S.cured);
+  $("rank").innerHTML = `지금까지 <b>${S.cured}명</b> 치료했어요<br>${r[1]}` +
+    (next ? `<br><span style="font-size:16px;color:#777">${next[0] - S.cured}명 더 치료하면 ${next[1]}</span>` : "");
+  $("voiceBtn").textContent = S.voice ? "🔊 소리 켜짐" : "🔇 소리 꺼짐";
+}
+$("docName").addEventListener("input", e => { S.name = e.target.value.trim() || "하리"; save(); });
+$("voiceBtn").onclick = () => { S.voice = !S.voice; save(); drawHome(); speak("소리를 켰어요"); };
+$("goWait").onclick = () => { sfx("pick"); ac(); show("wait"); speak("대기실이에요. 어떤 친구부터 치료해 줄까요?"); };
+$("goBook").onclick = () => { sfx("pick"); show("bookScr"); };
+
+// ───────── 대기실 ─────────
+const rand = a => a[Math.floor(Math.random() * a.length)];
+function newPatient() {
+  const used = S.queue.map(p => p.a), usedI = S.queue.map(p => p.i);
+  const ani = Object.keys(ANIMALS).filter(k => !used.includes(k));
+  const ill = Object.keys(ILLS).filter(k => !usedI.includes(k));
+  return { a: rand(ani), i: rand(ill) };
+}
+function fillQueue() {
+  S.queue = S.queue.filter(p => ANIMALS[p.a] && ILLS[p.i]);
+  while (S.queue.length < 3) S.queue.push(newPatient());
+  save();
+}
+function drawWait() {
+  fillQueue();
+  $("waitCount").textContent = `${S.name} 선생님 · 치료 ${S.cured}명`;
+  $("waits").innerHTML = S.queue.map((p, k) => {
+    const A = ANIMALS[p.a], I = ILLS[p.i];
+    return `<button class="wcard" data-k="${k}"><span class="mood">${I.mood}</span><span class="ani">${A.e}</span>${A.name}<br><span class="sym">${I.sym}</span></button>`;
+  }).join("");
+  $("waits").querySelectorAll(".wcard").forEach(b => b.onclick = () => startTreat(+b.dataset.k));
+}
+$("backWait").onclick = () => { sfx("pick"); if (window.speechSynthesis) speechSynthesis.cancel(); show("wait"); };
+
+// ───────── 진료실 ─────────
+let T = null; // 지금 치료 중인 환자
+
+function bodySVG(skin) {
+  return `<svg class="body" viewBox="0 0 200 205">
+    <rect x="18" y="14" width="30" height="104" rx="15" fill="${skin}"/>
+    <rect x="152" y="14" width="30" height="104" rx="15" fill="${skin}"/>
+    <circle cx="33" cy="120" r="15" fill="${skin}"/><circle cx="167" cy="120" r="15" fill="${skin}"/>
+    <rect x="58" y="110" width="34" height="95" rx="16" fill="${skin}"/>
+    <rect x="108" y="110" width="34" height="95" rx="16" fill="${skin}"/>
+    <path d="M40 18 Q100 -6 160 18 L156 132 Q100 146 44 132Z" fill="#cfe9ff" stroke="#9cc9ee" stroke-width="3"/>
+    <path d="M86 6 L100 26 L114 6" fill="none" stroke="#9cc9ee" stroke-width="3"/>
+    <circle cx="100" cy="46" r="3" fill="#9cc9ee"/><circle cx="100" cy="70" r="3" fill="#9cc9ee"/>
+    <path d="M128 44h14v14h-14z" fill="#fff" stroke="#9cc9ee" stroke-width="2"/>
+    <path d="M135 46v10M130 51h10" stroke="#e8505b" stroke-width="3"/>
+  </svg>`;
+}
+
+function startTreat(k) {
+  const p = S.queue[k], A = ANIMALS[p.a], I = ILLS[p.i];
+  T = { k, p, A, I, step: 0, wrong: 0, picked: null, busy: false };
+  sfx("pick");
+  $("patientName").textContent = `${A.e} ${A.name} · ${I.sym}`;
+  const [x, y] = SPOTS[I.spot];
+  $("fig").innerHTML = `<div class="head" id="head">${A.e}</div><div class="moodbadge" id="mood">${I.mood}</div>${bodySVG(A.skin)}
+    <div class="spot ${I.state}" id="spot" style="left:${x}px;top:${y}px"></div>`;
+  $("spot").onclick = applyTool;
+  drawTray();
+  show("treat");
+  setSay(I.intro);
+  speak(I.intro);
+  drawStep(false);
+}
+
+function setSay(text) { $("say").innerHTML = `${T.A.e} ${text}`; }
+function drawTray() {
+  $("tray").innerHTML = Object.keys(TOOLS).map(id =>
+    `<button class="tool" data-t="${id}"><span class="e">${toolIcon(id)}</span>${TOOLS[id].name}</button>`).join("");
+  $("tray").querySelectorAll(".tool").forEach(b => b.onclick = () => pickTool(b.dataset.t, b));
+}
+function drawStep(read = true) {
+  const st = T.I.steps[T.step];
+  $("steps").innerHTML = T.I.steps.map((_, i) => `<i class="${i < T.step ? "done" : i === T.step ? "now" : ""}"></i>`).join("");
+  $("hint").textContent = "💡 " + st.hint;
+  T.wrong = 0; T.picked = null;
+  document.querySelectorAll(".tool").forEach(b => b.classList.remove("glow", "sel"));
+  clearTarget();
+  if (read) speak(st.hint);
+}
+$("hearHint").onclick = () => { if (T) speak(T.picked ? "아픈 곳을 눌러 주세요" : T.I.steps[T.step].hint); };
+
+function clearTarget() {
+  const s = $("spot"); if (s) s.classList.remove("target");
+  document.querySelectorAll(".tapme").forEach(e => e.remove());
+}
+
+function pickTool(id, btn) {
+  if (!T || T.busy) return;
+  const st = T.I.steps[T.step];
+  if (id !== st.tool) {
+    sfx("no");
+    btn.classList.remove("no"); void btn.offsetWidth; btn.classList.add("no");
+    const line = rand((WRONG[id] || []).concat(WRONG_ANY));
+    setSay(line); speak(line);
+    T.wrong++;
+    // 두 번 틀리면 맞는 도구가 반짝반짝
+    if (T.wrong >= 2) document.querySelector(`.tool[data-t="${st.tool}"]`).classList.add("glow");
+    return;
+  }
+  sfx("pick");
+  T.picked = id;
+  document.querySelectorAll(".tool").forEach(b => b.classList.toggle("sel", b === btn));
+  btn.classList.remove("glow");
+  const s = $("spot"); s.classList.add("target");
+  const [x, y] = SPOTS[T.I.spot];
+  const tap = document.createElement("div");
+  tap.className = "tapme"; tap.textContent = "여기를 눌러요 👆";
+  tap.style.left = x + "px"; tap.style.top = (y + 40) + "px";
+  $("fig").appendChild(tap);
+  $("hint").textContent = `👍 좋아요! ${ro(TOOLS[id].name)} 아픈 곳을 눌러요`;
+  speak("좋아요! 아픈 곳을 눌러 주세요");
+}
+
+function applyTool() {
+  if (!T || !T.picked || T.busy) return;
+  T.busy = true;
+  const st = T.I.steps[T.step], [x, y] = SPOTS[T.I.spot];
+  clearTarget();
+  document.querySelectorAll(".tool").forEach(b => b.classList.remove("sel"));
+  $("hint").textContent = `🩺 ${TOOLS[st.tool].name} 쓰는 중…`;
+  const u = document.createElement("div");
+  u.className = "usetool"; u.innerHTML = toolIcon(st.tool);
+  u.style.left = x + "px"; u.style.top = y + "px";
+  $("fig").appendChild(u);
+  sfx(st.sfx || "ok");
+  setTimeout(() => {
+    u.remove();
+    if (st.state) $("spot").className = "spot " + st.state;
+    if (st.pop) showPop(st.pop);
+    setSay(st.say); speak(st.say);
+    if (st.sfx) sfx("ok");
+    T.step++;
+    setTimeout(() => {
+      hidePop();
+      T.busy = false;
+      if (T.step >= T.I.steps.length) cured();
+      else drawStep();
+    }, st.pop ? 2300 : 1500);
+  }, 900);
+}
+
+function showPop(html) {
+  if (html === "XRAY") html = `뼈에 금이 갔어요!<svg width="150" height="70" viewBox="0 0 150 70"><rect width="150" height="70" rx="10" fill="#1d2433"/>
+    <path d="M18 28a9 9 0 1 1 12-8h90a9 9 0 1 1 12 8 9 9 0 1 1-12 8H30a9 9 0 1 1-12-8z" fill="#e8f1ff"/>
+    <path d="M72 18l-6 10 8 6-6 10" stroke="#ff4d5a" stroke-width="4" fill="none"/></svg>`;
+  $("pop").innerHTML = html; $("pop").classList.add("on");
+}
+function hidePop() { $("pop").classList.remove("on"); }
+
+function cured() {
+  $("mood").textContent = "😄";
+  $("head").classList.add("bounce");
+  $("hint").textContent = "🎉 다 나았어요!";
+  $("steps").querySelectorAll("i").forEach(i => i.className = "done");
+  sfx("cheer");
+  confetti();
+  S.cured++;
+  S.stickers[T.p.a] = (S.stickers[T.p.a] || 0) + 1;
+  S.queue.splice(T.k, 1);
+  save();
+  const before = rankOf(S.cured - 1)[1], now = rankOf(S.cured)[1];
+  setTimeout(() => {
+    $("doneAni").textContent = T.A.e;
+    const msg = `${S.name} 선생님, 고마워요!<br>이제 하나도 안 아파요!` + (before !== now ? `<br><b style="color:#e8505b">새 칭호: ${now}</b>` : "");
+    $("doneMsg").innerHTML = msg;
+    $("doneSticker").textContent = T.A.e;
+    $("done").classList.add("on");
+    speak(`${S.name} 선생님, 고마워요! 이제 하나도 안 아파요!` + (before !== now ? ` 새 칭호를 받았어요. ${now}` : ""));
+  }, 1300);
+}
+$("nextBtn").onclick = () => { $("done").classList.remove("on"); T = null; sfx("pick"); show("wait"); speak("다음 환자 들어오세요!"); };
+
+function confetti() {
+  const items = ["❤️", "⭐", "💖", "🎉", "✨", T.A.e];
+  for (let i = 0; i < 24; i++) {
+    const f = document.createElement("div");
+    f.className = "fall"; f.textContent = rand(items);
+    f.style.left = Math.random() * 100 + "vw";
+    f.style.animationDelay = Math.random() * .8 + "s";
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 3200);
+  }
+}
+
+// ───────── 스티커북 ─────────
+function drawBook() {
+  const got = Object.keys(ANIMALS).filter(k => S.stickers[k]).length;
+  $("bookCount").textContent = `${got} / ${Object.keys(ANIMALS).length} 친구`;
+  $("book").innerHTML = Object.entries(ANIMALS).map(([k, A]) => {
+    const n = S.stickers[k] || 0;
+    return `<div class="bk ${n ? "" : "off"}"><span class="s">${A.e}${n > 1 ? `<span class="n">×${n}</span>` : ""}</span>${n ? A.name : "?"}</div>`;
+  }).join("");
+}
+
+drawHome();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+</script>
+</body>
+</html>
