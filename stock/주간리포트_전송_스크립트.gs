@@ -42,6 +42,15 @@ function doPost(e) {
   // 연결 테스트: 루틴은 깨우지 않고 설정만 확인
   if (body.ping) return reply_({ ok: true, ping: true });
 
+  // 하루 요약: 루틴을 깨우지 않고 저장만 한다.
+  // 아침 7시 비서 브리핑이 doGet으로 읽어 간다.
+  if (body.daily) {
+    const snap = JSON.stringify({ 받은시각: new Date().toISOString(), 내용: body.daily });
+    if (snap.length > 8500) return reply_({ ok: false, error: '하루 요약이 너무 길어' });
+    PropertiesService.getScriptProperties().setProperty('DAILY_SNAPSHOT', snap);
+    return reply_({ ok: true, daily: true });
+  }
+
   const report = String(body.report || '').slice(0, 20000);
   if (!report.startsWith('## ')) return reply_({ ok: false, error: '주간 리포트 형식이 아니야' });
 
@@ -59,6 +68,21 @@ function doPost(e) {
   const code = res.getResponseCode();
   if (code >= 200 && code < 300) return reply_({ ok: true });
   return reply_({ ok: false, error: '루틴 호출 실패 (' + code + ')', detail: res.getContentText().slice(0, 300) });
+}
+
+/**
+ * 아침 비서 브리핑이 하루 요약을 읽어 가는 주소.
+ * 예: https://script.google.com/macros/s/.../exec?key=암호
+ */
+function doGet(e) {
+  const saved = prop_('RELAY_KEY');
+  const key = String((e && e.parameter && e.parameter.key) || '').trim();
+  if (!saved) return reply_({ ok: false, error: '스크립트 속성에 RELAY_KEY가 없어' });
+  if (key !== saved) return reply_({ ok: false, error: '암호가 없거나 달라' });
+  const snap = prop_('DAILY_SNAPSHOT');
+  if (!snap) return reply_({ ok: true, snapshot: null, note: '아직 앱에서 받은 하루 요약이 없어' });
+  return ContentService.createTextOutput('{"ok":true,"snapshot":' + snap + '}')
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 function reply_(obj) {

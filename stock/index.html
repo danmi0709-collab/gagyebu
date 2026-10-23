@@ -306,7 +306,7 @@ function migrateEnded() {
   const t = today(), fix = x => { if (x.ended === t && !x.endedOn) { x.endedOn = t; x.ended = addD(t, 1); } };
   S.sectors.forEach(s => { fix(s); s.items.forEach(fix); });
 }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('저장 실패: 저장 공간을 확인해 줘'); } }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('저장 실패: 저장 공간을 확인해 줘'); } syncDaily(); }
 
 /* ---------- 계산 ---------- */
 // 항목·사업부는 지우지 않고 '완료(ended)' 날짜만 붙인다 → 지난 기록의 이름·사업부가 그대로 남는다
@@ -540,6 +540,53 @@ async function relayPost(obj) {
     const res = await fetch(S.relayUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(obj) });
     return await res.json();
   } catch (e) { return { ok: false, error: '인터넷 연결이나 주소를 확인해 줘' }; }
+}
+
+/* ---------- 하루 요약 자동 전송 (아침 브리핑용) ----------
+   앱을 열거나 체크를 바꿀 때마다 지금 상태를 중계 스크립트에 보내 둔다.
+   아침 7시 비서 브리핑이 그 값을 읽어 간다. (localStorage는 이 기기에만 있어서 그냥은 못 읽는다)
+   실패해도 조용히 넘어간다 — 기록 자체는 앱에 그대로 남아 있다. */
+let DAILY_LAST = '', DAILY_TIMER = null;
+
+function dailyPayload() {
+  const C = compute(), t = today(), st = S.settings;
+  const cur = C.days[C.days.length - 1];
+  const prev = C.days[C.days.length - 2] || null;
+  const rec = S.days[t] || {}, done = rec.done || {};
+  const n = now();
+  return {
+    보낸시각: `${ymd(n)} ${pad(n.getHours())}:${pad(n.getMinutes())}`,
+    오늘: t,
+    오늘_장중: { 주가: Math.round(cur.close), 등락: pctTxt(cur.pct), 점수: `${cur.pts}/${cur.target}`, 휴장: !!cur.off },
+    오늘_남은항목: allItems().filter(i => activeOn(i.sec, i, t) && !done[i.id]).map(i => `${i.sec.emoji}${i.name} (+${i.pts})`),
+    오늘_사업부: S.sectors.filter(s => activeOn(s, null, t)).map(s => {
+      const max = s.items.filter(i => activeOn(s, i, t)).reduce((a, i) => a + i.pts, 0);
+      const got = s.items.reduce((a, i) => a + (done[i.id] || 0), 0);
+      return `${s.emoji}${s.name} ${got}/${max}`;
+    }),
+    어제: prev ? { 날짜: prev.date, 종가: Math.round(prev.close), 등락: pctTxt(prev.pct), 점수: `${prev.pts}/${prev.target}`, 휴장: !!prev.off } : null,
+    목표점수: st.target,
+    보합점수: +evenPts().toFixed(1),
+    연속상승: C.upRun,
+    연속하락: C.downRun,
+    관리종목: C.downRun >= 3,
+    배당: { 연속: C.streak, 다음까지: st.divStreak - (C.streak % st.divStreak), 미사용쿠폰: C.coupons.filter(c => !S.usedCoupons[c.key]).length },
+    상장후수익률: pctTxt((cur.close / S.base - 1) * 100),
+    최근7일: C.days.slice(-7).map(d => `${md(d.date)}(${WD[pd(d.date).getDay()]}) ${d.off ? '휴장' : pctTxt(d.pct)}${d.closed ? '' : '(장중)'}`),
+    고정메모: (S.memos || []).filter(m => m.pinned).slice(-3).map(m => m.text.slice(0, 200)),
+  };
+}
+
+function syncDaily() {
+  if (!S.relayUrl) return;
+  clearTimeout(DAILY_TIMER);
+  DAILY_TIMER = setTimeout(() => {
+    let body, core;
+    try { body = dailyPayload(); core = JSON.stringify({ ...body, 보낸시각: '' }); } catch (e) { return; }
+    if (core === DAILY_LAST) return;          // 내용이 같으면 다시 보내지 않는다
+    DAILY_LAST = core;
+    relayPost({ daily: body }).then(r => { if (!r || !r.ok) DAILY_LAST = ''; });  // 실패하면 다음에 다시 시도
+  }, 3000);
 }
 // 노션은 HTML로 붙여넣어야 제목·목록이 각각 블록으로 들어간다 (일반 텍스트는 폰에서 한 줄로 뭉쳐지는 경우가 있음)
 const reportHtml = txt => txt.split('\n').map(l => l.startsWith('## ') ? `<h2>${esc(l.slice(3))}</h2>` : l.startsWith('- ') ? `<li>${esc(l.slice(2))}</li>` : `<p>${esc(l)}</p>`)
@@ -941,10 +988,10 @@ document.addEventListener('change', e => {
 let lastDay = null;
 setInterval(() => { if (today() !== lastDay) { lastDay = today(); EDIT_DAY = null; if (!$('#sheet').classList.contains('open')) render(); } else if (TAB === 'home' && !$('#sheet').classList.contains('open')) { const s = document.querySelector('.status'); if (s && !s.textContent.includes('휴장')) s.innerHTML = `<span class="dot"></span> 장중 · 마감까지 ${closeLeft()}`; } }, 30000);
 document.addEventListener('input', e => { if (e.target.id === 'memoIn') MEMO_DRAFT = e.target.value; });
-document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { render(); syncDaily(); } });
 window.addEventListener('resize', () => { if (TAB === 'home') render(); });
 
-load(); migrateEnded(); applyTheme(); lastDay = today(); render();
+load(); migrateEnded(); applyTheme(); lastDay = today(); render(); syncDaily();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
