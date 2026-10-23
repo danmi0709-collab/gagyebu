@@ -197,6 +197,11 @@ textarea{font-family:inherit;font-size:16px;color:var(--text);background:var(--c
 .itemedit{display:flex;gap:6px;margin:6px 0}
 .itemedit input{flex:1}
 .itemedit select{width:62px;padding:9px 4px}
+.star{flex-shrink:0;width:30px;font-size:17px;color:var(--text3)}
+.star.on{color:var(--gold)}
+.corewarn{margin-top:8px;font-size:12px;font-weight:700;color:var(--warn)}
+.coremuted{margin-top:8px;font-size:12px;font-weight:600;color:var(--text2)}
+.coreok{margin-top:8px;font-size:12px;font-weight:700;color:var(--up)}
 .mover{display:flex;flex-direction:column;justify-content:center;gap:2px;flex-shrink:0}
 .mover button{width:28px;height:19px;border-radius:6px;background:var(--card2);color:var(--text2);font-size:10px;line-height:1}
 .mover button:disabled{opacity:.25}
@@ -314,6 +319,7 @@ const allItems = () => S.sectors.flatMap(s => s.items.map(i => ({ ...i, sec: s }
 // ended = 체크 목록에서 빠지는 첫날(완료한 다음 날), endedOn = 완료를 누른 날
 const gone = x => !!x.ended && x.ended <= today();          // 이미 목록에서 빠짐 → 되살리기 칸
 const pendingEnd = x => !!x.ended && x.ended > today();    // 오늘 완료함 → 오늘까지는 남아 있음
+const coreIdsOn = d => allItems().filter(i => i.core && activeOn(i.sec, i, d)).map(i => i.id);
 const doneDay = x => x.endedOn || x.ended;
 const endOf = (s, i) => [s.ended, i && i.ended].filter(Boolean).sort()[0] || null;
 const activeOn = (s, i, d) => { const e = endOf(s, i); return !e || d < e; };
@@ -352,17 +358,23 @@ function compute() {
   S.disclosures.forEach(d => (disc[d.date] = disc[d.date] || []).push({ kind: 'disc', title: d.title, pct: +d.pct }));
   const perf = perfEvents();
   const days = [], news = [], coupons = [];
-  let price = S.base, hi = S.base, lo = S.base, streak = 0, upRun = 0, downRun = 0;
+  let price = S.base, hi = S.base, lo = S.base, streak = 0, upRun = 0, downRun = 0, prevHit = true;   // prevHit: 직전 영업일에 ⭐를 했는지
   for (let d = S.start; d <= t; d = addD(d, 1)) {
     const rec = S.days[d] || {};
     const closed = d < t, off = !!rec.off;
     const pts = recPts(rec), target = rec.target || st.target, ratio = pts / target;
-    const base = off ? 0 : baseChange(ratio);
+    // ⭐ 규칙: 이틀 연속 빠지지 않기. 어제 ⭐를 안 했으면 오늘은 필수 → 오늘도 안 하면 상승을 0%로 제한
+    const coreIds = rec.coreIds || [];
+    const coreHit = rec.coreIds ? (coreIds.length === 0 || coreIds.some(id => (rec.done || {})[id]))
+      : !(S.coreSince && d >= S.coreSince && !off);          // ⭐ 도입 뒤 아무 기록이 없는 날 = 안 함
+    const coreRequired = !off && !prevHit, coreMiss = coreRequired && !coreHit;
+    if (!off && closed) prevHit = coreHit;
+    const base = off ? 0 : coreMiss ? Math.min(0, baseChange(ratio)) : baseChange(ratio);
     const ev = [...(disc[d] || []), ...(perf[d] || [])];
     const bonus = ev.reduce((a, e) => a * (1 + e.pct / 100), 1);
     const pct = ((1 + base / 100) * bonus - 1) * 100;
     const open = price, close = open * (1 + pct / 100);
-    const day = { date: d, open, close, pct, base, pts, target, ratio, off, closed, ev };
+    const day = { date: d, open, close, pct, base, pts, target, ratio, off, closed, ev, coreMiss, coreHit, coreRequired, coreSet: coreIds.length > 0 };
     days.push(day);
     ev.forEach(e => news.push({ date: d, text: `${e.kind === 'disc' ? '📢 공시' : '🧾 실적'} · ${e.title}${e.pct ? ` (${sgn(e.pct)}${e.pct}%)` : ''}`, live: !closed }));
     if (!closed) break;
@@ -372,10 +384,11 @@ function compute() {
     if (close > hi + 0.01) { if (days.length > 1) news.push({ date: d, text: `📈 신고가 경신 ${won(close)}원` }); hi = close; }
     lo = Math.min(lo, close);
     if (base >= st.cap - 0.001) news.push({ date: d, text: '🚀 상한가!' });
+    if (coreMiss && pts > 0 && baseChange(ratio) > 0) news.push({ date: d, text: `⭐ 이틀 연속 미달 · ${pctTxt(baseChange(ratio))} → 보합 제한` });
     if (pts === 0) news.push({ date: d, text: `😶 거래 없음 (${pctTxt(base)})` });
     if ([3, 5, 10, 20, 30].includes(upRun)) news.push({ date: d, text: `🔥 ${upRun}일 연속 상승` });
     if (downRun === 3) news.push({ date: d, text: '⚠️ 3일 연속 하락 · 관리종목 지정' });
-    if (ratio >= st.divRatio) { streak++; if (streak % st.divStreak === 0) {
+    if (ratio >= st.divRatio && !coreMiss) { streak++; if (streak % st.divStreak === 0) {
       const reward = S.rewards.length ? S.rewards[coupons.length % S.rewards.length] : '나에게 주는 선물';
       coupons.push({ key: d, date: d, reward }); news.push({ date: d, text: `💰 배당 지급 · ${reward}` }); } }
     else streak = 0;
@@ -435,6 +448,7 @@ function viewHome(C) {
     <div class="status">${L.off ? '🏖️ 오늘은 휴장' : `<span class="dot"></span> 장중 · 마감까지 ${closeLeft()}`}</div>
   </div>
   ${mgmt ? `<div class="banner warn">⚠️ 관리종목 지정 중 — 3일 연속 하락. 오늘 ${evenPts().toFixed(1)}점만 넘겨도 상승 전환이야.</div>` : ''}
+  ${!L.off && L.coreRequired && !L.coreHit ? `<div class="banner warn">⚠️ 어제 ⭐ 핵심 항목을 빠뜨렸어. 오늘은 ⭐ 하나는 꼭 해야 주가가 오를 수 있어.</div>` : ''}
   ${!L.off && L.pts === 0 ? `<div class="banner warn">지금 이대로 마감하면 <b>${pctTxt(-st.down)}</b>. ${evenPts().toFixed(1)}점만 넘겨도 보합 이상이야.</div>` : ''}
   <div class="card">
     <div class="chart" id="chart"><div class="tip" id="tip"></div></div>
@@ -473,7 +487,7 @@ function viewToday(C) {
     if (!its.length) return '';
     return `<div class="card"><h3>${esc(s.emoji)} ${esc(s.name)} 사업부</h3>
     ${its.map(i => `<button class="item ${done[i.id] ? 'done' : ''}" data-item="${i.id}" ${rec.off ? 'disabled style="opacity:.4"' : ''}>
-      <span class="check">✓</span><span class="t">${esc(i.name)}${!activeOn(s, i, EDIT_DAY) ? ' <span class="muted small">(완료된 항목)</span>' : endOf(s, i) === addD(EDIT_DAY, 1) ? ` <span class="muted small">🏁 ${EDIT_DAY === today() ? '오늘' : '이날'} 완료</span>` : ''}</span><span class="p">+${done[i.id] || i.pts}점</span></button>`).join('')}
+      <span class="check">✓</span><span class="t">${i.core ? '⭐ ' : ''}${esc(i.name)}${!activeOn(s, i, EDIT_DAY) ? ' <span class="muted small">(완료된 항목)</span>' : endOf(s, i) === addD(EDIT_DAY, 1) ? ` <span class="muted small">🏁 ${EDIT_DAY === today() ? '오늘' : '이날'} 완료</span>` : ''}</span><span class="p">+${done[i.id] || i.pts}점</span></button>`).join('')}
   </div>`;
   }).join('');
   return `<div class="wrap">
@@ -484,6 +498,11 @@ function viewToday(C) {
       <div class="row" data-flash style="border-radius:10px"><span class="big num ${cls(day.pct)}">${pctTxt(day.pct)}</span><span class="num" style="font-weight:700">${won(day.close)}원</span></div>
       <div class="prog"><i style="width:${Math.min(100, day.ratio * 100)}%;background:${day.pct >= 0 ? 'var(--up)' : 'var(--down)'}"></i>
         <span class="mark" style="left:${st.down / (st.up + st.down) * 100}%" title="보합선"></span></div>
+      ${(rec.coreIds ? rec.coreIds.length : coreIdsOn(EDIT_DAY).length) && !rec.off ? (
+        day.coreRequired && !day.coreHit ? `<div class="corewarn">⚠️ ${EDIT_DAY === today() ? '어제' : '전날'} ⭐를 빠뜨렸어. 오늘은 ⭐ 필수 · 안 하면 최대 보합(0%)</div>`
+        : day.coreRequired ? `<div class="coreok">⭐ 이틀 연속 빠짐을 막았어 · 상승 제한 없음</div>`
+        : day.coreHit && rec.coreIds ? `<div class="coreok">⭐ 달성 · 내일은 쉬어도 돼</div>`
+        : `<div class="coremuted">⭐ ${EDIT_DAY === today() ? '어제' : '전날'} 했으니 오늘은 선택 · 오늘도 빠지면 내일은 필수</div>`) : ''}
       <div class="muted small" style="margin-top:6px">0점 ${pctTxt(-st.down)} · ${evenPts().toFixed(1)}점 보합 · ${target}점 +${st.up}% · 그 이상 최대 +${st.cap}% (상한가)</div>
     </div>
   </div>
@@ -511,7 +530,7 @@ function weekReport(C, mon) {
   const secLine = S.sectors.filter(s => activeOn(s, null, mon) || secPts[s.emoji + s.name]).map(s => `${s.emoji}${s.name} ${secPts[s.emoji + s.name] || 0}점`).concat(secPts['기타'] ? [`기타 ${secPts['기타']}점`] : []).join(' · ');
   const itemLine = items.filter(i => activeOn(i.sec, i, mon) || itemCnt[i.id]).map(i => `${i.name} ${itemCnt[i.id] || 0}회${activeOn(i.sec, i, sun) ? '' : ' (완료)'}`).join(', ');
   const open = ds.filter(d => !d.off);
-  const goalDays = open.filter(d => d.ratio >= 1).length, upDays = open.filter(d => d.base >= 0).length, offDays = ds.length - open.length;
+  const goalDays = open.filter(d => d.ratio >= 1 && !d.coreMiss).length, upDays = open.filter(d => d.base >= 0).length, offDays = ds.length - open.length;
   const avgW = (a, b) => { const v = S.weights.filter(x => x.date >= a && x.date <= b).map(x => +x.val); return v.length ? v.reduce((p, c) => p + c, 0) / v.length : null; };
   const wNow = avgW(mon, sun), wPrev = avgW(addD(mon, -7), addD(mon, -1));
   const wTxt = wNow === null ? '기록 없음' : `${wNow.toFixed(1)}kg` + (wPrev === null ? '' : ` (지난주 대비 ${sgn(wNow - wPrev)}${Math.abs(wNow - wPrev).toFixed(1)}kg)`);
@@ -524,7 +543,7 @@ function weekReport(C, mon) {
     `## ${y}. ${md(mon)}(월)~${md(sun)}(일) · 주가 ${pctTxt(pct)}${sun >= t ? ' (진행 중)' : ''}`,
     `- 주가: ${won(first.open)} → ${won(last.close)}원 (${pctTxt(pct)})`,
     `- 노력: ${secLine}`,
-    `- 목표 달성 ${goalDays}일 · 보합 이상 ${upDays}일 · 휴장 ${offDays}일 (기록 ${ds.length}일)`,
+    `- 목표 달성 ${goalDays}일 · 보합 이상 ${upDays}일 · 휴장 ${offDays}일 (기록 ${ds.length}일)${open.some(d => d.coreSet) ? ` · ⭐핵심 달성 ${open.filter(d => d.coreSet && !d.coreMiss).length}일` : ''}`,
     `- 항목별: ${itemLine}`,
     `- 결과: 체중 ${wTxt}${sv.length ? ' · 저축 ' + sv.join(', ') : ''}`,
     `- 공시: ${dc.length ? dc.join(', ') : '없음'}`,
@@ -684,7 +703,7 @@ function viewDiv(C) {
   }).join('');
   return `<div class="wrap">${header()}
   <div class="card"><h3>배당 조건</h3>
-    <p class="small muted">목표 점수의 ${Math.round(st.divRatio * 100)}% 이상(${Math.ceil(st.target * st.divRatio)}점)을 <b>${st.divStreak}일 연속</b> 채우면 배당 쿠폰 1장. 휴장일은 연속 기록을 끊지 않아.</p>
+    <p class="small muted">목표 점수의 ${Math.round(st.divRatio * 100)}% 이상(${Math.ceil(st.target * st.divRatio)}점)을 <b>${st.divStreak}일 연속</b> 채우면 배당 쿠폰 1장. ⭐ 필수인 날 ⭐를 빠뜨리면 연속이 끊겨. 휴장일은 연속 기록을 끊지 않아.</p>
     <div class="streak">${boxes}</div>
     <p class="small">다음 배당까지 <b>${st.divStreak - n}일</b></p>
   </div>
@@ -745,7 +764,7 @@ function openSettings(keepScroll) {
     <div class="head"><span class="mover"><button data-movesec="${si}:-1" ${actSec.indexOf(si) === 0 ? 'disabled' : ''} aria-label="사업부 위로">▲</button><button data-movesec="${si}:1" ${actSec.indexOf(si) === actSec.length - 1 ? 'disabled' : ''} aria-label="사업부 아래로">▼</button></span><input data-sec="${si}" data-f="emoji" value="${esc(s.emoji)}"><input data-sec="${si}" data-f="name" value="${esc(s.name)}">${pendingEnd(s) ? `<button class="endbtn pending" data-undoendsec="${si}">완료됨 ↩</button>` : `<button class="endbtn" data-endsec="${si}">사업부 완료</button>`}</div>
     ${s.items.map((it, ii) => { if (gone(it)) return '';
       const act = s.items.map((x, j) => gone(x) ? -1 : j).filter(j => j >= 0), pos = act.indexOf(ii);
-      return `<div class="itemedit" data-row="${si}:${ii}"><span class="mover"><button data-move="${si}:${ii}:-1" ${pos === 0 ? 'disabled' : ''} aria-label="위로">▲</button><button data-move="${si}:${ii}:1" ${pos === act.length - 1 ? 'disabled' : ''} aria-label="아래로">▼</button></span><input data-sec="${si}" data-it="${ii}" data-f="name" value="${esc(it.name)}">
+      return `<div class="itemedit" data-row="${si}:${ii}"><span class="mover"><button data-move="${si}:${ii}:-1" ${pos === 0 ? 'disabled' : ''} aria-label="위로">▲</button><button data-move="${si}:${ii}:1" ${pos === act.length - 1 ? 'disabled' : ''} aria-label="아래로">▼</button></span><button class="star ${it.core ? 'on' : ''}" data-core="${si}:${ii}" aria-label="${it.core ? '핵심 해제' : '핵심 항목으로'}">${it.core ? '⭐' : '☆'}</button><input data-sec="${si}" data-it="${ii}" data-f="name" value="${esc(it.name)}">
       <select data-sec="${si}" data-it="${ii}" data-f="pts">${[1, 2, 3, 4, 5].map(n => `<option value="${n}" ${it.pts === n ? 'selected' : ''}>${n}점</option>`).join('')}</select>
       ${pendingEnd(it) ? `<button class="endbtn pending" data-undoenditem="${si}:${ii}">완료됨 ↩</button>` : `<button class="endbtn" data-enditem="${si}:${ii}">완료</button>`}</div>`; }).join('')}
     <button class="btn ghost small" data-additem="${si}" style="margin-top:4px">+ 항목</button>
@@ -771,7 +790,7 @@ function openSettings(keepScroll) {
   </div>
   <div class="card"><h3>사업부 · 하루 체크 항목 <span class="sub">사업부당 3개 이하 추천</span></h3>${secs}
     <button class="btn ghost" data-act="addsec" style="width:100%;margin-top:8px">+ 사업부 추가</button>
-    <p class="muted small" style="margin-top:8px">다 끝낸 항목은 '완료'를 눌러. 오늘까지는 체크 목록에 남고 내일부터 빠져서 아래 되살리기 칸으로 가. 지난 기록·주가·리포트에는 이름 그대로 남아.</p>
+    <p class="muted small" style="margin-top:8px">☆를 누르면 ⭐ 핵심 항목이 돼. 규칙은 '이틀 연속 빠지지 않기': 어제 ⭐를 했으면 오늘은 선택, 어제 안 했으면 오늘은 필수야. 필수인 날 ⭐를 안 하면 최대 보합(0%)까지만 올라. 다 끝낸 항목은 '완료'를 눌러. 오늘까지는 체크 목록에 남고 내일부터 빠져서 아래 되살리기 칸으로 가. 지난 기록·주가·리포트에는 이름 그대로 남아.</p>
     ${endedSecs ? `<div class="endedlist" style="margin-top:10px"><div class="small" style="font-weight:700;margin-bottom:4px">완료한 사업부</div>${endedSecs}</div>` : ''}</div>
   <div class="card"><h3>결과 목표</h3>
     <label class="field"><span>목표 체중 (kg)</span><input data-wg="target" type="number" step="0.1" value="${esc(S.weightGoal.target)}"></label>
@@ -819,7 +838,7 @@ document.addEventListener('click', e => {
     rec.done = rec.done || {};
     const it = allItems().find(i => i.id === d.item);
     if (rec.done[d.item]) delete rec.done[d.item]; else if (it) rec.done[d.item] = it.pts;
-    rec.target = st.target;
+    rec.target = st.target; rec.coreIds = coreIdsOn(EDIT_DAY);
     save(); render();
     if (rec.done[d.item] && navigator.vibrate) navigator.vibrate(15);
     return;
@@ -865,6 +884,11 @@ document.addEventListener('click', e => {
     const row = document.querySelector(`#sheet [data-secrow="${j}"]`);
     if (row) { row.classList.add('moved'); row.scrollIntoView({ block: 'nearest' }); }
     return;
+  }
+  if (d.core) {
+    const [si, ii] = d.core.split(':').map(Number), it = S.sectors[si].items[ii]; it.core = !it.core; if (it.core && !S.coreSince) S.coreSince = today();
+    const r = S.days[today()]; if (r && r.done) r.coreIds = coreIdsOn(today());   // 오늘 기록이 있으면 오늘부터 바로 반영
+    save(); openSettings(true); toast(it.core ? `⭐ ${it.name}: 핵심 항목` : `☆ ${it.name}: 핵심 해제`); return;
   }
   if (d.move) {
     const [si, ii, dir] = d.move.split(':').map(Number), items = S.sectors[si].items;
