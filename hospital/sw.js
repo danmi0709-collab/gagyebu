@@ -1,5 +1,5 @@
 // 꼬마 의사 병원 — 오프라인 실행용 Service Worker (범위: /gagyebu/hospital/)
-const CACHE_NAME = 'kids-hospital-v1';  // 게임을 고치면 숫자를 올려 주세요
+const CACHE_NAME = 'kids-hospital-v2';  // 게임을 고치면 숫자를 올려 주세요
 const FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-180.png'];
 
 self.addEventListener('install', (e) => {
