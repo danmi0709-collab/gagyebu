@@ -24,3 +24,10 @@ curl -fsSL https://raw.githubusercontent.com/danmi0709-collab/gagyebu/main/setup
 - 확인: `headroom doctor` → savings 항목에 절약한 토큰 수가 찍히면 된다.
 
 (주소의 `main`은 이 파일이 main 브랜치에 합쳐진 뒤 동작한다. 그 전에는 `main` 대신 `ccr-b8388ac3-lwumnv`.)
+
+## 바탕화면 바로가기 (윈도우, 더블클릭으로 Claude + Headroom 실행)
+PowerShell에 아래 한 줄을 붙여 넣으면 바탕화면에 `Claude-Headroom.bat` 이 생긴다.
+작업 폴더는 기본이 `C:\Users\이름\claude-test` 이고, 파일을 우클릭 → 편집(메모장)에서 폴더 이름만 바꾸면 된다.
+```
+$d=[Environment]::GetFolderPath('Desktop'); Set-Content -Path "$d\Claude-Headroom.bat" -Encoding Ascii -Value @('@echo off','if not exist "%USERPROFILE%\claude-test" mkdir "%USERPROFILE%\claude-test"','cd /d "%USERPROFILE%\claude-test"','headroom wrap claude','pause')
+```
