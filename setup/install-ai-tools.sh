@@ -28,7 +28,7 @@ step "Graphify"
 if command -v graphify >/dev/null 2>&1; then
   echo "이미 있음: $(graphify --version)"
 else
-  uv tool install graphifyy
+  uv tool install --python 3.13 graphifyy
 fi
 # 스킬 파일이 없을 때만 연결 작업 실행
 if [ ! -f "$HOME/.claude/skills/graphify/SKILL.md" ]; then

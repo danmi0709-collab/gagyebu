@@ -22,7 +22,7 @@ else {
 
 Step "Graphify"
 if (Has graphify) { Write-Host "이미 있음: $(graphify --version)" }
-else { uv tool install graphifyy }
+else { uv tool install --python 3.13 graphifyy }
 if (-not (Test-Path "$env:USERPROFILE\.claude\skills\graphify\SKILL.md")) { graphify install }
 
 Step "Headroom"
