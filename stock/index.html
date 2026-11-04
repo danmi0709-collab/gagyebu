@@ -140,8 +140,19 @@ input,select{font-family:inherit;font-size:16px;color:var(--text);background:var
 .list .li .grow{flex:1}
 .x{color:var(--text3);font-size:18px;padding:0 4px}
 textarea{font-family:inherit;font-size:16px;color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;resize:vertical;line-height:1.5}
-.memo{position:relative;padding:10px 62px 10px 0;border-top:1px solid var(--line)}
-.memo.pinned{background:var(--goldbg);margin:0 -10px 6px;padding-left:10px;padding-right:72px;border-radius:12px;border-top-color:transparent}
+.memo{position:relative;padding:10px 92px 10px 0;border-top:1px solid var(--line)}
+.memo.editing{padding-right:0}
+.memo.pinned.editing{padding-right:10px}
+.memo .edit{font-size:14px;padding:2px 4px;opacity:.6}
+.photos{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.ph{position:relative;width:72px;height:72px;border-radius:10px;overflow:hidden;background:var(--card2);flex-shrink:0}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph .px{position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:14px;line-height:22px;text-align:center}
+.addph{width:72px;height:72px;border-radius:10px;border:1.5px dashed var(--text3);color:var(--text2);font-size:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.viewer{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:120;display:flex;align-items:center;justify-content:center}
+.viewer img{max-width:100%;max-height:100%;object-fit:contain}
+.viewer .vclose{position:absolute;top:calc(12px + env(safe-area-inset-top));right:14px;color:#fff;font-size:32px;line-height:1}
+.memo.pinned{background:var(--goldbg);margin:0 -10px 6px;padding-left:10px;padding-right:102px;border-radius:12px;border-top-color:transparent}
 .memo.pinned + .memo{border-top-color:transparent}
 .memo:first-child{border-top:none}
 .memo .mt{font-size:12px;color:var(--text3);margin-bottom:2px}
@@ -233,6 +244,8 @@ textarea{font-family:inherit;font-size:16px;color:var(--text);background:var(--c
 
 <div class="sheet" id="sheet"></div>
 <div class="toast" id="toast"></div>
+<input type="file" id="photoIn" accept="image/*" multiple class="hidden">
+<div class="viewer hidden" id="viewer" data-act="closeViewer"><img id="viewerImg" alt=""><button class="vclose" data-act="closeViewer">×</button></div>
 
 <script>
 'use strict';
@@ -419,6 +432,7 @@ function render() {
   const html = { home: viewHome, today: viewToday, perf: viewPerf, div: viewDiv, memo: viewMemo }[TAB](C);
   $('#app').innerHTML = html;
   if (TAB === 'home') drawChart(C);
+  if (TAB === 'memo') hydratePhotos();
   const p = C.last.close;
   if (lastPrice !== null && Math.abs(p - lastPrice) > 0.001) {
     const el = document.querySelector('[data-flash]');
@@ -676,6 +690,53 @@ function viewPerf(C) {
 }
 
 let MEMO_DRAFT = '';   // 쓰다가 앱을 오가도 입력 중인 글이 지워지지 않게
+let EDIT_MEMO = null, EDIT_DRAFT = '', EDIT_PHOTOS = [];   // 지금 고치는 메모
+let NEW_PHOTOS = [], PHOTO_TARGET = 'new';               // 새 메모에 붙일 사진 id
+
+// 사진은 용량이 커서 localStorage(약 5MB) 대신 IndexedDB에 따로 저장한다. 메모에는 사진 id만 남긴다.
+const PhotoDB = (() => {
+  let dbp;
+  const open = () => dbp || (dbp = new Promise((res, rej) => {
+    const r = indexedDB.open('hanna_stock_photos', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('photos');
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  }));
+  const run = (mode, fn) => open().then(db => new Promise((res, rej) => {
+    const t = db.transaction('photos', mode), req = fn(t.objectStore('photos'));
+    t.oncomplete = () => res(req && req.result); t.onerror = () => rej(t.error);
+  }));
+  return {
+    put: (id, blob) => run('readwrite', st => st.put(blob, id)),
+    get: id => run('readonly', st => st.get(id)),
+    del: id => run('readwrite', st => st.delete(id)),
+    keys: () => run('readonly', st => st.getAllKeys()),
+  };
+})();
+const PHOTO_URL = {};
+async function photoUrl(id) {
+  if (PHOTO_URL[id]) return PHOTO_URL[id];
+  const blob = await PhotoDB.get(id).catch(() => null);
+  return blob ? (PHOTO_URL[id] = URL.createObjectURL(blob)) : '';
+}
+function hydratePhotos() {
+  document.querySelectorAll('img[data-pid]:not([src])').forEach(async img => { const u = await photoUrl(img.dataset.pid); if (u) img.src = u; else img.alt = '사진 없음'; });
+}
+// 긴 변 1600px, JPEG 80%로 줄여서 저장 (폰 사진 3~5MB → 보통 200~400KB)
+async function shrinkPhoto(file) {
+  const src = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+    const sc = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return await new Promise(res => c.toBlob(res, 'image/jpeg', 0.8));
+  } finally { URL.revokeObjectURL(src); }
+}
+const thumbs = (ids, removable) => ids.map(id => `<span class="ph"><img data-pid="${id}" data-view="${id}" alt="사진">${removable ? `<button class="px" data-rmphoto="${removable}:${id}" aria-label="사진 빼기">×</button>` : ''}</span>`).join('');
+// 어떤 메모에도 안 붙은 사진(저장 전에 앱을 닫은 경우 등)은 시작할 때 정리
+async function cleanPhotos() {
+  try { const used = new Set((S.memos || []).flatMap(m => m.photos || [])); for (const k of await PhotoDB.keys()) if (!used.has(k)) await PhotoDB.del(k); } catch (e) {}
+}
 const memoStamp = at => { const d = pd(at.slice(0, 10)); return `${d.getMonth() + 1}/${d.getDate()}(${WD[d.getDay()]}) ${at.slice(11, 16)}`; };
 const memoOrder = () => { const r = [...(S.memos || [])].reverse(); return [...r.filter(m => m.pinned), ...r.filter(m => !m.pinned)]; };
 function viewMemo() {
@@ -683,11 +744,15 @@ function viewMemo() {
   return `<div class="wrap">${header()}
   <div class="card">
     <textarea id="memoIn" rows="4" placeholder="메모를 적어 줘">${esc(MEMO_DRAFT)}</textarea>
+    <div class="photos">${thumbs(NEW_PHOTOS, 'new')}<button class="addph" data-addphoto="new"><span style="font-size:20px">📷</span>사진</button></div>
     <div class="row2" style="margin-top:8px"><button class="btn" data-act="memoAdd" style="flex:1">저장</button>
       <button class="btn ghost" data-act="memoCopy" style="flex:1" ${ms.length ? '' : 'disabled'}>📋 전체 복사 (${ms.length})</button></div>
   </div>
-  <div class="card">${ms.length ? ms.map(m => `<div class="memo ${m.pinned ? 'pinned' : ''}"><div class="mt">${m.pinned ? '📌 고정 · ' : ''}${esc(memoStamp(m.at))}</div>
-    <div class="mb">${esc(m.text)}</div><span class="ma"><button class="pin ${m.pinned ? 'on' : ''}" data-pinmemo="${m.id}" aria-label="${m.pinned ? '고정 풀기' : '맨 위에 고정'}">📌</button><button class="x" data-delmemo="${m.id}" aria-label="삭제">×</button></span></div>`).join('')
+  <div class="card">${ms.length ? ms.map(m => { const ed = EDIT_MEMO === m.id; return `<div class="memo ${m.pinned ? 'pinned' : ''} ${ed ? 'editing' : ''}"><div class="mt">${m.pinned ? '📌 고정 · ' : ''}${esc(memoStamp(m.at))}</div>
+    ${ed ? `<textarea id="memoEdit" rows="4">${esc(EDIT_DRAFT)}</textarea>
+      <div class="photos">${thumbs(EDIT_PHOTOS, 'edit')}<button class="addph" data-addphoto="edit"><span style="font-size:20px">📷</span>사진</button></div>
+      <div class="row2" style="margin-top:6px"><button class="btn small" data-act="memoSave" style="flex:1">수정 저장</button><button class="btn ghost small" data-act="memoCancel" style="flex:1">취소</button></div>`
+    : `${m.text ? `<div class="mb">${esc(m.text)}</div>` : ''}${(m.photos || []).length ? `<div class="photos">${thumbs(m.photos)}</div>` : ''}`}${m.editedAt && !ed ? `<div class="mt" style="margin-top:2px">수정 ${esc(memoStamp(m.editedAt))}</div>` : ''}<span class="ma"><button class="pin ${m.pinned ? 'on' : ''}" data-pinmemo="${m.id}" aria-label="${m.pinned ? '고정 풀기' : '맨 위에 고정'}">📌</button>${ed ? '' : `<button class="edit" data-editmemo="${m.id}" aria-label="수정">✏️</button>`}<button class="x" data-delmemo="${m.id}" aria-label="삭제">×</button></span></div>`; }).join('')
     : '<div class="muted small">아직 메모가 없어.</div>'}</div>
   </div>`;
 }
@@ -830,7 +895,7 @@ function applyTheme() {
 document.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   const d = b.dataset, st = S.settings;
-  if (d.tab) { TAB = d.tab; EDIT_DAY = null; render(); window.scrollTo(0, 0); return; }
+  if (d.tab) { TAB = d.tab; EDIT_DAY = null; EDIT_MEMO = null; render(); window.scrollTo(0, 0); return; }
   if (d.range !== undefined) { RANGE = +d.range; render(); return; }
   if (d.day) { EDIT_DAY = d.day; render(); return; }
   if (d.item) {
@@ -859,7 +924,10 @@ document.addEventListener('click', e => {
     return;
   }
   if (d.pinmemo) { const m = S.memos.find(x => x.id === d.pinmemo); if (m) { m.pinned = !m.pinned; save(); render(); toast(m.pinned ? '📌 맨 위에 고정했어' : '고정을 풀었어'); } return; }
-  if (d.delmemo) { if (confirm('이 메모를 지울까?')) { S.memos = S.memos.filter(m => m.id !== d.delmemo); save(); render(); } return; }
+  if (d.delmemo) { const m = S.memos.find(x => x.id === d.delmemo); if (m && confirm(`이 메모를 지울까?${(m.photos || []).length ? `\n(사진 ${m.photos.length}장도 같이 지워져)` : ''}`)) { (m.photos || []).forEach(id => PhotoDB.del(id).catch(() => {})); S.memos = S.memos.filter(x => x !== m); if (EDIT_MEMO === m.id) EDIT_MEMO = null; save(); render(); } return; }
+  if (d.editmemo) { const m = S.memos.find(x => x.id === d.editmemo); if (m) { EDIT_MEMO = m.id; EDIT_DRAFT = m.text; EDIT_PHOTOS = [...(m.photos || [])]; render(); const t = $('#memoEdit'); if (t) { t.focus({ preventScroll: true }); t.setSelectionRange(t.value.length, t.value.length); t.scrollIntoView({ block: 'nearest' }); } } return; }
+  if (d.addphoto) { PHOTO_TARGET = d.addphoto; $('#photoIn').value = ''; $('#photoIn').click(); return; }
+  if (d.rmphoto) { const [where, id] = d.rmphoto.split(':'); if (where === 'new') { NEW_PHOTOS = NEW_PHOTOS.filter(x => x !== id); PhotoDB.del(id).catch(() => {}); } else EDIT_PHOTOS = EDIT_PHOTOS.filter(x => x !== id); render(); return; }
   if (d.copyweek) {
     const txt = weekReport(compute(), d.copyweek);
     copyText(txt, reportHtml(txt)).then(ok => {
@@ -934,18 +1002,41 @@ document.addEventListener('click', e => {
     }
     case 'rAdd': { const v = $('#rNew').value.trim(); if (v) { S.rewards.push(v); save(); render(); } break; }
     case 'export': {
-      const blob = new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' });
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `홍한나주식_백업_${today()}.json`; a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 3000); break;
+      (async () => {
+        const out = { ...S }, ids = (S.memos || []).flatMap(m => m.photos || []);
+        if (ids.length) {
+          toast(`사진 ${ids.length}장 담는 중…`); out._photos = {};
+          for (const id of ids) { const b = await PhotoDB.get(id).catch(() => null); if (b) out._photos[id] = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); }); }
+        }
+        const blob = new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `홍한나주식_백업_${today()}.json`; a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+      })(); break;
     }
     case 'import': $('#importFile').click(); break;
     case 'memoAdd': {
-      const t = ($('#memoIn').value || '').trim(); if (!t) { toast('메모를 적어 줘'); break; }
-      const n = now(); S.memos = S.memos || []; S.memos.push({ id: uid(), text: t, at: `${ymd(n)}T${pad(n.getHours())}:${pad(n.getMinutes())}` });
-      MEMO_DRAFT = ''; save(); render(); toast('📝 저장했어'); break;
+      const t = ($('#memoIn').value || '').trim(); if (!t && !NEW_PHOTOS.length) { toast('메모나 사진을 넣어 줘'); break; }
+      const n = now(), m = { id: uid(), text: t, at: `${ymd(n)}T${pad(n.getHours())}:${pad(n.getMinutes())}` };
+      if (NEW_PHOTOS.length) m.photos = [...NEW_PHOTOS];
+      S.memos = S.memos || []; S.memos.push(m);
+      MEMO_DRAFT = ''; NEW_PHOTOS = []; save(); render(); toast('📝 저장했어'); break;
     }
+    case 'memoSave': {
+      const m = S.memos.find(x => x.id === EDIT_MEMO), t = ($('#memoEdit').value || '').trim();
+      if (!m) { EDIT_MEMO = null; render(); break; }
+      if (!t && !EDIT_PHOTOS.length) { toast('내용이 비었어. 지우려면 × 를 눌러'); break; }
+      const before = m.photos || [], changed = t !== m.text || before.join() !== EDIT_PHOTOS.join();
+      if (changed) {
+        before.filter(id => !EDIT_PHOTOS.includes(id)).forEach(id => PhotoDB.del(id).catch(() => {}));   // 뺀 사진 정리
+        const n = now(); m.text = t; m.photos = [...EDIT_PHOTOS]; if (!m.photos.length) delete m.photos;
+        m.editedAt = `${ymd(n)}T${pad(n.getHours())}:${pad(n.getMinutes())}`; save(); toast('✏️ 수정했어');
+      }
+      EDIT_MEMO = null; render(); break;
+    }
+    case 'memoCancel': EDIT_MEMO = null; render(); break;
+    case 'closeViewer': $('#viewer').classList.add('hidden'); $('#viewerImg').removeAttribute('src'); break;
     case 'memoCopy': {
-      const txt = memoOrder().map(m => `[${m.pinned ? '📌 ' : ''}${memoStamp(m.at)}]\n${m.text}`).join('\n\n');
+      const txt = memoOrder().map(m => `[${m.pinned ? '📌 ' : ''}${memoStamp(m.at)}]\n${m.text}${(m.photos || []).length ? `${m.text ? '\n' : ''}(사진 ${m.photos.length}장)` : ''}`).join('\n\n');
       copyText(txt).then(ok => ok ? toast(`📋 메모 ${S.memos.length}개를 복사했어`) : window.prompt('여기서 직접 복사해 줘', txt));
       break;
     }
@@ -994,6 +1085,18 @@ document.addEventListener('change', e => {
     else s[d.f] = el.value.trim() || s[d.f];
     save(); return;
   }
+  if (el.id === 'photoIn' && el.files.length) {
+    const files = [...el.files]; toast(`📷 사진 ${files.length}장 넣는 중…`);
+    (async () => {
+      try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (x) {}
+      let ok = 0;
+      for (const f of files) {
+        try { const blob = await shrinkPhoto(f); const id = 'ph_' + uid() + uid(); await PhotoDB.put(id, blob); (PHOTO_TARGET === 'edit' ? EDIT_PHOTOS : NEW_PHOTOS).push(id); ok++; } catch (x) {}
+      }
+      render(); toast(ok === files.length ? `📷 사진 ${ok}장 넣었어` : `📷 ${ok}장만 넣었어 (일부는 읽을 수 없는 사진)`);
+    })();
+    return;
+  }
   if (el.id === 'importFile' && el.files[0]) {
     const r = new FileReader();
     r.onload = () => {
@@ -1001,7 +1104,10 @@ document.addEventListener('change', e => {
         const obj = JSON.parse(r.result);
         if (!obj.sectors || !obj.days || !obj.start) throw 0;
         if (!confirm('지금 기록을 백업 파일 내용으로 바꿀까?')) return;
-        S = Object.assign(defaults(), obj); save(); $('#sheet').classList.remove('open'); render(); toast('백업을 불러왔어');
+        const photos = obj._photos || {}; delete obj._photos;
+        S = Object.assign(defaults(), obj); save(); $('#sheet').classList.remove('open');
+        (async () => { for (const [id, url] of Object.entries(photos)) { try { await PhotoDB.put(id, await (await fetch(url)).blob()); } catch (x) {} } render(); })();
+        render(); toast('백업을 불러왔어');
       } catch (x) { toast('올바른 백업 파일이 아니야'); }
     };
     r.readAsText(el.files[0]);
@@ -1011,11 +1117,17 @@ document.addEventListener('change', e => {
 // 자정이 지나면 장 마감 반영
 let lastDay = null;
 setInterval(() => { if (today() !== lastDay) { lastDay = today(); EDIT_DAY = null; if (!$('#sheet').classList.contains('open')) render(); } else if (TAB === 'home' && !$('#sheet').classList.contains('open')) { const s = document.querySelector('.status'); if (s && !s.textContent.includes('휴장')) s.innerHTML = `<span class="dot"></span> 장중 · 마감까지 ${closeLeft()}`; } }, 30000);
-document.addEventListener('input', e => { if (e.target.id === 'memoIn') MEMO_DRAFT = e.target.value; });
+document.addEventListener('input', e => { if (e.target.id === 'memoIn') MEMO_DRAFT = e.target.value; if (e.target.id === 'memoEdit') EDIT_DRAFT = e.target.value; });
+// 사진은 버튼이 아니라 따로 처리: 썸네일을 누르면 크게 보기, 크게 보기 화면을 누르면 닫기
+document.addEventListener('click', e => {
+  const v = e.target.dataset && e.target.dataset.view;
+  if (v) { photoUrl(v).then(u => { if (!u) return; $('#viewerImg').src = u; $('#viewer').classList.remove('hidden'); }); return; }
+  if (e.target.id === 'viewer' || e.target.id === 'viewerImg') { $('#viewer').classList.add('hidden'); $('#viewerImg').removeAttribute('src'); }
+});
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { render(); syncDaily(); } });
 window.addEventListener('resize', () => { if (TAB === 'home') render(); });
 
-load(); migrateEnded(); applyTheme(); lastDay = today(); render(); syncDaily();
+load(); migrateEnded(); applyTheme(); lastDay = today(); render(); syncDaily(); cleanPhotos();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
