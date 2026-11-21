@@ -1,7 +1,7 @@
 """칸별 잉크 PNG들 -> 손글씨 폰트(.ttf).
 사용: python3 -I build_font.py <cells폴더> <출력.ttf> [폰트이름]
 cells폴더 안의 p*_cells.json 을 모두 읽는다(여러 쪽 지원)."""
-import sys, os, json, glob
+import sys, os, json, glob, re
 import numpy as np, cv2, potrace
 from fontTools.fontBuilder import FontBuilder
 from fontTools.pens.ttGlyphPen import TTGlyphPen
@@ -162,12 +162,17 @@ def finalize(ch, kind, cs, s_h, s_l):
     return cs, adv
 
 def main(cells_dir, out_ttf, family="MyHand", equal=True):
-    raw = []   # (글자, 종류, 확대 마스크, 여백px)
-    for jf in sorted(glob.glob(os.path.join(cells_dir, "p*_cells.json"))):
+    loaded = {}   # 글자 -> (글자, 종류, 확대 마스크, 여백px). 같은 글자가 여러 쪽에 있으면 나중 쪽이 앞 쪽을 덮어쓴다(다시 쓴 글자 반영)
+    page_no = lambda p: int(re.search(r"p(\d+)_cells", os.path.basename(p)).group(1))
+    redone = []
+    for jf in sorted(glob.glob(os.path.join(cells_dir, "p*_cells.json")), key=page_no):
         for m in json.load(open(jf)):
             big = prep_mask(os.path.join(cells_dir, m["file"]))
-            if big is not None: raw.append((m["char"], m["kind"], big, m["margin_px"]))
-    print("읽은 글자 수:", len(raw))
+            if big is None: continue
+            if m["char"] in loaded: redone.append(m["char"])
+            loaded[m["char"]] = (m["char"], m["kind"], big, m["margin_px"])
+    raw = list(loaded.values())
+    print("읽은 글자 수:", len(raw), "| 다시 쓴 글자로 덮어쓴 것:", "".join(redone) or "없음")
     # 1차: 기본 굵기로 윤곽을 따서 그룹별 확대 비율을 정한다
     first = {ch: trace_mask(offset_mask(big, BOLD_PX), mg) for ch, kind, big, mg in raw}
     def med(kinds, only=None):
