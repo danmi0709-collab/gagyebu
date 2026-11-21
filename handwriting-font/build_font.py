@@ -15,7 +15,7 @@ K = 1000 / BOX_PX
 HANGUL_H = 700    # 한글 글자 높이 목표(단위)
 DIGIT_H = 640     # 숫자·영문 높이 목표(대문자 높이쯤)
 MAX_SCALE = 2.6
-BOLD_PX = 1       # 윤곽 따기 전 살짝 굵게(확대 이미지 기준 px)
+BOLD_PX = 5       # 윤곽 따기 전 살짝 굵게(확대 이미지 기준 px)
 
 def trace_cell(png, margin):
     ink = cv2.imread(png, 0)
