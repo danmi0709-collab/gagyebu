@@ -235,6 +235,23 @@ def main(cells_dir, out_ttf, family="MyHand", equal=True):
         cs, adv = finalize(ch, kind, cs, s_h, s_l)
         glyphs[name] = to_glyph(cs); metrics[name] = adv
         cmap[ord(ch)] = name; order.append(name)
+    # 네가 쓰지 않은 한글은 자음·모음 부품으로 조합해서 채운다(환경변수 COMPOSE=all 또는 COMPOSE_CHARS=글자들)
+    compose_chars = os.environ.get("COMPOSE_CHARS", "")
+    if os.environ.get("COMPOSE") == "all": compose_chars = "".join(chr(c) for c in range(0xAC00, 0xD7A4))
+    if compose_chars:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))     # 안전 모드(-I)에서도 같은 폴더의 compose.py를 찾게
+        import compose
+        parts = compose.load_parts(cells_dir)
+        todo = [c for c in dict.fromkeys(compose_chars) if 0xAC00 <= ord(c) <= 0xD7A3 and c not in loaded]
+        print("조합으로 채울 글자:", len(todo), "| 부품:", len(parts), "개")
+        for ch in todo:
+            cs = compose.canvas_to_contours(compose.compose_canvas(ch, parts, target if target else 46.0))
+            if not cs: continue
+            x0_, _, x1_, _ = bbox(cs); w_ = x1_ - x0_
+            adv = max(1000, int(w_ + 90)); dx = (adv - w_) / 2 - x0_
+            cs = transform(cs, lambda x, y, dx=dx: (x + dx, y))
+            name = "uni%04X" % ord(ch)
+            glyphs[name] = to_glyph(cs); metrics[name] = adv; cmap[ord(ch)] = name; order.append(name)
     fb = FontBuilder(1000, isTTF=True)
     fb.setupGlyphOrder([".notdef", "space"] + order[2:])
     fb.setupCharacterMap(cmap)
