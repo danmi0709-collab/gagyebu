@@ -43,6 +43,34 @@ def bbox(contours):
 def transform(contours, fx):
     return [[(s[0],) + tuple(fx(*p) for p in s[1:]) for s in c] for c in contours]
 
+CONS = "ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎ"
+BLEND = 0.85   # 높이 차이를 줄이는 정도(1이면 완전히 같게, 0이면 그대로)
+
+def fit_height(cs, target, center, max_w=980):
+    """글자 높이를 target 쪽으로 맞추고 세로 중심을 center에 둔다(가로폭은 max_w 넘지 않게)."""
+    x0, y0, x1, y1 = bbox(cs); h = max(y1 - y0, 1); w = max(x1 - x0, 1)
+    k = 1 + BLEND * (target / h - 1)
+    k = max(0.6, min(1.6, k, max_w / w))
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    return transform(cs, lambda x, y: ((x - cx) * k + cx, (y - cy) * k + center))
+
+def fit_digit(cs, target):
+    """숫자 높이를 맞추고 바닥을 기준선(y=0)에 앉힌다."""
+    x0, y0, x1, y1 = bbox(cs); h = max(y1 - y0, 1)
+    k = max(0.6, min(1.6, 1 + BLEND * (target / h - 1)))
+    return transform(cs, lambda x, y: (x * k, (y - y0) * k))
+
+# 기호가 놓일 높이(숫자 높이 DIGIT_H의 비율). c=세로 중심, b=아래끝, t=위끝
+SYM_ANCHOR = {"-": ("c", 0.42), "~": ("c", 0.55), "(": ("c", 0.40), ")": ("c", 0.40), "/": ("c", 0.40),
+              ".": ("b", 0.0), ",": ("t", 0.15), ":": ("b", 0.0), ";": ("b", -0.12),
+              "'": ("t", 1.0), '"': ("t", 1.0), "^": ("t", 1.0)}
+
+def place_symbol(cs, ch):
+    mode, r = SYM_ANCHOR[ch]; target = r * DIGIT_H
+    x0, y0, x1, y1 = bbox(cs)
+    cur = {"c": (y0 + y1) / 2, "b": y0, "t": y1}[mode]
+    return transform(cs, lambda x, y: (x, y + target - cur))
+
 def to_glyph(contours):
     rec = RecordingPen()
     for c in contours:
@@ -95,12 +123,18 @@ def main(cells_dir, out_ttf, family="MyHand"):
         if kind == "latin":
             s = s_l
             cs = transform(cs, lambda x, y: (x * s, y * s))            # 바닥선(y=0) 기준 확대
+            if ch in "0123456789!?": cs = fit_digit(cs, DIGIT_H)
+            elif ch in SYM_ANCHOR: cs = place_symbol(cs, ch)
             xmin, _, xmax, _ = bbox(cs)
             cs = transform(cs, lambda x, y: (x - xmin + 70, y))
             adv = max(260, int(xmax - xmin + 140))
         else:
             s = s_h
             cs = transform(cs, lambda x, y: ((x - 500) * s + 500, (y - 300) * s + 330))  # 칸 중심 기준 확대
+            if kind == "hangul": cs = fit_height(cs, HANGUL_H, 330)
+            elif ch in CONS: cs = fit_height(cs, HANGUL_H * 0.72, 350)
+            else:
+                _, y0_, _, y1_ = bbox(cs); cs = transform(cs, lambda x, y: (x, y - (y0_ + y1_) / 2 + 350))
             xmin, _, xmax, _ = bbox(cs)
             w = xmax - xmin
             adv = max(1000, int(w + 90)) if kind == "hangul" else max(520, int(w + 140))
