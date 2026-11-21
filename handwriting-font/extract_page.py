@@ -13,11 +13,13 @@ def rectify(img, layout, page):
     want = layout["pages"][page-1]["marker_ids"]
     for g in (gray, cv2.createCLAHE(3.0, (8, 8)).apply(gray)):
         corners, ids, _ = det.detectMarkers(g)
-        if ids is not None and len(set(ids.flatten()) & set(want)) == 4:
+        if ids is not None and len(set(ids.flatten()) & set(want)) >= 3:      # 3개만 있어도 사진을 펼 수 있다(1개는 가려져도 됨)
             break
     else:
         found = None if ids is None else sorted(ids.flatten().tolist())
-        sys.exit(f"표식 4개를 못 찾았어요. 찾은 것: {found}, 필요한 것: {want}")
+        sys.exit(f"표식을 3개 이상 못 찾았어요. 찾은 것: {found}, 필요한 것: {want}")
+    n_found = len(set(ids.flatten()) & set(want))
+    if n_found < 4: print(f"참고: 표식 {n_found}개로 펴요(가려진 표식이 있어요)")
     m = layout["marker_size_mm"]; src, dst = [], []
     for cs, i in zip(corners, ids.flatten()):
         if i in want:
