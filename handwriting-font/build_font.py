@@ -99,7 +99,15 @@ def fit_digit(cs, target):
 # 기호가 놓일 높이(숫자 높이 DIGIT_H의 비율). c=세로 중심, b=아래끝, t=위끝
 SYM_ANCHOR = {"-": ("c", 0.42), "~": ("c", 0.55), "(": ("c", 0.40), ")": ("c", 0.40), "/": ("c", 0.40),
               ".": ("b", 0.0), ",": ("t", 0.15), ":": ("b", 0.0), ";": ("b", -0.12),
-              "'": ("t", 1.0), '"': ("t", 1.0), "^": ("t", 1.0)}
+              "'": ("t", 1.0), '"': ("t", 1.0), "^": ("t", 1.0),
+              "_": ("c", -0.12), "`": ("t", 1.0), "*": ("t", 1.0),
+              "+": ("c", 0.45), "=": ("c", 0.45), "<": ("c", 0.45), ">": ("c", 0.45),
+              "[": ("c", 0.40), "]": ("c", 0.40), "{": ("c", 0.40), "}": ("c", 0.40), "|": ("c", 0.40), "\\": ("c", 0.40)}
+
+# 영문 글자 종류별 높이 규칙(DIGIT_H에 대한 비율). 바닥은 바닥선(y=0)에 앉힌다.
+FIT_H = {c: 1.0 for c in "ABCDEFGHIKLMNOPRSTUVWXYZbdfhkli#$%&@"}
+FIT_H.update({"t": 0.85}); FIT_H.update({c: 0.70 for c in "acemnorsuvwxz"})
+TOP_ANCHOR = {"g": 0.70, "p": 0.70, "q": 0.70, "y": 0.70, "j": 1.0, "J": 1.0, "Q": 1.0}  # 윗선 맞춤(꼬리는 아래로)
 
 def place_symbol(cs, ch):
     mode, r = SYM_ANCHOR[ch]; target = r * DIGIT_H
@@ -132,6 +140,9 @@ def finalize(ch, kind, cs, s_h, s_l):
         s = s_l
         cs = transform(cs, lambda x, y: (x * s, y * s))            # 바닥선(y=0) 기준 확대
         if ch in "0123456789!?": cs = fit_digit(cs, DIGIT_H)
+        elif ch in FIT_H: cs = fit_digit(cs, DIGIT_H * FIT_H[ch])
+        elif ch in TOP_ANCHOR:
+            ymax_ = bbox(cs)[3]; cs = transform(cs, lambda x, y: (x, y + TOP_ANCHOR[ch] * DIGIT_H - ymax_))
         elif ch in SYM_ANCHOR: cs = place_symbol(cs, ch)
         xmin, _, xmax, _ = bbox(cs)
         cs = transform(cs, lambda x, y: (x - xmin + 70, y))
