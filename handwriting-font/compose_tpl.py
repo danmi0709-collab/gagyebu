@@ -8,6 +8,7 @@ import numpy as np, cv2
 CONS = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ"; VOW = "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ"
 FIN = "ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ"
 L_LIST = CONS; V_LIST = VOW; T_LIST = [""] + list(FIN)
+COMPOUND_FIN = set("ㄳㄵㄶㄺㄻㄼㄽㄾㄿㅀㅄ"); TOP_SQUEEZE = 0.80
 VERT = set("ㅏㅐㅑㅒㅓㅔㅕㅖㅣ"); HORIZ = set("ㅗㅛㅜㅠㅡ")
 # 양식 쪽(PDF 쪽번호)별 칸 내용(왼쪽 위부터 가로로): ('L',자음,'sero|garo|mix',받침있음) / ('V',모음,받침있음) / ('T',받침)
 LAYOUT = {
@@ -58,8 +59,14 @@ def compose_cell(ch, parts, box=210, margin=8):
     if keys is None: return None
     w, h = parts[keys[0]][1]; u = np.zeros((h, w), np.uint8)
     arrs = [parts[k][0][:h, :w] if parts[k][0].shape == (h, w) else cv2.resize(parts[k][0], (w, h)) for k in keys]
-    if len(keys) == 3 and keys[1][1] not in VERT:                 # 모음이 가로형·섞인형이면 모음 위에 받침이 쌓이는 구조 -> 겹치면 받침을 내린다
-        arrs[2] = separate_final(arrs[1], arrs[2])
+    compound = len(keys) == 3 and keys[2][1] in COMPOUND_FIN
+    if compound:                                                   # 겹받침: 위쪽(초성+모음)을 위쪽 기준으로 세로 80%로 줄여 받침 자리를 확보
+        top = min(np.nonzero(a.any(1))[0].min() for a in arrs[:2] if a.any())
+        M = np.float32([[1, 0, 0], [0, TOP_SQUEEZE, top * (1 - TOP_SQUEEZE)]])
+        arrs[0] = cv2.warpAffine(arrs[0], M, (w, h), flags=cv2.INTER_LINEAR)
+        arrs[1] = cv2.warpAffine(arrs[1], M, (w, h), flags=cv2.INTER_LINEAR)
+    if len(keys) == 3 and (compound or keys[1][1] not in VERT):    # 모음이 가로형·섞인형이거나 겹받침이면 겹침을 풀어 받침을 내린다
+        arrs[2] = separate_final(arrs[1], arrs[2], max_shrink=0.85 if compound else 0.7)
     for a in arrs: u = np.maximum(u, a)
     g = cv2.resize(u.astype(np.float32), (box, box), interpolation=cv2.INTER_AREA)         # 칸 -> 우리 칸 규격(21mm=210px)
     out = np.zeros((box + 2 * margin, box + 2 * margin), np.uint8)

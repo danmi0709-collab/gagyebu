@@ -161,7 +161,7 @@ def finalize(ch, kind, cs, s_h, s_l):
         s = s_h
         cs = transform(cs, lambda x, y: ((x - 500) * s + 500, (y - 300) * s + 330))  # 칸 중심 기준 확대
         if kind == "hangul": cs = fit_syllable(cs, HANGUL_H, 330)
-        elif ch in CONS: cs = fit_height(cs, HANGUL_H * 0.72, 350)
+        elif ch in CONS: cs = fit_height(cs, HANGUL_H * 0.90, 350)
         else:
             _, y0_, _, y1_ = bbox(cs); cs = transform(cs, lambda x, y: (x, y - (y0_ + y1_) / 2 + 350))
         xmin, _, xmax, _ = bbox(cs)
