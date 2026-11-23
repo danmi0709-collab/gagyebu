@@ -178,15 +178,17 @@ def main(cells_dir, out_ttf, family="MyHand", equal=True):
     redone = []
     for jf in sorted(glob.glob(os.path.join(cells_dir, "p*_cells.json")), key=page_no):
         for m in json.load(open(jf)):
-            big = prep_mask(os.path.join(cells_dir, m["file"]))
-            if big is None: continue
+            path = os.path.join(cells_dir, m["file"])
+            if m.get("ink_px", 3) < 3: continue                      # 잉크가 없는 칸은 건너뜀
             if m["char"] in loaded: redone.append(m["char"])
-            loaded[m["char"]] = (m["char"], m["kind"], big, m["margin_px"])
+            loaded[m["char"]] = (m["char"], m["kind"], path, m["margin_px"])   # 마스크 대신 경로(메모리 절약)
             (virt_set.add if m.get("virtual") else virt_set.discard)(m["char"])
     raw = list(loaded.values())
     print("읽은 글자 수:", len(raw), "| 다시 쓴 글자로 덮어쓴 것:", "".join(redone) or "없음")
     # 1차: 기본 굵기로 윤곽을 따서 그룹별 확대 비율을 정한다
-    first = {ch: trace_mask(offset_mask(big, BOLD_PX), mg) for ch, kind, big, mg in raw}
+    first = {}
+    for ch, kind, path, mg in raw:
+        _b = prep_mask(path); first[ch] = trace_mask(offset_mask(_b, BOLD_PX), mg) if _b is not None else None
     def med(kinds, only=None):
         hs = [bbox(first[ch])[3] - bbox(first[ch])[1] for ch, k, _, _ in raw if k in kinds and first[ch] and ch not in virt_set and (only is None or ch in only)]
         return float(np.median(hs)) if hs else None
@@ -207,17 +209,19 @@ def main(cells_dir, out_ttf, family="MyHand", equal=True):
     target = None
     if equal:
         ws = []
-        for ch, kind, big, mg in raw:
-            if ch in SKIP_EQ or not first[ch]: continue
-            w = stroke_w(offset_mask(big, BOLD_PX))
+        for ch, kind, path, mg in raw:
+            if ch in SKIP_EQ or ch in virt_set or not first[ch]: continue      # 조합 글자는 목표 계산에서 제외
+            w = stroke_w(offset_mask(prep_mask(path), BOLD_PX))
             if w: ws.append(w * UPK * eff_scale(ch, kind, first[ch]))
         target = float(np.median(ws))
         print(f"굵기 보정: 목표 {target:.0f}단위 (보정 전 글자별 {min(ws):.0f}~{max(ws):.0f}, 표준편차 {np.std(ws):.1f})")
 
-    items, radii = [], {}
-    for ch, kind, big, mg in raw:
+    built, radii = {}, {}
+    for ch, kind, path, mg in raw:
         r = BOLD_PX
         cs = first[ch]
+        if cs is None: continue
+        big = prep_mask(path)
         if equal and ch not in SKIP_EQ:
             w0 = stroke_w(big)
             for _ in range(2 if ch in virt_set else 3):      # 부풀리면 글자 크기도 변해서 되풀이(조합 글자는 2번)
@@ -229,9 +233,11 @@ def main(cells_dir, out_ttf, family="MyHand", equal=True):
                 cs = nxt
             if r != BOLD_PX: cs = trace_mask(offset_mask(big, r), mg) or first[ch]
         radii[ch] = r
-        items.append((ch, kind, cs))
+        _cs, _adv = finalize(ch, kind, cs, s_h, s_l)
+        built[ch] = (to_glyph(_cs), _adv); first[ch] = None; del big
     if equal:
-        print("깎은 글자(r<0):", "".join(c for c, r in radii.items() if r < 0), "| 부푼 글자(r>BOLD):", "".join(c for c, r in radii.items() if r > BOLD_PX), "| 한도에 걸린 글자:", "".join(c for c, r in radii.items() if r in (EQ_R_MIN, EQ_R_MAX) and c not in SKIP_EQ))
+        lim = [c for c, r in radii.items() if r in (EQ_R_MIN, EQ_R_MAX) and c not in SKIP_EQ]
+        print(f"굵기 보정: 깎은 글자 {sum(1 for r in radii.values() if r < 0)}개, 부푼 글자 {sum(1 for r in radii.values() if r > BOLD_PX)}개, 한도에 걸린 글자 {len(lim)}개", "".join(lim[:40]))
 
     glyphs, metrics, cmap, order = {}, {}, {}, [".notdef", "space"]
     pen = TTGlyphPen(None)
@@ -242,10 +248,9 @@ def main(cells_dir, out_ttf, family="MyHand", equal=True):
     glyphs[".notdef"] = pen.glyph(); metrics[".notdef"] = 800
     glyphs["space"] = TTGlyphPen(None).glyph(); metrics["space"] = 450
     cmap[0x20] = "space"
-    for ch, kind, cs in items:
+    for ch, (gl, adv) in built.items():
         name = "uni%04X" % ord(ch)
-        cs, adv = finalize(ch, kind, cs, s_h, s_l)
-        glyphs[name] = to_glyph(cs); metrics[name] = adv
+        glyphs[name] = gl; metrics[name] = adv
         cmap[ord(ch)] = name; order.append(name)
     # 네가 쓰지 않은 한글은 자음·모음 부품으로 조합해서 채운다(환경변수 COMPOSE=all 또는 COMPOSE_CHARS=글자들)
     compose_chars = os.environ.get("COMPOSE_CHARS", "")
