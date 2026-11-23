@@ -19,7 +19,7 @@ BOLD_PX = 5       # 윤곽 따기 전 살짝 굵게(확대 이미지 기준 px)
 
 UPK = K / UP      # 확대 이미지 1px = 폰트 몇 단위
 SKIP_EQ = set(".,:;'\"")   # 너무 작아서 깎으면 사라질 기호는 굵기 보정에서 뺀다
-EQ_R_MIN, EQ_R_MAX = -4, 12  # 확대 이미지 기준 깎기/부풀리기 한도(px)
+EQ_R_MIN, EQ_R_MAX = -12, 12  # 확대 이미지 기준 깎기/부풀리기 한도(px)
 
 def prep_mask(png):
     ink = cv2.imread(png, 0)
@@ -109,6 +109,15 @@ FIT_H = {c: 1.0 for c in "ABCDEFGHIKLMNOPRSTUVWXYZbdfhkli#$%&@"}
 FIT_H.update({"t": 0.85}); FIT_H.update({c: 0.70 for c in "acemnorsuvwxz"})
 TOP_ANCHOR = {"g": 0.70, "p": 0.70, "q": 0.70, "y": 0.70, "j": 1.0, "J": 1.0, "Q": 1.0}  # 윗선 맞춤(꼬리는 아래로)
 
+# 템플릿에서 새로 쓴 기호: 가장 긴 변이 DIGIT_H 의 몇 배가 되게 맞춘다(화살표처럼 납작한 기호도 크기가 폭주하지 않게)
+NEWSYM_MAX = {"₩": 0.95, "…": 0.55, "★": 0.95, "☆": 0.95, "→": 0.95, "←": 0.95, "↑": 0.95, "↓": 0.95, "♪": 0.9, "※": 0.85, "×": 0.7, "÷": 0.7, "°": 0.3}
+SYM_ANCHOR.update({"₩": ("b", 0.0), "…": ("b", 0.0), "★": ("c", 0.5), "☆": ("c", 0.5), "→": ("c", 0.5), "←": ("c", 0.5), "↑": ("c", 0.5), "↓": ("c", 0.5),
+                   "♪": ("c", 0.5), "※": ("c", 0.5), "×": ("c", 0.42), "÷": ("c", 0.42), "°": ("t", 1.0)})
+
+def fit_max(cs, target):
+    x0, y0, x1, y1 = bbox(cs); k = target / max(x1 - x0, y1 - y0, 1)
+    return transform(cs, lambda x, y: ((x - x0) * k + x0, (y - y0) * k + y0))
+
 def place_symbol(cs, ch):
     mode, r = SYM_ANCHOR[ch]; target = r * DIGIT_H
     x0, y0, x1, y1 = bbox(cs)
@@ -143,6 +152,7 @@ def finalize(ch, kind, cs, s_h, s_l):
         elif ch in FIT_H: cs = fit_digit(cs, DIGIT_H * FIT_H[ch])
         elif ch in TOP_ANCHOR:
             ymax_ = bbox(cs)[3]; cs = transform(cs, lambda x, y: (x, y + TOP_ANCHOR[ch] * DIGIT_H - ymax_))
+        elif ch in NEWSYM_MAX: cs = place_symbol(fit_max(cs, NEWSYM_MAX[ch] * DIGIT_H), ch)
         elif ch in SYM_ANCHOR: cs = place_symbol(cs, ch)
         xmin, _, xmax, _ = bbox(cs)
         cs = transform(cs, lambda x, y: (x - xmin + 70, y))
@@ -162,6 +172,7 @@ def finalize(ch, kind, cs, s_h, s_l):
     return cs, adv
 
 def main(cells_dir, out_ttf, family="MyHand", equal=True):
+    virt_set = set()   # 조합으로 만든 가상 칸(크기 기준 계산에서 제외)
     loaded = {}   # 글자 -> (글자, 종류, 확대 마스크, 여백px). 같은 글자가 여러 쪽에 있으면 나중 쪽이 앞 쪽을 덮어쓴다(다시 쓴 글자 반영)
     page_no = lambda p: int(re.search(r"p(\d+)_cells", os.path.basename(p)).group(1))
     redone = []
@@ -171,12 +182,13 @@ def main(cells_dir, out_ttf, family="MyHand", equal=True):
             if big is None: continue
             if m["char"] in loaded: redone.append(m["char"])
             loaded[m["char"]] = (m["char"], m["kind"], big, m["margin_px"])
+            (virt_set.add if m.get("virtual") else virt_set.discard)(m["char"])
     raw = list(loaded.values())
     print("읽은 글자 수:", len(raw), "| 다시 쓴 글자로 덮어쓴 것:", "".join(redone) or "없음")
     # 1차: 기본 굵기로 윤곽을 따서 그룹별 확대 비율을 정한다
     first = {ch: trace_mask(offset_mask(big, BOLD_PX), mg) for ch, kind, big, mg in raw}
     def med(kinds, only=None):
-        hs = [bbox(first[ch])[3] - bbox(first[ch])[1] for ch, k, _, _ in raw if k in kinds and first[ch] and (only is None or ch in only)]
+        hs = [bbox(first[ch])[3] - bbox(first[ch])[1] for ch, k, _, _ in raw if k in kinds and first[ch] and ch not in virt_set and (only is None or ch in only)]
         return float(np.median(hs)) if hs else None
     hh = med(("hangul",)) or med(("jamo",))
     dh = med(("latin",), only="0123456789")
@@ -208,7 +220,7 @@ def main(cells_dir, out_ttf, family="MyHand", equal=True):
         cs = first[ch]
         if equal and ch not in SKIP_EQ:
             w0 = stroke_w(big)
-            for _ in range(3):                      # 부풀리면 글자 크기도 변해서 3번 되풀이
+            for _ in range(2 if ch in virt_set else 3):      # 부풀리면 글자 크기도 변해서 되풀이(조합 글자는 2번)
                 k = eff_scale(ch, kind, cs)
                 r = int(round((target / (k * UPK) - w0) / 2))
                 r = max(EQ_R_MIN, min(EQ_R_MAX, r))

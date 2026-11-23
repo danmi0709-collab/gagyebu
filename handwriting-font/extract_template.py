@@ -45,7 +45,8 @@ def corner_squares(img, ref_aspect=None):
         q = order4([c[0] for c in combo]); w = np.linalg.norm(q[1] - q[0]); h = np.linalg.norm(q[3] - q[0])
         if min(w, h) < 50: continue                                  # 점이 겹친 엉터리 조합은 건너뜀
         asp = w / h
-        score = abs(np.log(asp / (ref_aspect or 0.707))) + 0.2 * np.log(max(areas) / min(areas))
+        ra = ref_aspect or 0.707
+        score = min(abs(np.log(asp / ra)), abs(np.log(asp * ra))) + 0.2 * np.log(max(areas) / min(areas))      # 누워 있어도(가로세로비 반전) 허용
         if best is None or score < best[0]: best = (score, q)
     if best is None: sys.exit("검은 네모 4개로 이루어진 모서리 조합을 못 찾았어요.")
     return best[1]
@@ -76,7 +77,20 @@ def main(pdf, page, photo, outdir, labels_key=None, labels_file=None):
     img = cv2.imread(photo); assert img is not None, "사진을 못 읽었어요"
     asp = np.linalg.norm(bq[1] - bq[0]) / np.linalg.norm(bq[3] - bq[0])
     pq = corner_squares(img, asp)
-    M = cv2.getPerspectiveTransform(pq, bq)
+    def quick_dark(a):                                                              # 인쇄물 구조만 보려는 가벼운 어둡기 지도
+        g = cv2.cvtColor(a, cv2.COLOR_BGR2GRAY).astype(np.float32) / 255
+        bg = cv2.GaussianBlur(g, (0, 0), 12); return np.clip(1 - g / np.maximum(bg, 0.05), 0, 1)
+    sm = 0.25; S4 = np.diag([sm, sm, 1.0]).astype(np.float64)
+    blank_s = cv2.resize(blank, (int(W * sm), int(H * sm)), interpolation=cv2.INTER_AREA); db = cv2.GaussianBlur(quick_dark(blank_s), (0, 0), 1.2)
+    best = None
+    for k in range(4):
+        Mk = cv2.getPerspectiveTransform(np.roll(pq, -k, axis=0), bq)
+        ws = cv2.warpPerspective(img, S4 @ Mk, (int(W * sm), int(H * sm)), flags=cv2.INTER_AREA)
+        dp = cv2.GaussianBlur(quick_dark(ws), (0, 0), 1.2)
+        c = float(np.corrcoef(dp.ravel(), db.ravel())[0, 1])
+        if best is None or c > best[0]: best = (c, k, Mk)
+    corr, rot, M = best
+    print(f"방향 맞춤: 회전 {rot * 90}도 (빈 양식과 일치도 {corr:.2f})")
     warped = cv2.warpPerspective(img, M, (W, H), flags=cv2.INTER_CUBIC)
     cv2.imwrite(os.path.join(outdir, f"t{page}_rectified.jpg"), warped)
     boxes = detect_cells(blank)
